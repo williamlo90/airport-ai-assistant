@@ -149,4 +149,4 @@ Mulai dari backend minimal yang bisa dijalankan, konfigurasi environment, dan ko
 
 Setelah itu, bangun fondasi tenant dan akses, lalu alur kasus tanpa AI. Ketika pengajuan, penugasan, status, dan handoff sudah bekerja, agent menggunakan layanan yang sama untuk membantu pengguna melalui percakapan.
 
-Schema database akan memperinci tabel, relasi, constraint, indeks, dan RLS. Rencana tugas backend akan mengurutkan implementasi serta bukti yang harus tersedia sebelum suatu pekerjaan disebut selesai.
+[Schema database](database_schema.md) memperinci tabel, relasi, constraint, indeks, dan RLS. Rencana tugas backend akan mengurutkan implementasi serta bukti yang harus tersedia sebelum suatu pekerjaan disebut selesai.

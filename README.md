@@ -20,6 +20,8 @@ Booking creation, payment processing, refund execution, and delegation managemen
 | [Architecture](ARCHITECTURE.md) | System boundaries, data flows, access controls, and deployment design. |
 | [Data and API contracts](DATA_AND_API_CONTRACTS.md) | Domain entities, API behavior, confirmation, and state transitions. |
 | [Test plan](TEST_PLAN.md) | Planned verification, acceptance gates, and evidence requirements. |
+| [Backend architecture](docs/backend/backend_architecture.md) | Backend responsibilities, module dependencies, and request flow. |
+| [Database schema](docs/backend/database_schema.md) | PostgreSQL tables, field types, keys, relationships, constraints, indexes, and isolation rules. |
 
 ## Implementation status
 
