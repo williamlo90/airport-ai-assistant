@@ -22,7 +22,7 @@ def target():
     url = settings.url.get_secret_value()
     engine = migrations.create_migration_engine(url, connect_timeout=settings.connect_timeout)
     try:
-        assert migrations.migrate(url, schema=schema) == "0001_foundation"
+        assert migrations.migrate(url, schema=schema, target_revision="0001_foundation") == "0001_foundation"
         yield schema, engine, url
     finally:
         # Exact generated schema only; never delete the application schema.
@@ -70,7 +70,7 @@ def reject(connection, expected, operation):
 
 def test_empty_upgrade_and_repeat_are_versioned(target):
     schema, engine, url = target
-    assert migrations.migrate(url, schema=schema) == "0001_foundation"
+    assert migrations.migrate(url, schema=schema, target_revision="0001_foundation") == "0001_foundation"
     assert migrations.migrate(url, schema=schema, action="current") == "0001_foundation"
     with engine.connect() as connection:
         rows = connection.execute(text("SELECT table_name FROM information_schema.tables WHERE table_schema=:schema"), {"schema": schema}).scalars().all()

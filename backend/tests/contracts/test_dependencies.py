@@ -21,6 +21,7 @@ INTERNAL_ALLOWED = {
     "worker": {"modules", "config", "composition"},
     "database_check": {"composition", "config", "database_config", "infrastructure"},
     "migrate": {"config", "database_config", "infrastructure"},
+    "provision": {"composition", "database_config", "infrastructure"},
 }
 EXTERNAL_ALLOWED = {
     "api": {"fastapi", "starlette", "pydantic"},
@@ -31,6 +32,7 @@ EXTERNAL_ALLOWED = {
     "worker": set(),
     "database_check": set(),
     "migrate": set(),
+    "provision": {"dotenv"},
 }
 IO_MODULES = {"socket", "urllib", "http", "sqlite3", "subprocess", "dbm", "shelve"}
 

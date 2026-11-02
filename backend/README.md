@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. DB-02 menambahkan tabel fondasi tenant/identitas; schema alur layanan, autentikasi, worker executable dan route bisnis belum tersedia.
+BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. DB-02 menambahkan tabel fondasi tenant/identitas; DB-03 menambahkan role runtime terbatas, RLS dan konteks transaksi. Schema alur layanan, autentikasi, worker executable dan route bisnis belum tersedia.
 
 ## Prasyarat
 
@@ -138,7 +138,7 @@ Rujukan: [Psycopg pools](https://www.psycopg.org/psycopg3/docs/advanced/pool.htm
 
 ## Migration fondasi DB-02
 
-Riwayat schema memakai Alembic dengan SQLAlchemy Core dan Psycopg direct connection. Source migration ada di `backend/migrations/`, ikut dibundel pada wheel sebagai resource paket. Tidak ada URL/credential pada file konfigurasi Alembic.
+Riwayat schema memakai Alembic dengan SQLAlchemy Core dan Psycopg direct connection. Pada checkout baru, jalankan provisioner DB-03 terlebih dahulu agar role yang diperlukan revision0002 tersedia; perintah upgrade berikut dipakai setelah persiapan tersebut. Source migration ada di `backend/migrations/`, ikut dibundel pada wheel sebagai resource paket. Tidak ada URL/credential pada file konfigurasi Alembic.
 
 Dari root repository, dengan server lama dihentikan bila mengunci virtualenv:
 
@@ -164,3 +164,41 @@ Aktifkan RUN_NEON_DB_TESTS=1 juga untuk regresi koneksi DB-01 pada full suite. T
 Rujukan: [Alembic connection sharing](https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands), [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html).
 
 Verifikasi DB-02 pada 2 November 2026: **144 tes live lulus**, audit QA independen lulus. Schema app sudah ber-revision `0001_foundation`; upgrade ulang/current dan metadata sembilan tabel fondasi diverifikasi. RLS serta role runtime belum menjadi klaim DB-02.
+
+## Role runtime dan RLS DB-03
+
+Persiapan awal (migration credential harus dapat membuat role):
+
+```powershell
+uv sync --locked --project backend
+uv run --locked --project backend airport-assistant-db-provision
+```
+
+Provisioner membuat role runtime LOGIN terbatas dan policy-owner NOLOGIN, menerapkan revision `0002_runtime_rls`, menguji login runtime, lalu mengganti DATABASE_URL di .env secara internal. Password dihasilkan script dan tidak dicetak. Credential migration tidak diganti. Jangan set DATABASE_URL di environment proses saat memakai provisioner file lokal; override tersebut akan ditolak. --env-file tersedia untuk lokasi konfigurasi lain. API yang sudah berjalan perlu direstart untuk memakai konfigurasi baru.
+
+Role yang sudah ada tidak diberi privilege tambahan secara diam-diam bila atribut/membership-nya tidak aman. Pengulangan dengan URL role runtime yang sama mempertahankan password. Bila terjadi kegagalan sebelum update file, role/migration mungkin sudah dibuat; perbaiki tahap yang dilaporkan dan ulangi provisioner. Tidak perlu menyalin password ke chat. PUBLIC CREATE/TEMP pada database dan CREATE pada schema public dicabut; gunakan database khusus proyek ini seperti pada setup DB-01.
+
+Layanan menggunakan `db.transaction(DatabaseContext(tenant_id, principal_id, actor_kind))`. Context immutable berasal dari server yang telah memverifikasi sesi; bukan input tenant/aktor dari user atau model. Tanpa context, query data fondasi default deny. Jalur bootstrap terbatas adalah `app.lookup_tenant_host(host)` dan hanya mengembalikan UUID dari host/tenant aktif. Tidak ada endpoint autentikasi atau bypass RLS baru pada DB-03.
+
+Startup RuntimeDatabase menolak credential owner/BYPASSRLS/CREATE ROLE/CREATE DB, role induk yang bisa di-SET, database/schema ownership dan hak CREATE/TEMP. Semua transaksi memasang context transaction-local; cancellation membuang koneksi yang tidak pasti. RLS fondasi membatasi kontak/principal ke diri sendiri, membership dan mutasi role ke admin aktif dalam organisasi yang sesuai. Kasus dan aturan akses CS ke kasus tetap tugas berikutnya.
+
+Tes RLS opt-in memakai login khusus acak dan schema db03_test_UUID terisolasi; credential hanya berada dalam proses tes. Role dan schema tes dibersihkan setelah selesai. Tambahkan flag berikut untuk full suite:
+
+```powershell
+$env:RUN_NEON_DB_TESTS = '1'
+$env:RUN_NEON_MIGRATION_TESTS = '1'
+$env:RUN_NEON_RLS_TESTS = '1'
+try { uv run --locked --project backend pytest backend/tests } finally {
+  Remove-Item Env:RUN_NEON_DB_TESTS, Env:RUN_NEON_MIGRATION_TESTS, Env:RUN_NEON_RLS_TESTS
+}
+```
+
+Migrasi fondasi DB-02 tetap diuji secara khusus pada revision0001. Tes RLS meng-upgrade dari kosong ke revision0002 serta memeriksa login nyata; menjalankan SET ROLE dari owner bukan pengganti bukti tersebut. DB-01 probe tetap memberi SELECT/INSERT hanya pada tabel probe sementara yang akan dihapus, bukan memberi CREATE pada runtime.
+
+Rujukan: [PostgreSQL row security](https://www.postgresql.org/docs/current/ddl-rowsecurity.html), [Neon roles](https://neon.com/docs/manage/roles).
+
+Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ketika ia admin. Positive admin management hanya menarget principal lain dalam organisasi yang diizinkan. Runtime hanya boleh mengubah active/version pada membership, role pada membership_roles, dan queue_id pada membership_queues; tenant/principal/organization/membership target tidak dapat diretarget lewat UPDATE. Perubahan scope membutuhkan operasi eksplisit terhadap record yang sesuai, dengan pemeriksaan bisnis/audit pada fitur AUTH/admin berikutnya.
+
+Status pemasangan DB-03: app ber-revision `0002_runtime_rls`. Provisioner memverifikasi login runtime terbatas dan memperbarui hanya DATABASE_URL secara internal; DATABASE_DIRECT_URL tetap credential migration. API yang sudah berjalan perlu direstart untuk memuat URL baru. Saat deployment, berikan DATABASE_URL saja pada API/worker; credential direct hanya untuk job migration/provisioning.
+
+Hasil final DB-03: full suite live **192 passed** pada 2 November 2026. QA independen mengulang suite191tes dan tes tambahan credential runtime aktual, memverifikasi rollout, dan menyatakan lulus dalam scope keamanan fondasi.

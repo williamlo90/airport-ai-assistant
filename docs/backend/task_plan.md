@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01 dan DB-02 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02 dan DB-03 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -277,3 +277,21 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Schema app terpasang revision `0001_foundation`: upgrade, current, dan repeat upgrade semuanya PASS. Pemeriksaan metadata memastikan sembilan tabel fondasi plus schema_migrations tersedia. Tidak ada seed pelanggan, grants runtime atau RLS; DB-03 menguji role/tenant policy terpisah.
 
 - Review QA: **lulus tanpa temuan material**. QA mengulang live suite **144 passed** serta clean wheel **115 passed, 29 skipped**, memverifikasi migration resources dipakai dari paket terpasang. Bukti penerapan app dicatat setelah audit kode dan pengujian schema terisolasi lulus.
+
+
+## Catatan pelaksanaan DB-03
+
+**Status: selesai - 2 November 2026.**
+
+- Revision `0002_runtime_rls` terpasang pada app: ENABLE/FORCE pada sembilan tabel, missing/malformed tenant context default deny, scope kontak/principal sendiri dan scope organisasi/membership admin aktif. SECURITY DEFINER memakai owner NOLOGIN non-BYPASS dengan SELECT-only metadata policies, search_path tetap, tabel terqualifikasi dan PUBLIC EXECUTE dicabut.
+- Hak pribadi tidak dapat dinaikkan sendiri: mutasi membership/role/queue principal aktor ditolak. Column-level UPDATE menjaga tenant/principal/org/membership target immutable. Admin tetap dapat mengelola principal lain dalam organisasi yang diizinkan, termasuk kombinasi role yang eksplisit.
+- DatabaseContext immutable berisi tenant/principal UUID dan actor kind dari server. Semua transaksi memasang/reset context transaction-local. Startup menolak owner/privileged login, parent role membership dan CREATE/TEMP. Cancellation menutup koneksi yang tidak pasti.
+- Provisioner memverifikasi restricted LOGIN sebelum mengganti hanya DATABASE_URL lokal secara internal. DATABASE_DIRECT_URL tetap terpisah. Password/DSN tidak dicetak dan statement password tidak melalui logger SQLAlchemy. PUBLIC CREATE/TEMP dicabut pada database khusus proyek.
+- QA mengulang pemeriksaan keamanan dan probe eskalasi memakai LOGIN runtime nyata, serta full suite setelah rollout: **191 passed**. Pemeriksaan app aktual memastikan revision0002, sembilan tabel FORCE/ENABLE, role runtime lolos guard, context kosong dan pembacaan fondasi tanpa context menghasilkan nol baris.
+- Tes meliputi kontak A/B dan dua pelanggan dalam A, staff queue scope, role spoofing, self-escalation INSERT/UPDATE/DELETE, immutable target, DDL/TRUNCATE/SET ROLE/RLS-off, admin lintas organisasi, revocation, seluruh exit transaksi dan tenant konkuren pada pool satu koneksi. Schema/role acak tes dibersihkan; app tidak diberi seed pelanggan.
+- Tes tambahan credential DATABASE_URL aktual pada scratch schema: konteks A/B hanya membaca kontak sendiri dan context kosong membaca nol. Role runtime aktual tidak diganti password atau dihapus oleh tes; scratch schema/helper-owner dibersihkan.
+- Batas: SEC-01/02/05/07 hanya bagian fondasi yang tersedia. Auth API, case/blob/email/model dan seluruh scope CS mengikuti tugas berikutnya. Context berasal dari backend tepercaya; RLS bukan pengganti autentikasi atau pembatas untuk pemegang credential runtime yang memiliki SQL bebas.
+
+- Penerimaan final: ketiga flag integrasi Neon aktif, **192 passed** tanpa skip. QA menyatakan lulus berdasarkan suite independen191tes, probe app dan pengulangan tes tambahan credential runtime aktual. Tidak ada temuan material tersisa.
+
+- Build final dari ekspor tracked files: instalasi wheel non-editable berhasil, **126 passed, 66 skipped** dalam mode offline, resource migration0002 dan regresi HTTP/bootstrap lulus. Semua66tes integrasi tersebut aktif dan lulus pada suite live192tes di atas.

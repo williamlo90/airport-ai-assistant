@@ -18,7 +18,7 @@ def test_packaged_revision_has_one_head():
         assert directory == package / "_migrations"
     config = Config()
     config.set_main_option("script_location", str(directory))
-    assert ScriptDirectory.from_config(config).get_heads() == ["0001_foundation"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0002_runtime_rls"]
 
 
 @pytest.mark.parametrize("schema", ["public", "pg_catalog", "app;DROP SCHEMA app", 'a"b', "", "a" * 64])

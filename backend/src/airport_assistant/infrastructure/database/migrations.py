@@ -39,7 +39,9 @@ def create_migration_engine(url: str, *, connect_timeout=10):
                          poolclass=NullPool, echo=False, hide_parameters=True)
 
 
-def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade") -> str | None:
+def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade",
+            target_revision="head", runtime_role="airport_assistant_runtime",
+            policy_role="airport_assistant_policy_owner") -> str | None:
     validate_schema(schema)
     if action not in {"upgrade", "current"}:
         raise MigrationError("Unsupported migration action.")
@@ -56,8 +58,9 @@ def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade") -> 
                 connection.exec_driver_sql(f"REVOKE ALL ON SCHEMA {quoted} FROM PUBLIC")
                 config = Config()
                 config.set_main_option("script_location", str(migration_directory()))
-                config.attributes.update(connection=connection, schema=schema)
-                command.upgrade(config, "head")
+                config.attributes.update(connection=connection, schema=schema,
+                                         runtime_role=runtime_role, policy_role=policy_role)
+                command.upgrade(config, target_revision)
             return MigrationContext.configure(connection, opts={
                 "version_table": "schema_migrations", "version_table_schema": schema,
             }).get_current_revision()

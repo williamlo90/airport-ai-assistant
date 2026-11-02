@@ -8,6 +8,8 @@ import certifi
 import psycopg
 from psycopg_pool import AsyncConnectionPool, PoolClosed, PoolTimeout, TooManyRequests
 
+from airport_assistant.modules.identity.context import DatabaseContext
+
 
 class DatabaseError(RuntimeError):
     def __init__(self, sqlstate: str | None = None):
@@ -72,6 +74,7 @@ class RuntimeDatabase:
             async with asyncio.timeout(self._acquire_timeout + self._statement_timeout_ms / 1000):
                 async with self.transaction() as connection:
                     await connection.execute("SELECT 1")
+                    await self._validate_role(connection)
         except TimeoutError:
             await self._pool.close()
             raise DatabaseError() from None
@@ -82,8 +85,30 @@ class RuntimeDatabase:
     async def close(self) -> None:
         await self._pool.close()
 
+    async def _validate_role(self, connection) -> None:
+        row = await (await connection.execute("""
+            SELECT r.rolsuper OR r.rolbypassrls OR r.rolcreaterole OR r.rolcreatedb
+                OR r.rolreplication OR r.rolinherit OR current_user <> session_user
+                OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member=r.oid)
+                OR EXISTS (SELECT 1 FROM pg_database WHERE datname=current_database() AND datdba=r.oid)
+                OR EXISTS (SELECT 1 FROM pg_namespace WHERE nspowner=r.oid AND nspname='app')
+                OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+                           WHERE n.nspname='app' AND c.relowner=r.oid)
+                OR has_database_privilege(current_user,current_database(),'CREATE')
+                OR has_database_privilege(current_user,current_database(),'TEMP')
+                OR has_schema_privilege(current_user,'public','CREATE')
+            FROM pg_roles r WHERE rolname=current_user
+        """)).fetchone()
+        if row is None or row[0]:
+            raise DatabaseError()
+        row = await (await connection.execute("SELECT has_schema_privilege(current_user,'app','CREATE')")).fetchone()
+        if row[0]:
+            raise DatabaseError()
+
     @asynccontextmanager
-    async def transaction(self):
+    async def transaction(self, context: DatabaseContext | None = None):
+        if context is not None and not isinstance(context, DatabaseContext):
+            raise ValueError("Validated database context is required.")
         try:
             # pool.timeout does not cover network I/O inside its check callback.
             # The application budget covers queueing and that callback together.
@@ -95,6 +120,12 @@ class RuntimeDatabase:
                         await connection.execute("SELECT set_config('statement_timeout', %s, true)", (str(self._statement_timeout_ms),))
                         await connection.execute("SELECT set_config('lock_timeout', '3000', true)")
                         await connection.execute("SELECT set_config('idle_in_transaction_session_timeout', '10000', true)")
+                        await connection.execute("SELECT set_config('app.tenant_id', %s, true)",
+                                                 (str(context.tenant_id) if context else "",))
+                        await connection.execute("SELECT set_config('app.principal_id', %s, true)",
+                                                 (str(context.principal_id) if context and context.principal_id else "",))
+                        await connection.execute("SELECT set_config('app.actor_kind', %s, true)",
+                                                 (context.actor_kind if context else "anonymous",))
                         yield connection
                     except asyncio.CancelledError:
                         # Close locally before transaction exit: don't wait for a

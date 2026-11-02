@@ -645,3 +645,25 @@ Revision Alembic `0001_foundation` mencakup sembilan tabel: tenants, tenant_host
 Seluruh ID memakai default gen_random_uuid(), timestamps memakai CURRENT_TIMESTAMP dan trigger updated_at. Batas nama 200 karakter, source_subject_ref 256, slug 63 dan hostname 253 diterapkan bersama pemeriksaan nonkosong/format. Email memakai batas 320 dan guard dasar; validasi email lengkap serta lookup canonical tetap milik layanan identitas, tanpa menghapus plus-tag/titik secara universal. Bahasa wajib array satu dimensi nonkosong berisi id/en tanpa elemen NULL. Timezone diperiksa ke pg_catalog.pg_timezone_names lewat trigger ber-search_path tetap.
 
 Migration dijalankan melalui direct credential dalam satu transaksi, termasuk schema/version. Advisory transaction lock per schema mencegah dua runner meng-upgrade bersamaan. Migration gagal di-rollback; tidak menggunakan CREATE TABLE IF NOT EXISTS untuk menutupi drift. Tidak ada runtime/public access grant atau seed pelanggan; least privilege/RLS mengikuti DB-03. Downgrade destruktif tidak tersedia melalui CLI; koreksi schema membutuhkan recovery migration yang direview.
+
+
+## 18 Implementasi fondasi RLS DB-03
+
+Revision `0002_runtime_rls` memakai role LOGIN `airport_assistant_runtime` dengan NOINHERIT/NOSUPERUSER/NOBYPASSRLS/NOCREATEDB/NOCREATEROLE/NOREPLICATION, tanpa role induk, ownership app, CREATE schema/table atau TEMP. Provisioner memakai migration credential untuk membuat role dan mengganti hanya DATABASE_URL lokal secara internal setelah login baru diverifikasi. DATABASE_DIRECT_URL tetap terpisah. PUBLIC CREATE/TEMP pada database dan PUBLIC CREATE pada schema public dicabut untuk menutup hak yang diwarisi secara publik.
+
+Sembilan tabel fondasi memakai ENABLE dan FORCE RLS, dengan USING/WITH CHECK yang relevan. Context `app.tenant_id`, `app.principal_id` dan `app.actor_kind` dipasang transaction-local dari DatabaseContext server, selalu direset saat transaksi dimulai. Missing/malformed context tidak membuka data. Ini bukan autentikasi; service AUTH harus membentuk context dari sesi yang sah. Pengguna/model tidak mendapat SQL, credential database atau kemampuan memilih context.
+
+| Fondasi | Hak runtime yang tersedia |
+| --- | --- |
+| tenants / tenant_hosts / organizations / service_queues | Baca sesuai tenant. Tanpa context hanya lookup_tenant_host(host) yang mengembalikan UUID tenant aktif dari host aktif. |
+| principals | Baca diri sendiri, update display_name sendiri. Tidak ada INSERT/DELETE atau perubahan source_subject_ref/active. |
+| contacts | Baca kontak principal sendiri. Tidak ada bind/verifikasi/rebind melalui SQL runtime biasa. |
+| staff_memberships / membership_roles / membership_queues | Baca membership diri sendiri atau dalam organisasi admin yang sah; mutasi hanya oleh principal staf aktif dengan membership admin aktif pada organisasi terkait. |
+
+Creation/binding identitas dan tindakan operasional lain baru dibuka melalui use case/operasi terbatas pada AUTH. Kontrol RLS ini tidak otomatis memberi CS akses semua kontak pelanggan atau memberi admin akses isi kasus; kasus dan izin operasionalnya belum diimplementasikan.
+
+Helper untuk role/grants dan bootstrap dimiliki role NOLOGIN `airport_assistant_policy_owner`, bukan role runtime dan bukan BYPASSRLS. Role ini mendapat SELECT hanya pada tabel metadata identitas yang diperlukan serta policy SELECT khusus, bukan DML. SECURITY DEFINER mempunyai search_path pg_catalog, tabel terqualifikasi, hasil bool/UUID terbatas dan PUBLIC EXECUTE dicabut. Runtime tidak menjadi anggota role owner. Lookup host tidak memberi data personal atau akses SQL bebas.
+
+Startup pool menolak login privileged, owner, role dengan parent membership, CREATE/TEMP atau facade SET ROLE. Ini melindungi konfigurasi runtime; migration dan fixture administrator tetap terpisah. Isolasi fondasi diuji dengan login runtime sungguhan, termasuk commit/rollback/error/cancellation/timeout dan pergantian tenant melalui pool satu koneksi. Pengujian SEC untuk case/blob/email/agent tetap mengikuti fitur-fitur tersebut.
+
+Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ketika ia admin. Positive admin management hanya menarget principal lain dalam organisasi yang diizinkan. Runtime hanya boleh mengubah active/version pada membership, role pada membership_roles, dan queue_id pada membership_queues; tenant/principal/organization/membership target tidak dapat diretarget lewat UPDATE. Perubahan scope membutuhkan operasi eksplisit terhadap record yang sesuai, dengan pemeriksaan bisnis/audit pada fitur AUTH/admin berikutnya.
