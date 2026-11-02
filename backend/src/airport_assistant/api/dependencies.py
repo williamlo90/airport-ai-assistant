@@ -34,3 +34,8 @@ async def get_staff_identity(identity: AccessIdentity = Depends(get_identity)) -
     if identity.session.kind != "staff":
         raise AuthError(401, "AUTH_REQUIRED")
     return identity
+
+
+async def get_customer_identity(identity:AccessIdentity=Depends(get_identity))->AccessIdentity:
+    if identity.session.kind!='customer':raise AuthError(401,'AUTH_REQUIRED')
+    return identity

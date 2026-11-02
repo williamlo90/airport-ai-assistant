@@ -92,6 +92,12 @@ Grant booking:read tidak memberi payment read. Transaksi minimal membutuhkan pay
 
 SRC-01 membuktikan sumber mandiri. Konektor aplikasi dan pemetaan principal/source_subject_ref tetap SRC-02; grants/security labels data turunan tetap SRC-03A/B.
 
+### Perincian SRC-02 yang executable
+
+Backend menggunakan adapter HTTP async independen untuk kelima read SRC-01, tanpa mengimpor source package/SQLite. Tiga GET portal booking/direct transaction/booking transactions aktif hanya dengan APP_SOURCE_ENABLED dan customer session sah. Tenant aplikasi dipetakan satu-ke-satu ke tenant sumber melalui SOURCE_TENANT_MAP; subject diambil dari source_subject_ref principal sendiri dengan runtime RLS. Client tidak memasok caller atau tujuan sumber.
+
+Respons divalidasi terhadap DTO ketat, exact reference/page/parent, scopes dan proyeksi status/details. Missing/null required status tetap invalid502; provider enum string baru menjadi unknown. Source404/mapping tidak ada tetap404, transport/timeout/sourceauth/5xx503 dan respons rusak502, tanpa mengubah status transaksi. Policy/relations belum menjadi endpoint publik. [Source integration guide](docs/backend/source_integration.md) menjelaskan protokol, batas jaringan, error, setup dan diagnostic fixture yang terpisah dari login pelanggan.
+
 ## 4 Endpoint portal dan identitas
 
 | Endpoint | Akses dan kontrak |

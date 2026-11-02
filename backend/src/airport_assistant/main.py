@@ -18,18 +18,24 @@ from airport_assistant.auth_config import AuthSettings,load_auth_settings
 from airport_assistant.modules.identity.auth import VerificationSender
 from airport_assistant.api.auth import router as auth_router
 from airport_assistant.api.staff import router as staff_router
+from airport_assistant.api.source import router as source_router
+from airport_assistant.source_config import SourceSettings,load_source_settings
 
 
 def create_app(settings: Settings, *, services: ApplicationServices | None = None,
                database_settings: RuntimeDatabaseSettings | None = None,
-               auth_settings:AuthSettings|None=None,verification_sender:VerificationSender|None=None) -> FastAPI:
+               auth_settings:AuthSettings|None=None,verification_sender:VerificationSender|None=None,source_settings:SourceSettings|None=None) -> FastAPI:
     """Build the ASGI application from previously validated settings."""
     development_docs = settings.env != "production"
     if settings.database_enabled != (database_settings is not None):
         raise ConfigurationError("Database enablement and runtime configuration must match.")
     if settings.auth_enabled != (auth_settings is not None) or (settings.auth_enabled and not settings.database_enabled):
         raise ConfigurationError("Authentication requires explicit settings and an enabled database.")
-    resources = build_resources(database_settings)
+    if settings.source_enabled != (source_settings is not None) or (settings.source_enabled and not settings.auth_enabled):
+        raise ConfigurationError("Source reads require explicit source settings and authentication.")
+    if source_settings and settings.env=='production' and source_settings.base_url.lower().startswith('http:'):
+        raise ConfigurationError("Production source connections require TLS.")
+    resources = build_resources(database_settings,source_settings)
     app = FastAPI(
         title="Airport AI Assistant API",
         version="0.1.0",
@@ -40,7 +46,7 @@ def create_app(settings: Settings, *, services: ApplicationServices | None = Non
         lifespan=lambda app: resources.lifecycle(),
     )
     app.state.settings = settings
-    app.state.services = (build_services(resources.database,auth_settings,verification_sender) if auth_settings else build_services()) if services is None else services
+    app.state.services = (build_services(resources.database,auth_settings,verification_sender,resources.source,source_settings.tenant_map if source_settings else None) if auth_settings else build_services()) if services is None else services
     app.state.resources = resources
     install_error_handlers(app)
     app.include_router(health_router)
@@ -48,6 +54,9 @@ def create_app(settings: Settings, *, services: ApplicationServices | None = Non
         if app.state.services.auth is None or app.state.services.access is None:raise ConfigurationError("Authentication and access services are required.")
         app.include_router(auth_router)
         if app.state.services.staff is not None:app.include_router(staff_router)
+    if settings.source_enabled:
+        if app.state.services.source is None:raise ConfigurationError("Source read services are required.")
+        app.include_router(source_router)
     app.add_middleware(RequestBoundary, max_body_bytes=settings.max_request_body_bytes)
     return app
 
@@ -68,6 +77,9 @@ def main() -> None:
         settings = load_settings(None if args.no_env_file else args.env_file)
         if settings.auth_enabled and not settings.database_enabled:
             raise ConfigurationError("APP_AUTH_ENABLED requires APP_DATABASE_ENABLED.")
+        if settings.source_enabled and not settings.auth_enabled:raise ConfigurationError("APP_SOURCE_ENABLED requires authentication.")
+        source_settings=load_source_settings(None if args.no_env_file else args.env_file) if settings.source_enabled else None
+        if source_settings and settings.env=='production' and source_settings.base_url.lower().startswith('http:'):raise ConfigurationError("Production source connections require TLS.")
         auth_settings=load_auth_settings(None if args.no_env_file else args.env_file) if settings.auth_enabled else None
         database_settings = load_database_settings(
             RuntimeDatabaseSettings, None if args.no_env_file else args.env_file,
@@ -79,7 +91,7 @@ def main() -> None:
         print("Configuration valid.")
         return
     # Default Uvicorn access logs include raw paths/query strings.
-    uvicorn.run(create_app(settings, database_settings=database_settings,auth_settings=auth_settings), host=settings.host,
+    uvicorn.run(create_app(settings, database_settings=database_settings,auth_settings=auth_settings,source_settings=source_settings), host=settings.host,
                 port=settings.port, access_log=False,
                 loop="airport_assistant.composition:database_loop_factory" if settings.database_enabled else "auto")
 

@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; **AUTH-04 selesai**; **SRC-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; **AUTH-04 selesai**; **SRC-01 selesai**; **SRC-02 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -369,3 +369,19 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Audit QA independen lulus tanpa temuan material tersisa; suite96tes diulang dan race publikasi file baru diregresi sehingga target yang muncul bersamaan tidak ditimpa. Reset memakai lock kooperatif dan lifecycle stop/reset/restart; tidak mengklaim hot reseed atau perlindungan dari administrator filesystem yang tidak dipercaya.
 - Setup sumber lokal aktual berhasil menghasilkan key internal dan SQLite fiktif terpisah. Smoke TCP aktual lulus health, unsigned401, owner booking200, representative payment404, beneficiary status-only200, payer tanpa booking link200, outsider404. Key tidak tampil pada output/log dan server smoke sudah dihentikan.
 - Regresi backend tanpa perubahan source: **207 passed, 160 skipped** (tes Neon opt-in). Suite live367 dari AUTH-04 tetap bukti terakhir untuk backend yang tidak berubah; tidak menjalankan ulang Neon untuk perubahan source mandiri ini. SRC-02/SRC-03A tetap belum dimulai.
+
+
+## Catatan pelaksanaan SRC-02
+
+**Status: selesai.**
+
+- Adapter async source lima GET, origin tertutup/HMAC caller, proxy/redirect/retry/cookie-provider ditolak, pool/deadline/stream bytes dibatasi dan logging teredaksi. Validasi ketat type/reference/scopes/money/time/page/parent; malformed status bukan unknown yang difabrikasi.
+- Tiga GET portal customer dengan shared identity AUTH-04, mapping tenant satu-ke-satu dan principal source_subject_ref melalui self RLS/active principal+tenant. Policy/relations tetap internal; tidak ada source data/identity dari request atau fallback fixture.
+- SourceSettings opt-in, composition owns lifecycle client; helper local setup menyalin key secara internal tanpa customer seed/source rebind. Diagnostic localhost menggunakan adapter normal, bukan web auth bypass. Panduan [source_integration.md](source_integration.md).
+- Tidak ada migration/grant database baru; SRC-03A/B untuk grants/security labels serta enforcement data turunan belum diimplementasikan.
+
+- Regresi akhir dengan enam flag aktif (lima Neon + RUN_SOURCE_NETWORK_TESTS): **454 passed** dalam468.13detik. Termasuk77unit sumber baru dan10bridge realNeon dengan source TCP di interpreter mandiri, OTP hanya delivery terkontrol pada tes.
+- Wheel non-editable dari ekspor tracked files: **284 passed, 170 skipped** pada mode offline; konfigurasi contoh serta live HTTP health/404/405/chunked413/request-ID lulus. Skips adalah tes integrasi opt-in, bukan fallback provider. Runtime HTTPX dan tzdata tersedia pada paket terkunci.
+- Audit QA independen lulus tanpa temuan material tersisa;104tes terarah terbaru, bridge/kontrak dan wheel diperiksa. Requiredstatus/refund malformed ditolak dan guard HTTP production tidak bergantung pada kapitalisasi scheme. Tidak mengklaim DTO sendiri membuktikan seluruh grants link booking atau bahwa pengiriman email live sudah diuji.
+- Source setup lokal aktual lulus: key disalin internal, host terdaftar dipetakan, flag source diaktifkan; credential lain dipertahankan. Tidak membuat customer/source_subject_ref/relasi baru. Smoke adapter TCP aktual lulus booking200/beneficiary status-only200, portal missing/anonymous401, logout204, clientclosed dan operator diagnostic200. Proses source milik pengguna yang sudah berjalan dipertahankan; proses smoke yang dibuat sendiri dihentikan.
+- Tidak ada migration/grant database baru; schema tetap0004_staff_auth. SRC-03A menjadi tugas berikutnya untuk grants dan security labels, bukan dinyatakan selesai oleh source-read ini.

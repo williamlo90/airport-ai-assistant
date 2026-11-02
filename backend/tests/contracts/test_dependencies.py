@@ -17,17 +17,19 @@ INTERNAL_ALLOWED = {
     "modules": {"modules"},
     "integrations": {"integrations", "modules"},
     "infrastructure": {"infrastructure", "modules"},
-    "main": {"api", "config", "composition", "database_config", "auth_config", "modules"},
+    "main": {"api", "config", "composition", "database_config", "auth_config", "source_config", "modules"},
     "worker": {"modules", "config", "composition"},
     "database_check": {"composition", "config", "database_config", "infrastructure"},
     "migrate": {"config", "database_config", "infrastructure"},
     "provision": {"composition", "database_config", "infrastructure"},
     "staff_credential": {"modules", "database_config", "infrastructure"},
+    "source_check": {"source_config", "config", "modules", "integrations"},
+    "source_setup": {"source_config", "config", "database_config", "composition", "infrastructure"},
     "auth_setup": {"auth_config", "composition", "database_config", "infrastructure"},
 }
 EXTERNAL_ALLOWED = {
     "api": {"fastapi", "starlette", "pydantic"},
-    "modules": {"email_validator"},
+    "modules": {"email_validator", "pydantic"},
     "integrations": {"httpx"},
     "infrastructure": {"argon2", "psycopg", "psycopg_pool", "certifi", "sqlalchemy", "alembic"},
     "main": {"fastapi", "uvicorn"},
@@ -36,6 +38,8 @@ EXTERNAL_ALLOWED = {
     "migrate": set(),
     "provision": {"dotenv"},
     "staff_credential": {"sqlalchemy"},
+    "source_check": set(),
+    "source_setup": {"dotenv"},
     "auth_setup": {"dotenv", "sqlalchemy"},
 }
 IO_MODULES = {"socket", "urllib", "http", "sqlite3", "subprocess", "dbm", "shelve"}

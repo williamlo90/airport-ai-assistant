@@ -232,3 +232,8 @@ Revision0004_staff_auth dipasang melalui migration runner; histori0001–0003 ti
 ## Shared authorization AUTH-04
 
 [Authorization guide](../docs/backend/authorization.md) memuat identitas bersama, helper proof read/mutation, exact tenant/kind/id, ownership dan scope staf, serta concealed404/visible403. /me dan /staff/me memakai AccessService; tidak ada migration atau endpoint resource produksi baru. Uji terfokus: unit/test_access_policy.py dan integration/test_access_http.py dengan RUN_NEON_AUTH_TESTS=1.
+
+
+## Source connector SRC-02
+
+[Source integration](../docs/backend/source_integration.md) memuat setup internal key/mapping, tiga GET customer portal, lima metode read adapter, batas HTTP, validasi DTO dan error. APP_SOURCE_ENABLED opt-in; kebijakan/relasi tetap internal. Diagnostic localhost memakai airport-assistant-source-check; tidak menjadi bypass login customer. SourceGrantProvider/security labels mengikuti SRC-03A.

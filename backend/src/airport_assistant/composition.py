@@ -17,6 +17,10 @@ from airport_assistant.infrastructure.database.auth_repository import PostgresAu
 from airport_assistant.modules.identity.auth import AuthService,AuthPolicy,VerificationSender
 from airport_assistant.modules.identity.staff import StaffService
 from airport_assistant.modules.identity.access import AccessService
+from airport_assistant.source_config import SourceSettings
+from airport_assistant.modules.source.service import SourceReadService
+from airport_assistant.integrations.source.client import SourceHttpClient
+from airport_assistant.infrastructure.database.source_subjects import PostgresSourceSubjects
 from airport_assistant.infrastructure.database.staff_repository import PostgresStaffRepository
 from airport_assistant.infrastructure.security.passwords import BoundedPasswordVerifier
 
@@ -27,9 +31,10 @@ class ApplicationServices:
     auth: AuthService|None=None
     staff: StaffService|None=None
     access: AccessService|None=None
+    source: SourceReadService|None=None
 
 
-def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings|None=None,sender:VerificationSender|None=None) -> ApplicationServices:
+def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings|None=None,sender:VerificationSender|None=None,source_client=None,tenant_map=None) -> ApplicationServices:
     auth=None
     staff=None
     access=None
@@ -41,33 +46,35 @@ def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings
         repository=PostgresStaffRepository(database)
         access=AccessService(auth,repository)
         staff=StaffService(auth,repository,BoundedPasswordVerifier(),access)
-    return ApplicationServices(health=ProcessHealthService(),auth=auth,staff=staff,access=access)
+    source=SourceReadService(source_client,PostgresSourceSubjects(database),tenant_map) if source_client is not None and database is not None and access is not None else None
+    return ApplicationServices(health=ProcessHealthService(),auth=auth,staff=staff,access=access,source=source)
 
 
 @dataclass(frozen=True)
 class ApplicationResources:
     database: RuntimeDatabase | None = None
+    source: SourceHttpClient | None = None
 
     @asynccontextmanager
     async def lifecycle(self):
-        if self.database is None:
-            yield
-            return
         try:
-            await self.database.open()
+            if self.database is not None:await self.database.open()
             yield
         finally:
-            await self.database.close()
+            try:
+                if self.source is not None:await self.source.aclose()
+            finally:
+                if self.database is not None:await self.database.close()
 
 
-def build_resources(settings: RuntimeDatabaseSettings | None) -> ApplicationResources:
-    if settings is None:
-        return ApplicationResources()
-    return ApplicationResources(database=RuntimeDatabase(
-        settings.url.get_secret_value(), pool_max=settings.pool_max,
-        max_waiting=settings.max_waiting, connect_timeout=settings.connect_timeout,
-        acquire_timeout=settings.acquire_timeout, statement_timeout_ms=settings.statement_timeout_ms,
-    ))
+def build_resources(settings: RuntimeDatabaseSettings | None,source_settings:SourceSettings|None=None) -> ApplicationResources:
+    database=RuntimeDatabase(
+        settings.url.get_secret_value(),pool_max=settings.pool_max,max_waiting=settings.max_waiting,
+        connect_timeout=settings.connect_timeout,acquire_timeout=settings.acquire_timeout,
+        statement_timeout_ms=settings.statement_timeout_ms) if settings else None
+    source=SourceHttpClient(source_settings.base_url,source_settings.token.get_secret_value(),source_settings.context_secret.get_secret_value(),
+                            timeout=source_settings.timeout,max_response_bytes=source_settings.max_response_bytes) if source_settings else None
+    return ApplicationResources(database,source)
 
 
 def database_loop_factory():
