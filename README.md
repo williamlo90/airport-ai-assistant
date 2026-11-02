@@ -26,7 +26,7 @@ Booking creation, payment processing, refund execution, and delegation managemen
 
 ## Implementation status
 
-This repository currently contains the reviewed planning documents and the agreed folder scaffold. Empty directories use `.gitkeep`; the three Python entry-point/configuration files are explicitly marked placeholders. Application behavior, executable setup, and deployment instructions will be added during implementation. Document review is separate from implementation testing.
+The repository contains the reviewed planning documents, the agreed folder scaffold, and an executable FastAPI bootstrap for BE-01. See [backend setup](backend/README.md) for locked installation, configuration, startup, and test commands. The worker remains a placeholder; database, health endpoints, authentication, AI, and business workflows are not implemented yet. Document review is separate from implementation testing.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
 
@@ -49,6 +49,6 @@ Provider adapters belong in `backend/src/airport_assistant/integrations/`; busin
 
 ## Local configuration
 
-`.env.example` lists initial configuration placeholders. Copy it to `.env` when implementing the application and populate values locally. The template is not an executable setup and will evolve with the configuration schema.
+`.env.example` supplies the API bootstrap settings and reserves placeholders for later integrations. Copy it to `.env` without overwriting an existing local file. Provider credentials are not required by BE-01; those placeholders will be wired only when their features are implemented.
 
 Never commit `.env`, API keys, database credentials, private keys, real customer data, or unredacted provider payloads. Use synthetic fixtures for development and testing.

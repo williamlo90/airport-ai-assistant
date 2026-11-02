@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. Semua tugas masih **belum mulai**. Folder dan dokumen yang sudah tersedia bukan bukti bahwa backend sudah berfungsi.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -203,4 +203,17 @@ Dokumentasi dan catatan pribadi boleh dipakai. Bantuan AI diberikan bertingkat: 
 
 ## Tugas pertama yang dikerjakan
 
-Mulai dari **BE-01: backend minimal yang bisa dijalankan**. Dokumen ini belum memberikan status selesai pada BE-01 atau tugas implementasi lainnya, dan tidak memulai perubahan kode aplikasi secara otomatis.
+Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02 dan tugas lainnya belum dimulai.
+
+## Catatan pelaksanaan BE-01
+
+**Status: selesai — 2 November 2026.**
+
+- Implementasi: paket Python, manifest `backend/pyproject.toml`, `backend/uv.lock`, FastAPI app factory, CLI API, validasi konfigurasi, serta instruksi di `backend/README.md`.
+- Lingkungan pemeriksaan: Windows, Python 3.13.6, uv 0.13.6. Dependency runtime terkunci termasuk FastAPI 0.162.0, Pydantic Settings 2.16.2, dan Uvicorn 0.54.0.
+- `uv sync --locked --project backend`: berhasil. `pytest backend/tests`: **11 passed**; memeriksa konfigurasi wajib/invalid, redaksi nilai input, prioritas environment, OpenAPI dan batas dokumentasi production.
+- Instalasi bersih: ekspor file Git yang akan di-commit ke direktori sementara, tanpa `.env`, virtualenv atau tooling lokal. `uv sync --locked --no-editable --project backend` berhasil, lalu 11 tes lulus dari paket wheel yang terpasang. Ini pengujian ekspor bersih, bukan klaim clone remote.
+- Contoh `.env.example` lulus `--check-config`. Proses API sungguhan mengembalikan HTTP 200 pada `/openapi.json`, dengan judul aplikasi sesuai dan paths bisnis kosong; proses dihentikan sesudah pemeriksaan.
+- API saat ini tidak memerlukan credential atau koneksi provider. Health endpoint, database, worker, identitas dan workflow bisnis mengikuti tugas berikutnya.
+
+- Review QA: **lulus tanpa temuan material**. QA meninjau diff dan menjalankan ulang 11 tes, instalasi bersih non-editable, validasi konfigurasi melalui console script, serta startup HTTP. Bukti instalasi bersih juga lulus pada pemeriksaan independen QA.
