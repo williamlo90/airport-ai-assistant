@@ -26,7 +26,7 @@ Booking creation, payment processing, refund execution, and delegation managemen
 
 ## Implementation status
 
-The repository contains the reviewed planning documents, the agreed folder scaffold, and an executable FastAPI bootstrap (BE-01) with process liveness, structured errors, request IDs, and input limits (BE-02), plus service dependency wiring and executable import boundaries (BE-03). See [backend setup](backend/README.md) for locked installation, configuration, startup, and test commands. The worker remains a placeholder; database, authentication, AI, and business workflows are not implemented yet. Document review is separate from implementation testing.
+The repository contains the reviewed planning documents, the agreed folder scaffold, and an executable FastAPI bootstrap (BE-01) with process liveness, structured errors, request IDs, and input limits (BE-02), plus service dependency wiring and executable import boundaries (BE-03). See [backend setup](backend/README.md) for locked installation, configuration, startup, and test commands. The worker remains a placeholder; authentication, AI, and business workflows are not implemented yet. DB-01 connection code is available behind explicit opt-in; live Neon verification is pending credentials, and business schema/RLS are not implemented. Document review is separate from implementation testing.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
 
@@ -49,6 +49,6 @@ Provider adapters belong in `backend/src/airport_assistant/integrations/`; busin
 
 ## Local configuration
 
-`.env.example` supplies the API bootstrap settings and reserves placeholders for later integrations. Copy it to `.env` without overwriting an existing local file. Provider credentials are not required by BE-01; those placeholders will be wired only when their features are implemented.
+`.env.example` supplies the API bootstrap settings and reserves placeholders for later integrations. Copy it to `.env` without overwriting an existing local file. Bootstrap without database remains credential-free. DB-01 separately loads runtime and migration URLs; see backend setup for opt-in connection checks. Email/model/source placeholders remain reserved for their features.
 
 Never commit `.env`, API keys, database credentials, private keys, real customer data, or unredacted provider payloads. Use synthetic fixtures for development and testing.

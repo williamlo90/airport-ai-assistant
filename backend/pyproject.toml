@@ -4,13 +4,16 @@ version = "0.1.0"
 description = "Modular backend for Airport AI Assistant"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "certifi>=2025.1,<2027",
     "fastapi>=0.115,<1",
+    "psycopg[binary,pool]>=3.2,<4",
     "pydantic-settings>=2.6,<3",
     "uvicorn>=0.32,<1",
 ]
 
 [project.scripts]
 airport-assistant-api = "airport_assistant.main:main"
+airport-assistant-db-check = "airport_assistant.database_check:main"
 
 [dependency-groups]
 dev = [

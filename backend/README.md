@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. Database, autentikasi, worker executable dan route bisnis belum tersedia.
+BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in; koneksi Neon nyata masih menunggu pengujian. Schema bisnis, autentikasi, worker executable dan route bisnis belum tersedia.
 
 ## Prasyarat
 
@@ -32,7 +32,7 @@ Jangan mengganti `uv sync --locked` dengan pembaruan dependency tanpa review. `b
 | APP_PORT | Default 8000; integer 1–65535. |
 | APP_MAX_REQUEST_BODY_BYTES | Default 1048576 (1 MiB); integer 1–16777216. Batas seluruh body request saat ini, termasuk encoding/overhead. |
 
-Field provider lain di `.env.example` adalah placeholder tahap berikutnya dan tidak dimuat oleh Settings BE-01. API tidak memanggil provider atau Neon saat bootstrap. Tidak perlu mengisi credential untuk menjalankan tugas ini.
+Field integrasi email/model/source di `.env.example` masih placeholder. Konfigurasi database DB-01 dimuat terpisah ketika dipakai. API tanpa APP_DATABASE_ENABLED=true tidak memanggil provider atau Neon. Mode bootstrap tanpa database tetap tidak memerlukan credential.
 
 Environment-only untuk deployment atau pengujian:
 
@@ -84,3 +84,54 @@ Guard AST memeriksa semua import statis (termasuk relatif dan import di dalam fu
 Guard ini membuktikan batas import yang diperiksa, bukan seluruh aturan bisnis atau kontrol akses. Tes izin/transaksi tetap dibuat bersama fitur. Health tetap memiliki wire response BE-02 yang sama.
 
 Pola override mengikuti [dependency overrides FastAPI](https://fastapi.tiangolo.com/advanced/testing-dependencies/).
+
+## Koneksi database DB-01
+
+Driver yang dipakai adalah Psycopg 3 dengan binary wheel dan async pool. Instalasi tetap `uv sync --locked --project backend`; hentikan server lokal dengan Ctrl+C terlebih dahulu jika Windows mengunci executable virtualenv. Runtime memakai URL pooled dan pool lokal kecil untuk membatasi koneksi per proses; migration memakai koneksi direct terpisah.
+
+Isi lokal `.env` menggunakan database/branch pengujian khusus proyek ini:
+
+```dotenv
+DATABASE_URL=postgresql://runtime_user:PASSWORD@ep-example-pooler.REGION.aws.neon.tech/testdb?sslmode=require
+DATABASE_DIRECT_URL=postgresql://migration_user:PASSWORD@ep-example.REGION.aws.neon.tech/testdb?sslmode=require
+APP_DATABASE_ENABLED=false
+```
+
+URL di atas hanya format, bukan credential yang dapat dipakai. URL pooled/direct harus menuju endpoint dan nama database sama; username dapat berbeda. Ambil kedua URL dari Neon. Password harus URL-encoded bila mengandung karakter khusus. Opsi query yang didukung adalah sslmode, channel_binding dan connect_timeout. Driver selalu memperketat TLS menjadi verify-full, CA bundle certifi dan channel binding require; mode TLS yang dilemahkan ditolak. Credential disimpan sebagai SecretStr dan diagnosis konfigurasi hanya menyebut nama variabel.
+
+Validasi konfigurasi tanpa membuka jaringan:
+
+```powershell
+uv run --locked --project backend airport-assistant-db-check
+```
+
+Uji nyata berikut hanya untuk database pengujian. Perintah membuat satu tabel probe dengan nama acak `_airport_db01_probe_*` di public, memberi SELECT/INSERT pada role runtime untuk tabel itu saja, menguji commit/rollback dan penggunaan ulang pool setelah SQL error, kemudian menghapus tabel dalam finally. Role migration perlu CREATE pada schema public serta hak grant/drop atas tabel yang dibuat. Jika proses dimatikan paksa atau koneksi putus saat cleanup, periksa dan hapus tabel probe tersisa melalui role migration sebelum mengulang. Tidak ada perubahan schema bisnis.
+
+```powershell
+uv run --locked --project backend airport-assistant-db-check --live
+```
+
+Perintah tidak mencetak URL, nama role, query parameter atau detail exception. Error pool/driver diredaksi pada logger psycopg/psycopg.pool. Tidak melakukan retry otomatis atas transaksi bisnis. Hasil ini tidak membuktikan least privilege runtime atau RLS; role dan isolasi diperketat pada DB-03. Credential migration tidak dimuat oleh startup API.
+
+Untuk mengaktifkan database pada API, ubah APP_DATABASE_ENABLED=true di `.env`, lalu jalankan API seperti biasa. Startup membuka pool dan SELECT 1; kegagalan koneksi menggagalkan startup, shutdown menutup pool. Liveness tetap process-only dan belum ada readiness endpoint. Default false mempertahankan mode bootstrap tanpa Neon.
+
+| Konfigurasi | Default dan batas |
+| --- | --- |
+| APP_DB_POOL_MAX | 2; 1-20 per proses. |
+| APP_DB_MAX_WAITING | 8; 1-100 request menunggu pool. |
+| APP_DB_CONNECT_TIMEOUT | 10 detik; 1-60. |
+| APP_DB_ACQUIRE_TIMEOUT | 10 detik; 1-60, mencakup antrean dan pemeriksaan koneksi client-side. |
+| APP_DB_STATEMENT_TIMEOUT_MS | 10000 ms; 100-120000 per transaksi runtime. |
+
+Runtime memakai autocommit pada koneksi dan BEGIN/COMMIT/ROLLBACK eksplisit pada `RuntimeDatabase.transaction()`. Statement/lock/idle timeout bersifat transaction-local; tidak ada tenant context sesi. Prepared statements otomatis dimatikan untuk kompatibilitas pooler. Probe direct memakai statement timeout 10 detik dan lock timeout 3 detik. Startup probe juga memiliki deadline client-side sebesar acquire timeout ditambah statement timeout. Pembatalan saat check/transaction menutup koneksi yang tidak pasti sebelum dikembalikan ke pool; tidak mengulang transaksi bisnis. Koneksi, error dan query nyata tetap perlu diuji dengan credential lokal; unit fake tidak dihitung sebagai integrasi Neon.
+
+Tes integrasi opt-in yang memanggil probe yang sama:
+
+```powershell
+$env:RUN_NEON_DB_TESTS = '1'
+try { uv run --locked --project backend pytest backend/tests/integration/test_neon_connections.py } finally { Remove-Item Env:RUN_NEON_DB_TESTS }
+```
+
+Secara default tes ini skipped. `DB_TEST_ENV_FILE` dapat menunjuk file konfigurasi pengujian lain; CLI juga mendukung --env-file atau --no-env-file. CLI API dan DB-check memilih selector event loop pada Windows untuk Psycopg async; runner ASGI lain perlu konfigurasi loop yang setara.
+
+Rujukan: [Psycopg pools](https://www.psycopg.org/psycopg3/docs/advanced/pool.html), [async connections](https://www.psycopg.org/psycopg3/docs/advanced/async.html), [Neon pooling](https://neon.com/docs/connect/connection-pooling).
