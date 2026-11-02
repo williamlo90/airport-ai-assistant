@@ -2,6 +2,8 @@
 
 from contextlib import contextmanager
 from pathlib import Path
+import shutil
+import sys
 
 import airport_assistant
 from alembic.config import Config
@@ -59,3 +61,39 @@ def test_failed_upgrade_rolls_back_disposes_and_redacts(monkeypatch):
     assert state == ["rollback", "dispose"]
     assert "secret-sentinel" not in str(error.value)
     assert error.value.__suppress_context__
+
+
+def test_new_revision_is_offline_and_aborts_until_implemented(tmp_path,monkeypatch):
+    root=tmp_path/"backend"
+    directory=root/"migrations"
+    shutil.copytree(migrations.migration_directory(),directory)
+    monkeypatch.setattr(migrations,"migration_directory",lambda:directory)
+    monkeypatch.setattr(migrations,"__file__",str(root/"src/airport_assistant/infrastructure/database/migrations.py"))
+    monkeypatch.setattr(migrations,"create_migration_engine",lambda *a,**k:pytest.fail("new must not connect"))
+    created=migrations.new_revision('feature "safe quote"')
+    assert created.is_file() and created.parent==directory/"versions"
+    config=Config();config.set_main_option("script_location",str(directory))
+    graph=ScriptDirectory.from_config(config)
+    assert len(graph.get_heads())==1
+    script=graph.get_revision(graph.get_heads()[0])
+    assert script.down_revision=="0002_runtime_rls"
+    with pytest.raises(NotImplementedError):script.module.upgrade()
+
+
+def test_new_cli_does_not_load_credentials(monkeypatch,tmp_path,capsys):
+    from airport_assistant import migrate as cli
+    monkeypatch.setattr(sys,"argv",["migrate","new","--message","offline"])
+    monkeypatch.setattr(cli,"load_database_settings",lambda *a,**k:pytest.fail("new must not load credentials"))
+    monkeypatch.setattr(cli,"new_revision",lambda message:tmp_path/"new_revision.py")
+    cli.main()
+    assert "created revision" in capsys.readouterr().out
+
+
+def test_multiple_heads_rejected_before_connection(tmp_path,monkeypatch):
+    directory=tmp_path/"migrations"
+    shutil.copytree(migrations.migration_directory(),directory)
+    (directory/"versions/fork.py").write_text("revision='fork'\ndown_revision='0001_foundation'\n",encoding="utf-8")
+    monkeypatch.setattr(migrations,"migration_directory",lambda:directory)
+    monkeypatch.setattr(migrations,"create_migration_engine",lambda *a,**k:pytest.fail("ambiguous head must not connect"))
+    with pytest.raises(migrations.MigrationError,match="single"):
+        migrations.migrate("secret-sentinel")

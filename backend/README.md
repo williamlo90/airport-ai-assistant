@@ -202,3 +202,11 @@ Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ket
 Status pemasangan DB-03: app ber-revision `0002_runtime_rls`. Provisioner memverifikasi login runtime terbatas dan memperbarui hanya DATABASE_URL secara internal; DATABASE_DIRECT_URL tetap credential migration. API yang sudah berjalan perlu direstart untuk memuat URL baru. Saat deployment, berikan DATABASE_URL saja pada API/worker; credential direct hanya untuk job migration/provisioning.
 
 Hasil final DB-03: full suite live **192 passed** pada 2 November 2026. QA independen mengulang suite191tes dan tes tambahan credential runtime aktual, memverifikasi rollout, dan menyatakan lulus dalam scope keamanan fondasi.
+
+## Pola upgrade DB-04
+
+[Migration workflow](../docs/backend/migration_workflow.md) menjelaskan pembuatan revision offline, PK/FK/index/RLS, siklus FK, expand/contract dan bukti upgrade. `airport-assistant-migrate new --message "..."` membuat file scaffold dari checkout tanpa membaca credential; implementasikan file sebelum upgrade. Setelah upgrade, guard menolak tabel tanpa ENABLE/FORCE RLS atau dengan runtime sebagai owner dan me-rollback transaksi.
+
+Tambahkan RUN_NEON_UPGRADE_TESTS=1 pada full suite untuk populated-upgrade dan siklus FK di schema sementara. Revision contoh hanya fixture test; tidak menambah tabel demonstrasi ke app atau mengubah head production0002. Tes ini bukan bukti performa backfill besar, rolling deployment, atau fitur bisnis yang belum diimplementasikan.
+
+Verifikasi DB-04: **201 tes live lulus**, dikonfirmasi ulang QA. Build bersih offline129passed72skipped serta HTTP bootstrap lulus. Smoke schema app tetap revision0002 dan sembilan tabel fondasi; fixture contoh tidak terpasang di app.

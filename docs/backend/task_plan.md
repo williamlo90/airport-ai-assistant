@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02 dan DB-03 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03 dan DB-04 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -295,3 +295,17 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Penerimaan final: ketiga flag integrasi Neon aktif, **192 passed** tanpa skip. QA menyatakan lulus berdasarkan suite independen191tes, probe app dan pengulangan tes tambahan credential runtime aktual. Tidak ada temuan material tersisa.
 
 - Build final dari ekspor tracked files: instalasi wheel non-editable berhasil, **126 passed, 66 skipped** dalam mode offline, resource migration0002 dan regresi HTTP/bootstrap lulus. Semua66tes integrasi tersebut aktif dan lulus pada suite live192tes di atas.
+
+
+## Catatan pelaksanaan DB-04
+
+**Status: selesai - 2 November 2026.**
+
+- Panduan executable: template Alembic script.py.mako, CLI new offline tanpa credential, abort scaffold yang belum diimplementasikan, dan satu-head preflight sebelum koneksi. Pembuatan revision hanya dari editable checkout; histori0001/0002 tidak diedit.
+- Guard post-upgrade memeriksa ENABLE/FORCE RLS serta non-ownership runtime pada semua tabel/partitioned table selain version table setelah tahap historis0001. Pelanggaran membatalkan transaksi DDL/data/version; guard struktural tidak menggantikan tes ekspresi policy dan grants.
+- Enam tes baru Neon: snapshot semua sembilan tabel saat populated upgrade0001->0002, repeat upgrade, legacy read projection dengan context yang sah, contoh expand/cyclic composite FK dengan RLS tetap aktif, serta rollback pada exception/no-RLS/no-FORCE/runtime-owner. Tes negatif memastikan guard benar-benar terpanggil untuk pelanggaran struktural.
+- Full suite dengan empat flag Neon aktif: **201 passed**. Instalasi wheel non-editable dari ekspor tracked files: **129 passed, 72 skipped** untuk mode offline dan regresi HTTP/bootstrap lulus. Tidak ada credential ikut ekspor/output/Git.
+- Dua tabel contoh dan kolom demo hanya fixture di schema db04_test_UUID, bukan product revision; schema/role tes dibersihkan. App tetap revision0002 dan tidak mendapat tabel fitur yang belum dikerjakan.
+- Panduan migration_workflow.md mencakup PK/FK/index/RLS, add-then-link FK, expand/backfill/contract, batas transactional runner, recovery dan bukti upgrade. Tidak mengklaim backfill skala besar, rolling release, backup/restore atau fitur bisnis berikutnya sudah diuji.
+
+- Review QA: **lulus tanpa temuan material**. Suite independen **201 passed**, wheel resources/template terverifikasi, fixture0003 tidak masuk paket produksi, dan unit migration11tes lulus pada paket hasil build. Smoke app aktual: current dan upgrade tetap revision0002, sembilan tabel fondasi plus history utuh, tidak ada tabel/kolom demonstrasi.
