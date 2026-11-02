@@ -15,21 +15,28 @@ from airport_assistant.modules.system.health import HealthService, ProcessHealth
 from airport_assistant.auth_config import AuthSettings
 from airport_assistant.infrastructure.database.auth_repository import PostgresAuthRepository
 from airport_assistant.modules.identity.auth import AuthService,AuthPolicy,VerificationSender
+from airport_assistant.modules.identity.staff import StaffService
+from airport_assistant.infrastructure.database.staff_repository import PostgresStaffRepository
+from airport_assistant.infrastructure.security.passwords import BoundedPasswordVerifier
 
 
 @dataclass(frozen=True)
 class ApplicationServices:
     health: HealthService
     auth: AuthService|None=None
+    staff: StaffService|None=None
 
 
 def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings|None=None,sender:VerificationSender|None=None) -> ApplicationServices:
     auth=None
+    staff=None
     if auth_settings is not None:
         if database is None:raise ValueError("Authentication requires a database resource.")
         auth=AuthService(PostgresAuthRepository(database),auth_settings.session_secret.get_secret_value().encode(),
                          AuthPolicy(**auth_settings.model_dump(exclude={"session_secret"})),sender)
-    return ApplicationServices(health=ProcessHealthService(),auth=auth)
+    if auth is not None:
+        staff=StaffService(auth,PostgresStaffRepository(database),BoundedPasswordVerifier())
+    return ApplicationServices(health=ProcessHealthService(),auth=auth,staff=staff)
 
 
 @dataclass(frozen=True)

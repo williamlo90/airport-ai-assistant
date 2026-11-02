@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. DB-02 menambahkan tabel fondasi tenant/identitas; DB-03 menambahkan role runtime terbatas, RLS dan konteks transaksi. Schema alur layanan, autentikasi, worker executable dan route bisnis belum tersedia.
+BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. DB-02 menambahkan tabel fondasi tenant/identitas; DB-03 menambahkan role runtime terbatas, RLS dan konteks transaksi. Autentikasi pelanggan dan staf tersedia dalam scope AUTH-01/03 di bagian akhir panduan. Schema alur layanan, worker executable dan route bisnis menyusul.
 
 ## Prasyarat
 
@@ -220,3 +220,10 @@ uv run --locked --project backend airport-assistant-auth-setup --demo-host local
 ```
 
 Sender nyata belum dipasang, sehingga API normal memberi503 untuk permintaan kirim kode. Controlled sender hanya ada di tes; tidak ada debug endpoint untuk mengambil OTP. Login staf dan pemindahan riwayat/draf bukan bagian AUTH-01.
+
+
+## Staff authentication AUTH-03
+
+[Staff authentication guide](../docs/backend/staff_authentication.md) menjelaskan login password lokal untuk staf terprovisi, scope membership/queue, pencabutan, CLI credential interaktif dan batas rilis. POST /api/v1/staff/auth/login memerlukan sesi anonim/CSRF; GET /api/v1/staff/me membaca membership terbaru. Logout memakai endpoint umum. Credential tidak membuat membership baru dan tidak dikirim melalui email pelanggan.
+
+Revision0004_staff_auth dipasang melalui migration runner; histori0001–0003 tidak berubah. Runtime tidak mempunyai akses tabel credential langsung. Uji terfokus: unit/test_staff_passwords.py dan integration/test_staff_auth.py dengan RUN_NEON_AUTH_TESTS=1.

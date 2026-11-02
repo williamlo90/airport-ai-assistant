@@ -30,7 +30,7 @@ class EmptyRequest(RequestModel):
 
 
 class SessionView(BaseModel):
-    session_kind:Literal["anonymous","customer"]
+    session_kind:Literal["anonymous","customer","staff"]
     principal_id:UUID|None
 
 

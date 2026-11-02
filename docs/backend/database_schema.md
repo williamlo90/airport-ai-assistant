@@ -680,3 +680,12 @@ Schema challenges AUTH-01 hanya purpose customer_login, origin_session_id dan bi
 Table auth_rate_limits mempunyai common columns serta scope TEXT(boot/contact/issue_ip/issue_session/verify_ip/verify_session), subject_hash TEXT64hex, window_start TIMESTAMPTZ dan hits INTEGER positif. UQ tenant/scope/subject_hash/window_start mendukung UPSERT atomic. Nilai window berasal dari waktu server dan hit tetap commit saat permintaan ditolak. Rate helper tidak dapat dipanggil runtime secara langsung.
 
 Detail flow, konfigurasi dan batas proof berada di [authentication guide](authentication.md). Migration/provision owner dan session key disiapkan script lokal; key tidak disimpan pada tabel atau ditampilkan dalam output.
+
+
+## 20 Implementasi AUTH-03
+
+Revision0004_staff_auth menambah staff_credentials: PK `(tenant_id,principal_id)` sekaligus FK composite ke principals; contact_id UUID NN FK composite ke contacts dan UQ `(tenant_id,contact_id)`; password_hash TEXT NN Argon2id dengan panjang terbatas; credential_version UUID NN; active BOOLEAN NN; created_at/updated_at TIMESTAMPTZ NN. Satu principal mempunyai paling banyak satu credential lokal dalam tenant; kontak login tidak dapat dipindahkan lewat rotasi CLI. Kontak harus terverifikasi dan terikat principal tersebut saat provision/login/request.
+
+sessions.staff_credential_version UUID NULL untuk anonymous/customer dan wajib terisi untuk staff melalui CHECK. UUID versi disalin pada login; trigger UPDATE credential selalu menghasilkan versi baru sehingga rotasi/deaktivasi tidak menghidupkan sesi lama. Tidak ada FK ke versi yang berubah; fungsi sesi membandingkan versi terbaru serta active status. Password/hash/version tidak masuk DTO.
+
+Credential ENABLE/FORCE RLS, tanpa direct runtime grants. Auth-owner mendapat SELECT dan UPDATE(credential_version) untuk row lock; policy UPDATE USING(true) WITH CHECK(false) menolak penulisan. SECURITY DEFINER staff begin/finish/memberships memeriksa proof dan identitas, memakai fixed search_path serta private ACL. Rate menambah scope staff_ip,staff_contact,staff_session. Penulisan credential hanya oleh migrator; alur [staff authentication](staff_authentication.md) mencatat batas audit/SSO/MFA yang belum tersedia.

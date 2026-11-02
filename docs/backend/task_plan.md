@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -323,3 +323,19 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Ekspor tracked files dan instalasi wheel non-editable: **153 passed, 100 skipped** dalam mode offline; konfigurasi contoh serta live HTTP health/404/405/chunked413/request-ID lulus. Tes Neon hanya dilewati pada mode offline tersebut.
 - Setup app aktual menerapkan revision0003_customer_auth, menyiapkan auth-owner dan metadata demo localhost. SESSION_SECRET dihasilkan/dipertahankan dan flag diaktifkan oleh script internal; .env tidak ditampilkan. Smoke HTTPS-ASGI terhadap runtime Neon lulus: bootstrap200, me200, tanpa sender503, logout204, revoked401. Tidak ada email dikirim.
 - AUTH-02 history/draft adoption dan AUTH-03 staff login tetap belum dimulai. Panduan setup, TLS/proxy, rate/expiry, batas delivery dan pekerjaan lanjutan ada di [authentication.md](authentication.md).
+
+
+## Catatan pelaksanaan AUTH-03
+
+**Status: selesai - 2 November 2026.**
+
+- Adapter password lokal untuk staf terprovisi, endpoint staff login/me terpisah; flow customer tidak menghasilkan staff. Sesi browser bersama memerlukan logout+anon baru untuk berpindah dari customer ke staff.
+- Argon2id19MiB/time2/p1, salt acak, input15–128karakter pada provisioner. Executor/semaphore global maksimal2worker/proses tanpa antrean; pembatalan tidak melepas slot sebelum thread selesai. Counter login PostgreSQL dikonsumsi sebelum KDF, tidak menahan transaksi selama hashing.
+- Revision0004_staff_auth: credential RLS, session credential_version, rate staf, fungsi terbatas dan trigger version pada UPDATE. Provision/rotation hanya akun/kontak terverifikasi dengan membership aktif yang sudah ada; contact tidak diretarget, tidak memberi role. CLI menolak noninteractive/echo fallback; secret tidak tampil.
+- Policy tiap membership mempertahankan organisasi/queue dan kombinasi role; admin tidak otomatis mendapat CS. Pencabutan dan perubahan credential diperiksa tiap request; endpoint kasus/admin tetap pekerjaan berikutnya.
+- Panduan executable: [staff_authentication.md](staff_authentication.md). SSO/MFA/recovery/breach-list lengkap/audit/benchmark deployment belum termasuk bukti tahap ini.
+
+- Regresi akhir seluruh backend dengan lima flag Neon aktif: **309 passed** dalam339.47detik. Termasuk18tes unit password/policy/CLI dan38tes integrasi AUTH-03. Pengiriman customer tetap terkontrol di tes; tidak ada akun staf default pada app.
+- Instalasi wheel non-editable dari ekspor tracked files: **171 passed, 138 skipped** pada mode offline, disertai konfigurasi contoh dan live HTTP health/404/405/chunked413/request-ID lulus. Skips hanya untuk integrasi Neon yang opt-in.
+- QA independen lulus tanpa temuan material tersisa:18unit,42tes wheel terarah, fixture integrasi, ACL/rowlock serta kebijakan scope dan dokumentasi diperiksa. Seluruh teks berubah valid UTF-8 dan diff check bersih. Penggantian server lama/baru harus terkoordinasi karena DTO lama belum mengenali staff.
+- Rollout app aktual: revision0004_staff_auth terpasang. Smoke HTTPS-ASGI/runtime Neon lulus bootstrap200, staff-only401 untuk anonim, unknown-login401 generik, sesi tetap anonim, logout204 dan revoked401. Tidak memprovisi akun staf nyata atau mengirim email; credential hanya dimuat script internal.

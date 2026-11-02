@@ -17,6 +17,7 @@ from airport_assistant.database_config import RuntimeDatabaseSettings, load_data
 from airport_assistant.auth_config import AuthSettings,load_auth_settings
 from airport_assistant.modules.identity.auth import VerificationSender
 from airport_assistant.api.auth import router as auth_router
+from airport_assistant.api.staff import router as staff_router
 
 
 def create_app(settings: Settings, *, services: ApplicationServices | None = None,
@@ -46,6 +47,7 @@ def create_app(settings: Settings, *, services: ApplicationServices | None = Non
     if settings.auth_enabled:
         if app.state.services.auth is None:raise ConfigurationError("Authentication services are required.")
         app.include_router(auth_router)
+        if app.state.services.staff is not None:app.include_router(staff_router)
     app.add_middleware(RequestBoundary, max_body_bytes=settings.max_request_body_bytes)
     return app
 

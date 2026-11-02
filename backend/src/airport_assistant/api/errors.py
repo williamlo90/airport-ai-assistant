@@ -9,6 +9,7 @@ from airport_assistant.api.schemas import ErrorDetail, ErrorResponse
 from airport_assistant.modules.identity.auth import AuthError
 
 AUTH_ERRORS={
+    "STAFF_LOGIN_FAILED":("Login staf tidak berhasil. Periksa kredensial atau hubungi administrator.",False),
     "CSRF_REQUIRED":("Permintaan harus berasal dari browser dan sesi yang sah.",False),
     "VERIFICATION_FAILED":("Verifikasi tidak dapat diselesaikan. Periksa kode atau minta kode baru.",False),
     "VERIFICATION_UNAVAILABLE":("Pengiriman verifikasi belum tersedia. Coba lagi nanti.",True),
@@ -61,4 +62,4 @@ def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validation_error(request: Request, exc: RequestValidationError):
         # Pydantic errors can contain the submitted value and user-chosen keys.
-        return error_response(422, request.state.request_id)
+        return error_response(422, request.state.request_id, {"Cache-Control":"no-store"} if request.url.path.startswith("/api/v1/") else None)

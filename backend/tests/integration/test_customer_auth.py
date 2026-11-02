@@ -44,7 +44,7 @@ def target():
     engine=create_migration_engine(direct.url.get_secret_value())
     try:
         with engine.begin() as c:prepare_roles(c,role,policy);prepare_auth_owner(c,owner)
-        assert migrate(direct.url.get_secret_value(),schema=schema,runtime_role=role,policy_role=policy,auth_role=owner)=="0003_customer_auth"
+        assert migrate(direct.url.get_secret_value(),schema=schema,runtime_role=role,policy_role=policy,auth_role=owner,target_revision="0003_customer_auth")=="0003_customer_auth"
         with engine.begin() as c:
             enable_login(c,role,password)
             tenants=[]
