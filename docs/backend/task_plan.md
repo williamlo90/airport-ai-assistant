@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02 dan BE-03 selesai**; **DB-01 dikerjakan**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03 dan DB-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -251,16 +251,15 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 
 ## Catatan pelaksanaan DB-01
 
-**Status: dikerjakan; review offline lulus, pengujian Neon menunggu credential lokal.**
+**Status: selesai - 2 November 2026.**
 
-- Konfigurasi runtime dan migration dipisahkan, dengan SecretStr, validasi URL pooled/direct dan kesesuaian target. Psycopg 3.3.6/psycopg-pool 3.3.3 dipin pada lockfile bersama certifi. API memuat hanya credential runtime jika APP_DATABASE_ENABLED=true.
+- Konfigurasi runtime dan migration dipisahkan, dengan SecretStr, validasi URL pooled/direct dan kesesuaian target. Psycopg 3.3.6/psycopg-pool 3.3.3 dipin pada lockfile bersama certifi. Startup API hanya memuat credential runtime jika APP_DATABASE_ENABLED=true.
 - Pool min_size=0, default max_size=2, antrean/acquire/connect timeout terbatas; koneksi diverifikasi saat startup, pool ditutup saat shutdown. Transaksi eksplisit, parameter timeout transaction-local, autocommit pada checkout dan prepare_threshold=None.
-- CLI DB-check default memvalidasi konfigurasi tanpa jaringan; --live menjalankan probe tabel acak sementara untuk pooled/direct/TLS/commit/rollback dan reuse setelah SQL error, dengan cleanup. Tidak ada migration/schema bisnis atau klaim RLS/least privilege pada DB-01.
-- Pemeriksaan lokal Windows/Python 3.13.6: **107 passed, 1 skipped**. Skip adalah tes integrasi Neon opt-in, bukan pass koneksi nyata. Lingkungan tes terisolasi digunakan karena proses API milik pengguna mengunci executable virtualenv utama pada Windows.
-- DATABASE_URL dan DATABASE_DIRECT_URL pada .env proyek masih kosong. Pengguna meminta kode disiapkan dahulu dan menunggu pengisian .env. DB-01 belum ditandai selesai sampai koneksi serta rollback pada Neon benar-benar lulus.
+- Deadline client-side mencakup checkout/check dan probe startup. Timeout/cancellation menutup koneksi yang tidak pasti. Review QA offline serta tes stuck-check, cancellation dan stuck-startup lulus tanpa socket DB.
+- Instalasi wheel locked dari ekspor tracked files tanpa .env/venv: **107 passed, 1 skipped**, konfigurasi contoh dan regresi HTTP bootstrap lulus. Skip pada pemeriksaan offline adalah integrasi Neon opt-in.
+- Integrasi nyata: `airport-assistant-db-check --live` **PASS** untuk koneksi pooled runtime, direct, TLS, commit, rollback dan pool reuse setelah SQL error. Tabel probe sementara dihapus setelah pemeriksaan.
+- Suite lengkap dengan RUN_NEON_DB_TESTS=1: **108 passed**, termasuk integrasi Neon. Lingkungan Windows, Python 3.13.6; runner pengujian terisolasi `local/db01-venv`.
+- Credential dimuat hanya oleh script testing sesuai izin pengguna. Isi .env/URL/password tidak ditampilkan pada output atau dimasukkan ke Git. Output pemeriksaan suite dibatasi ke ringkasan hasil.
+- Batas kelulusan: ini bukti koneksi/transaksi, bukan schema bisnis, least privilege runtime, RLS, isolasi tenant atau performa skala. Implementasi dan pengujian tersebut mengikuti DB-02/DB-03 serta tahap terkait.
 
-- Ekspor tracked files ke direktori sementara tanpa .env/venv: instalasi wheel locked berhasil, **107 passed, 1 skipped**, config contoh valid dan regresi HTTP health/request ID/404/405/chunked413 tetap lulus tanpa koneksi database. Tambahan tes lifecycle FastAPI memeriksa open/close normal dan cleanup ketika startup gagal.
-
-- Revisi review offline: deadline client-side mencakup checkout/check serta probe startup. Timeout/cancellation menutup koneksi yang tidak pasti dan pool direklamasi/ditutup. Tiga regresi offline memeriksa stuck-check, pembatalan checkout dan stuck-startup tanpa socket. Suite final lokal **107 passed, 1 skipped**; tes Neon tetap belum dijalankan.
-
-- Review QA offline: **lulus**, suite independen **107 passed, 1 skipped**. Deadline checkout/check/startup serta cleanup pada timeout/cancellation diverifikasi tanpa socket DB. Uji ekspor wheel final juga **107 passed, 1 skipped** dan regresi HTTP bootstrap lulus. Ini bukti kode/offline, bukan bukti Neon atau alasan menutup DB-01.
+- QA penutupan: **lulus tanpa temuan material**. QA mengulang CLI live (exit 0, probe table removed) dan suite integrasi aktif secara independen: **108 passed**. Credential hanya dimuat dalam proses testing, dengan output audit terbatas pada hasil tersanitasi.

@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in; koneksi Neon nyata masih menunggu pengujian. Schema bisnis, autentikasi, worker executable dan route bisnis belum tersedia.
+BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. Schema bisnis, autentikasi, worker executable dan route bisnis belum tersedia.
 
 ## Prasyarat
 
@@ -123,7 +123,7 @@ Untuk mengaktifkan database pada API, ubah APP_DATABASE_ENABLED=true di `.env`, 
 | APP_DB_ACQUIRE_TIMEOUT | 10 detik; 1-60, mencakup antrean dan pemeriksaan koneksi client-side. |
 | APP_DB_STATEMENT_TIMEOUT_MS | 10000 ms; 100-120000 per transaksi runtime. |
 
-Runtime memakai autocommit pada koneksi dan BEGIN/COMMIT/ROLLBACK eksplisit pada `RuntimeDatabase.transaction()`. Statement/lock/idle timeout bersifat transaction-local; tidak ada tenant context sesi. Prepared statements otomatis dimatikan untuk kompatibilitas pooler. Probe direct memakai statement timeout 10 detik dan lock timeout 3 detik. Startup probe juga memiliki deadline client-side sebesar acquire timeout ditambah statement timeout. Pembatalan saat check/transaction menutup koneksi yang tidak pasti sebelum dikembalikan ke pool; tidak mengulang transaksi bisnis. Koneksi, error dan query nyata tetap perlu diuji dengan credential lokal; unit fake tidak dihitung sebagai integrasi Neon.
+Runtime memakai autocommit pada koneksi dan BEGIN/COMMIT/ROLLBACK eksplisit pada `RuntimeDatabase.transaction()`. Statement/lock/idle timeout bersifat transaction-local; tidak ada tenant context sesi. Prepared statements otomatis dimatikan untuk kompatibilitas pooler. Probe direct memakai statement timeout 10 detik dan lock timeout 3 detik. Startup probe juga memiliki deadline client-side sebesar acquire timeout ditambah statement timeout. Pembatalan saat check/transaction menutup koneksi yang tidak pasti sebelum dikembalikan ke pool; tidak mengulang transaksi bisnis. Integrasi Neon DB-01 telah lulus dengan credential pengujian lokal; suite lengkap dengan integrasi aktif menghasilkan 108 passed. Unit fake tetap tidak dihitung sebagai integrasi provider.
 
 Tes integrasi opt-in yang memanggil probe yang sama:
 
