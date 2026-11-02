@@ -26,7 +26,7 @@ Booking creation, payment processing, refund execution, and delegation managemen
 
 ## Implementation status
 
-The repository contains the reviewed planning documents, the agreed folder scaffold, and an executable FastAPI bootstrap (BE-01) with process liveness, structured errors, request IDs, and input limits (BE-02). See [backend setup](backend/README.md) for locked installation, configuration, startup, and test commands. The worker remains a placeholder; database, authentication, AI, and business workflows are not implemented yet. Document review is separate from implementation testing.
+The repository contains the reviewed planning documents, the agreed folder scaffold, and an executable FastAPI bootstrap (BE-01) with process liveness, structured errors, request IDs, and input limits (BE-02), plus service dependency wiring and executable import boundaries (BE-03). See [backend setup](backend/README.md) for locked installation, configuration, startup, and test commands. The worker remains a placeholder; database, authentication, AI, and business workflows are not implemented yet. Document review is separate from implementation testing.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
 

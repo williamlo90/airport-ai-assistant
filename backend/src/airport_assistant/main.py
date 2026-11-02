@@ -12,9 +12,10 @@ from airport_assistant.api.errors import install_error_handlers
 from airport_assistant.api.health import router as health_router
 from airport_assistant.api.schemas import ErrorResponse
 from airport_assistant.config import ConfigurationError, Settings, load_settings
+from airport_assistant.composition import ApplicationServices, build_services
 
 
-def create_app(settings: Settings) -> FastAPI:
+def create_app(settings: Settings, *, services: ApplicationServices | None = None) -> FastAPI:
     """Build the ASGI application from previously validated settings."""
     development_docs = settings.env != "production"
     app = FastAPI(
@@ -26,6 +27,7 @@ def create_app(settings: Settings) -> FastAPI:
         responses={status: {"model": ErrorResponse} for status in (400, 404, 405, 413, 422, 500)},
     )
     app.state.settings = settings
+    app.state.services = build_services() if services is None else services
     install_error_handlers(app)
     app.include_router(health_router)
     app.add_middleware(RequestBoundary, max_body_bytes=settings.max_request_body_bytes)

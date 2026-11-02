@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01 dan BE-02 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02 dan BE-03 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -203,7 +203,7 @@ Dokumentasi dan catatan pribadi boleh dipakai. Bantuan AI diberikan bertingkat: 
 
 ## Tugas pertama yang dikerjakan
 
-Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02 melanjutkan fondasi HTTP; tugas lainnya belum dimulai.
+Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02 menyediakan fondasi HTTP, dilanjutkan dependency wiring BE-03; tahap database dan fitur bisnis belum dimulai.
 
 ## Catatan pelaksanaan BE-01
 
@@ -231,3 +231,19 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Batas bukti: health hanya proses; belum readiness database/provider. Proteksi transport HTTP sebelum ASGI, slow clients, proxy/deployment serta upload attachment belum menjadi klaim BE-02. Schema mutasi fitur dan kode error domain menyusul bersama implementasi masing-masing.
 
 - Review QA: **lulus tanpa temuan material**. QA menjalankan ulang 48 tes dan helper instalasi bersih/live HTTP. Probe tambahan pada StreamingResponse FastAPI yang gagal setelah headers membuktikan hanya satu response.start, request ID tetap ada, dan exception yang keluar tersanitasi tanpa sentinel privat.
+
+
+## Catatan pelaksanaan BE-03
+
+**Status: selesai - 2 November 2026.**
+
+- Implementasi: composition root, container service immutable per aplikasi, dependency provider FastAPI, serta pemisahan layanan health dan hasil domain dari schema HTTP. Factory menerima service injection tanpa membangun dependency default ketika injection tersedia.
+- Kontrak consumer awal: `TenantRepository` untuk lookup tenant berdasarkan host canonical; `SourceGrantProvider` untuk grants per tenant/principal/tipe resource/reference/scopes. Port belum dipasang pada runtime atau diklaim sebagai otorisasi executable; adapter dan use case mengikuti tugas database/identitas/sumber. Tidak ada fake adapter production atau endpoint privat tambahan.
+- Guard AST memeriksa import absolut/relatif/nested, dependency eksternal dan beberapa bypass dynamic import pada lapisan terkait. Fixture pelanggaran membuktikan guard menolak route yang memanggil SDK/infrastructure, modul bisnis yang mengimpor framework/adapter, dan worker yang memanggil adapter langsung.
+- Windows, Python 3.13.6; lockfile dan dependency tidak berubah. `backend/.venv/Scripts/python.exe -m pytest backend/tests`: **80 passed** (48 regresi sebelumnya, 27 pemeriksaan dependency/guard, 5 wiring/service). Tidak ada credential yang diperlukan.
+- Tes wiring memeriksa service injection melalui route health nyata, override dependency dan isolasi antarapp, container immutable, serta kegagalan service tetap memakai error BE-02 yang aman. Tidak menambahkan framework dependency injection tersendiri.
+- Batas bukti: static import guard bukan bukti otorisasi atau aturan bisnis seluruh aplikasi. Implementasi SQL, grants source, lifecycle transaksi/provider dan worker mengikuti tugas masing-masing.
+
+- Ekspor tracked files ke direktori sementara tanpa env/venv proyek: `uv sync --locked --no-editable --project backend` berhasil, seluruh **76 tes lulus** dari wheel terpasang. Startup HTTP asli tetap lulus health200, request ID ternormalisasi, envelope404, 405/Allow, chunked413 dan log tanpa query sentinel. Proses dihentikan setelah pengujian.
+
+- Review QA: **lulus, tidak ada temuan material tersisa**. QA menjalankan suite final **80 passed** dan 10 probe tambahan pada pola dynamic import/alias di API dan modul bisnis; seluruh probe ditolak. Wiring/isolation dan regresi BE-01/02 tetap lulus.

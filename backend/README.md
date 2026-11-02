@@ -62,3 +62,25 @@ Tes bootstrap memeriksa dotenv/environment override, config wajib, redaksi outpu
 - Batas body ini fondasi awal, bukan implementasi upload atau perlindungan lengkap terhadap slow clients. Timeout, batas koneksi/proxy dan aturan attachment 5 MiB/file ditambahkan bersama deployment/CASE-04; konfigurasi body request harus menampung multipart overhead ketika upload dibuat.
 
 Implementasi mengikuti [exception handlers FastAPI](https://fastapi.tiangolo.com/tutorial/handling-errors/) dan [pure ASGI middleware Starlette](https://starlette.dev/middleware/).
+
+## Dependency wiring BE-03
+
+`create_app()` memasang `ApplicationServices` dari `composition.py` pada instance aplikasi. `api/dependencies.py` mengambil layanan, lalu route health memanggil `HealthService.check()`. Hasil domain `ProcessStatus` diterjemahkan ke schema respons oleh route. Service tidak mengimpor FastAPI atau SDK.
+
+- Factory default hanya memasang `ProcessHealthService`, tanpa database/provider maupun state tenant/aktor. Tidak ada singleton global antaraplikasi.
+- Tes bisa memasok `create_app(settings, services=...)` atau override `get_health_service` melalui `app.dependency_overrides`. Override harus dibersihkan setelah pengujian bila memakai ulang app.
+- `modules/identity/ports.py` mendefinisikan `TenantRepository` (lookup host canonical ke tenant) dan `SourceGrantProvider` (pemeriksaan grants per tenant/principal/tipe resource/reference/scopes). Ini kontrak consumer, bukan adapter executable atau bukti akses aman. Keduanya belum dipasang pada runtime karena use case identitas/sumber belum tersedia; tidak ada fallback palsu atau endpoint privat yang memakai keduanya.
+- Implementasi Neon/repository ditambahkan pada tugas database/identitas; adapter grants ditambahkan pada SRC-03A. Layanan bisnis nantinya memeriksa izin serta menangani kegagalan secara fail closed. Port tidak mengambil keputusan email recipient atau mengganti pemeriksaan bisnis.
+- `composition.py` memilih implementasi dan menyuntikkannya melalui constructor service ketika fitur tersedia. Koneksi, transaksi, tenant dan aktor harus memiliki scope yang sesuai; tidak disimpan sebagai state mutable pada service aplikasi. Worker kelak memakai composition yang sama, tanpa mengimpor FastAPI; saat ini worker tetap placeholder.
+
+Jalankan pemeriksaan arsitektur tersendiri:
+
+```powershell
+uv run --locked --project backend pytest backend/tests/contracts/test_dependencies.py
+```
+
+Guard AST memeriksa semua import statis (termasuk relatif dan import di dalam fungsi) pada source. API boleh mengimpor API/modul bisnis, modul bisnis hanya modul bisnis, adapter/infrastructure boleh mengimpor kontrak modul bisnis. Import konkret SDK pada API, framework pada modul bisnis, serta bypass umum melalui importlib/builtins/__import__ ditolak. Daftar dependency eksternal yang diizinkan diperluas bersama adapter nyata dan reviewnya. Composition root menjadi tempat pemilihan implementasi; entry point API/worker tidak mengakses adapter secara langsung.
+
+Guard ini membuktikan batas import yang diperiksa, bukan seluruh aturan bisnis atau kontrol akses. Tes izin/transaksi tetap dibuat bersama fitur. Health tetap memiliki wire response BE-02 yang sama.
+
+Pola override mengikuti [dependency overrides FastAPI](https://fastapi.tiangolo.com/advanced/testing-dependencies/).
