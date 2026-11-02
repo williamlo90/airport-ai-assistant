@@ -15,6 +15,7 @@ from airport_assistant.config import Settings
 from airport_assistant.database_config import RuntimeDatabaseSettings
 from airport_assistant.main import create_app
 from airport_assistant.modules.identity.auth import Session,SessionCredentials
+from airport_assistant.modules.identity.access import AccessService
 from airport_assistant.modules.system.health import ProcessHealthService
 
 
@@ -27,7 +28,7 @@ def app():
     service.validate_csrf=Mock()
     application=create_app(Settings(env="test",database_enabled=True,auth_enabled=True),
         database_settings=RuntimeDatabaseSettings(DATABASE_URL="postgresql://test:fake@ep-test-pooler.region.aws.neon.tech/db?sslmode=require"),
-        auth_settings=AuthSettings(SESSION_SECRET="k"*48),services=ApplicationServices(ProcessHealthService(),service))
+        auth_settings=AuthSettings(SESSION_SECRET="k"*48),services=ApplicationServices(ProcessHealthService(),service,access=AccessService(service)))
     return application,service
 
 

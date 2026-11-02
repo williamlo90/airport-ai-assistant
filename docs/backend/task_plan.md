@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; **AUTH-04 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -68,11 +68,11 @@ Jangan membuat seluruh tabel tanpa endpoint/layanan atau tes yang memakainya. In
 | ID | Prasyarat | Pekerjaan | Kriteria selesai dan bukti |
 | --- | --- | --- | --- |
 | AUTH-01 | DB-03 | Implementasikan anonymous session, contact challenge dan sesi pelanggan | Kode di-hash, sekali pakai, expired/rate limit berlaku. Secret tidak masuk model/log. Uji memakai adapter pengiriman terkontrol terlebih dahulu; bukan klaim email live. |
-| AUTH-02 | AUTH-01 | Implementasikan upgrade anonim ke terverifikasi | Ownership percakapan dipindahkan hanya dari sesi asal terbukti; token rotate/revoke dan draf pending dibatalkan. SEC-12 memeriksa browser lain tidak mengambil riwayat. |
+| AUTH-02 | AUTH-01, BEHAV-01, CASE-01 | Implementasikan upgrade anonim ke terverifikasi | Ownership percakapan dipindahkan hanya dari sesi asal terbukti; token rotate/revoke dan draf pending dibatalkan. SEC-12 memeriksa browser lain tidak mengambil riwayat. |
 | AUTH-03 | DB-03 | Autentikasi staf terprovisi, membership aktif dan kebijakan akses | Pelanggan tidak dapat menjadi staf lewat challenge. Role gabungan didukung; admin tanpa CS tidak membaca kasus. Pencabutan membership berlaku pada request berikutnya. |
 | AUTH-04 | AUTH-01/03 | Satukan pemeriksaan tenant, organisasi, queue dan akses objek | Kebijakan akses bersama lulus tes terfokus dengan objek/fixture yang tersedia; 404/403 tidak membocorkan tenant lain. Penerapannya pada case, cursor, blob dan tool diperiksa saat endpoint masing-masing dibangun dan dituntaskan pada QUALITY-01. Tugas fondasi ini tidak mengklaim seluruh jalur sudah diuji. |
 
-AUTH-02 diselesaikan setelah percakapan/draf BEHAV-01/CASE-01 tersedia; pada tahap awal implementasikan sesi dan kontrak upgrade dahulu. Endpoint privat yang memerlukan verifikasi email nyata belum boleh dinyatakan lulus live sebelum MAIL-05. Ini urutan implementasi bertahap, bukan bypass verifikasi production.
+AUTH-02 diselesaikan setelah percakapan/draf BEHAV-01/CASE-01 tersedia; pada tahap awal implementasikan sesi dan kontrak upgrade dahulu. Urutan kerja yang dipilih setelah AUTH-03 adalah AUTH-04 → SRC-01 → SRC-02 → SRC-03A → BEHAV-01 → CASE-01 → tuntaskan/audit AUTH-02 → CASE-02. AUTH-02 tidak dilewati atau dianggap selesai sebelum bukti adopsi riwayat dan pembatalan draf lulus. Endpoint privat yang memerlukan verifikasi email nyata belum boleh dinyatakan lulus live sebelum MAIL-05. Ini urutan implementasi bertahap, bukan bypass verifikasi production.
 
 ## 4 Source reference dan konektor read-only
 
@@ -91,7 +91,7 @@ Referensi transaksi saja harus cukup untuk mencoba lookup terotorisasi. Jika sum
 | --- | --- | --- | --- |
 | BEHAV-01 | AUTH-01, DB-04 | Buat percakapan dan pesan dasar tanpa agent | Kepemilikan anonim/terverifikasi jelas; urutan pesan dan deduplikasi client message bekerja. Setelah ini integrasikan AUTH-02. |
 | CASE-01 | BEHAV-01, AUTH-04 | Implementasikan action draft, koreksi, expiry dan cancel | Aktor/sesi, tujuan, versi/hash dan ringkasan tersimpan. Draft yang berubah tidak menerima persetujuan versi lama. AUTH-02 membatalkan pending draft saat upgrade. |
-| CASE-02 | CASE-01, SRC-03A untuk kasus privat | Implementasikan commit terkonfirmasi dan idempotency | Consent, case/message, participant, history, labels dan outbox atomik. Konfirmasi bersamaan/retry hanya satu hasil; timeout setelah commit dapat diperiksa melalui action status. WF-01–06 diuji pada alur yang tersedia; penerapan labels lintas model/outbound dituntaskan SRC-03B. |
+| CASE-02 | CASE-01, AUTH-02, SRC-03A untuk kasus privat | Implementasikan commit terkonfirmasi dan idempotency | Consent, case/message, participant, history, labels dan outbox atomik. Konfirmasi bersamaan/retry hanya satu hasil; timeout setelah commit dapat diperiksa melalui action status. WF-01–06 diuji pada alur yang tersedia; penerapan labels lintas model/outbound dituntaskan SRC-03B. |
 | CASE-03 | CASE-02, AUTH-03 | Implementasikan status, assignment, penutupan manual dan reopen | Alasan/hasil/next actor wajib sesuai state. Pelanggan diam bukan rating puas. Closed reply ambigu ditinjau staf; kebutuhan berbeda tidak digabung otomatis. CASE suite diuji dengan fixtures. |
 | CASE-04 | CASE-02 | Tambahkan attachment privat dan pengikatan draf/kasus | Batas tipe/ukuran/jumlah dan pemeriksaan file berlaku. Download terotorisasi, labels diwariskan, blob bukan filesystem pod sementara. FILE-01 diuji. |
 
@@ -339,3 +339,18 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Instalasi wheel non-editable dari ekspor tracked files: **171 passed, 138 skipped** pada mode offline, disertai konfigurasi contoh dan live HTTP health/404/405/chunked413/request-ID lulus. Skips hanya untuk integrasi Neon yang opt-in.
 - QA independen lulus tanpa temuan material tersisa:18unit,42tes wheel terarah, fixture integrasi, ACL/rowlock serta kebijakan scope dan dokumentasi diperiksa. Seluruh teks berubah valid UTF-8 dan diff check bersih. Penggantian server lama/baru harus terkoordinasi karena DTO lama belum mengenali staff.
 - Rollout app aktual: revision0004_staff_auth terpasang. Smoke HTTPS-ASGI/runtime Neon lulus bootstrap200, staff-only401 untuk anonim, unknown-login401 generik, sesi tetap anonim, logout204 dan revoked401. Tidak memprovisi akun staf nyata atau mengirim email; credential hanya dimuat script internal.
+
+
+## Catatan pelaksanaan AUTH-04
+
+**Status: selesai - 2 November 2026.**
+
+- AccessService menyatukan identitas/membership, konteks database tepercaya dan policy objek. /me, /staff/me dan StaffService.current/require menggunakan service yang sama; helper HTTP read/staff/mutation mempertahankan HTTPS/cookie/Origin/CSRF.
+- ResourceKey tenant/kind/id wajib cocok dengan projection backend; owned conversation/draft membutuhkan owner XOR dan klasifikasi ownership_only eksplisit. Objek source/case-bound yang belum diperiksa tidak dibuka lewat fallback ownership. Staff case dan membership mempertahankan organisasi/queue/role, admin tidak mendapat CS dan self-management ditolak.
+- 401 sebelum lookup; missing/cross-tenant/out-of-scope/key-mismatch404 generik; visible-disallowed403. require_resource memeriksa CSRF untuk known mutation sebelum lookup. Snapshot bukan tiket izin lintas request/job dan tidak menggantikan transaksi bisnis/RLS/source grants.
+- Panduan [authorization.md](authorization.md). Tidak ada revision baru, app tetap0004_staff_auth; endpoint case/cursor/blob/tool belum dibuat. AUTH-02 tetap diselesaikan setelah BEHAV-01/CASE-01, dan pengujian seluruh jalur mengikuti SRC-03A/B serta QUALITY-01.
+
+- Regresi akhir lima flag Neon aktif: **367 passed** dalam447.61detik, termasuk36unit policy AUTH-04 dan22integrasi shared-guard HTTP dengan identitas Neon nyata. Resource tetap fixture projection; tidak mengklaim endpoint kasus yang belum tersedia sudah lulus.
+- Wheel non-editable dari ekspor tracked files: **207 passed, 160 skipped** untuk mode offline; konfigurasi contoh dan live HTTP health/404/405/chunked413/request-ID lulus. Skips hanya integrasi Neon yang opt-in.
+- QA independen: lulus tanpa temuan material tersisa, mencakup36unit terbaru, target suite96tes dengan22integrasi Neon, pemeriksaan wheel/production OpenAPI, exact key binding, defaultdeny, scope role dan dokumentasi. Seluruh perubahan teks valid UTF-8 dan diff check bersih.
+- Smoke app aktual HTTPS-ASGI/runtime Neon lulus missing401, bootstrap/me200 anonim, staffme401, defaultsender503, logout204 dan revoked401. AccessService terpasang dan router fixture tidak ada pada production OpenAPI. Current schema tetap0004_staff_auth; tidak ada migration/grant baru, credential/env tidak diubah dan email tidak dikirim.

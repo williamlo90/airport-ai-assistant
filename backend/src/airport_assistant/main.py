@@ -45,7 +45,7 @@ def create_app(settings: Settings, *, services: ApplicationServices | None = Non
     install_error_handlers(app)
     app.include_router(health_router)
     if settings.auth_enabled:
-        if app.state.services.auth is None:raise ConfigurationError("Authentication services are required.")
+        if app.state.services.auth is None or app.state.services.access is None:raise ConfigurationError("Authentication and access services are required.")
         app.include_router(auth_router)
         if app.state.services.staff is not None:app.include_router(staff_router)
     app.add_middleware(RequestBoundary, max_body_bytes=settings.max_request_body_bytes)

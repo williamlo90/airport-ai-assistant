@@ -22,6 +22,7 @@ from airport_assistant.infrastructure.database.connections import RuntimeDatabas
 from airport_assistant.infrastructure.database.migrations import create_migration_engine,migrate
 from airport_assistant.infrastructure.database.provisioning import prepare_roles,prepare_auth_owner,enable_login,runtime_url
 from airport_assistant.main import create_app
+from airport_assistant.modules.identity.access import AccessService
 from airport_assistant.modules.identity.auth import AuthService,AuthPolicy
 from airport_assistant.modules.identity.context import DatabaseContext
 from airport_assistant.modules.system.health import ProcessHealthService
@@ -105,7 +106,7 @@ async def harness(target,*,sender_enabled=True,**limits):
     service=AuthService(PostgresAuthRepository(db,target["schema"]),target["key"].encode(),policy,sender if sender_enabled else None)
     application=create_app(Settings(env="test",database_enabled=True,auth_enabled=True),
         database_settings=RuntimeDatabaseSettings(DATABASE_URL=target["url"]),auth_settings=settings,
-        services=ApplicationServices(ProcessHealthService(),service))
+        services=ApplicationServices(ProcessHealthService(),service,access=AccessService(service)))
     try:
         await db.open()
         yield Harness(target,application,db,service,sender)

@@ -227,3 +227,8 @@ Sender nyata belum dipasang, sehingga API normal memberi503 untuk permintaan kir
 [Staff authentication guide](../docs/backend/staff_authentication.md) menjelaskan login password lokal untuk staf terprovisi, scope membership/queue, pencabutan, CLI credential interaktif dan batas rilis. POST /api/v1/staff/auth/login memerlukan sesi anonim/CSRF; GET /api/v1/staff/me membaca membership terbaru. Logout memakai endpoint umum. Credential tidak membuat membership baru dan tidak dikirim melalui email pelanggan.
 
 Revision0004_staff_auth dipasang melalui migration runner; histori0001–0003 tidak berubah. Runtime tidak mempunyai akses tabel credential langsung. Uji terfokus: unit/test_staff_passwords.py dan integration/test_staff_auth.py dengan RUN_NEON_AUTH_TESTS=1.
+
+
+## Shared authorization AUTH-04
+
+[Authorization guide](../docs/backend/authorization.md) memuat identitas bersama, helper proof read/mutation, exact tenant/kind/id, ownership dan scope staf, serta concealed404/visible403. /me dan /staff/me memakai AccessService; tidak ada migration atau endpoint resource produksi baru. Uji terfokus: unit/test_access_policy.py dan integration/test_access_http.py dengan RUN_NEON_AUTH_TESTS=1.

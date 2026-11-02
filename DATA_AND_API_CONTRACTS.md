@@ -116,6 +116,12 @@ GET /api/v1/staff/me memberi session_kind,principal_id,memberships aktif dengan 
 
 Adapter password lokal, provisioning/rotation tersembunyi serta batas rilis dijelaskan pada [staff authentication](docs/backend/staff_authentication.md). Tidak ada self-registration, staff password di env/commandline, endpoint debug, SSO atau MFA pada tahap ini.
 
+### Perincian AUTH-04 yang executable
+
+/me dan /staff/me memakai AccessService dan dependency identitas bersama; mutasi memakai proof Origin/CSRF. Metadata objek hanya dari backend dan harus cocok persis dengan ResourceKey tenant/kind/id. Anonymous/customer hanya memiliki akses ownership pada conversation/draft mandiri yang backend klasifikasikan ownership_only=true; default false menolak konteks case/source yang belum diperiksa. Staff memakai scope role/organisasi/queue per membership. Target membership diri sendiri tidak boleh dimutasi melalui izin admin.
+
+Sesi invalid401 sebelum lookup. Missing/cross-tenant/out-of-scope/mismatched projection menghasilkan404 sama; visible object dengan aksi terlarang403. Snapshot per-call tidak menggantikan pemeriksaan transaksi/state/consent/source-grants saat fitur dijalankan. Aplikasi belum menambah endpoint case/cursor/blob/tool; bukti AUTH-04 memakai fixture projection dengan identitas Neon nyata. [Authorization guide](docs/backend/authorization.md) memuat kontrak helper, mapping aksi dan kewajiban integrasi berikutnya.
+
 ### Perincian AUTH-01 yang executable
 
 Semua path di atas berada di /api/v1. Purpose challenge saat ini customer_login; response202 berisi challenge_id,status=verification_requested. Verify menerima code string8digit, memberi respons200 session_kind=customer dan principal_id melalui cookie baru. /me hanya memuat kedua field tersebut; tidak memuat role staf atau hash. Bootstrap/logout body kosong atau null, field tambahan ditolak. Mutasi memakai HTTPS, Origin sama (termasuk port), cookie CSRF terikat sesi dan header X-CSRF-Token; bootstrap tidak memerlukan header X-CSRF-Token: sesi baru belum memiliki proof, sedangkan bootstrap sesi aktif memeriksa cookie CSRF yang terikat sesi serta Origin. Cookie __Host-airport_session HttpOnly/Secure/SameSite=Lax/Path=/, CSRF cookie __Host-airport_csrf Secure dan readable oleh frontend, tanpa Domain. Respons sesi/error memakai no-store.

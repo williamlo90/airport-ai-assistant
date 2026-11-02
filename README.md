@@ -24,6 +24,7 @@ Booking creation, payment processing, refund execution, and delegation managemen
 | [Database schema](docs/backend/database_schema.md) | PostgreSQL tables, field types, keys, relationships, constraints, indexes, and isolation rules. |
 | [Customer authentication](docs/backend/authentication.md) | Session lifecycle, email challenges, cookie/CSRF protection, setup, and delivery limits. |
 | [Staff authentication](docs/backend/staff_authentication.md) | Provisioned staff login, live membership scopes, credential rotation, and password worker limits. |
+| [Shared authorization](docs/backend/authorization.md) | Trusted request identities, exact object binding, ownership and membership scopes, and integration requirements. |
 | [Migration workflow](docs/backend/migration_workflow.md) | Revision creation, constraints/RLS, cyclic FKs, expand/contract, and upgrade verification. |
 | [Backend task plan](docs/backend/task_plan.md) | Implementation order, prerequisites, completion criteria, review evidence, and ownership exercises. |
 
@@ -31,11 +32,13 @@ Booking creation, payment processing, refund execution, and delegation managemen
 
 The backend provides a FastAPI bootstrap with structured errors, request IDs, input limits, service wiring, and executable module boundaries (BE-01–03). Neon PostgreSQL connections, versioned migrations, restricted runtime roles, forced tenant/identity RLS, and guarded populated upgrades are implemented (DB-01–04). See [backend setup](backend/README.md) for installation and commands.
 
-AUTH-01 adds anonymous/customer sessions, browser-bound email challenges, atomic verification and token rotation, logout, persistent rate limits, and HTTPS cookie/CSRF protection. The suite passes 309 tests including real Neon integration checks. Clean non-editable installation passes 171 offline tests, with 138 database tests intentionally skipped in that mode. Email challenge delivery is controlled in tests; the normal API returns 503 until a real sender is configured and verified in MAIL-05. See the [authentication guide](docs/backend/authentication.md).
+AUTH-01 adds anonymous/customer sessions, browser-bound email challenges, atomic verification and token rotation, logout, persistent rate limits, and HTTPS cookie/CSRF protection. The suite passes 367 tests including real Neon integration checks. Clean non-editable installation passes 207 offline tests, with 160 database tests intentionally skipped in that mode. Email challenge delivery is controlled in tests; the normal API returns 503 until a real sender is configured and verified in MAIL-05. See the [authentication guide](docs/backend/authentication.md).
 
 AUTH-03 adds local password login for provisioned staff, live organization/queue membership checks, credential rotation, and bounded Argon2id workers. Customer verification cannot create staff sessions. This adapter does not implement SSO or MFA. See the [staff authentication guide](docs/backend/staff_authentication.md).
 
-The worker remains a placeholder. Conversation/draft adoption, cross-feature access enforcement, AI, and case workflows follow the task plan.
+AUTH-04 centralizes request identity and object authorization for tenant, owner, organization, and queue scopes. The identity endpoints use the shared service; protected object behavior is verified with fixture projections and real Neon identities. Case/source/state enforcement follows each feature.
+
+The worker remains a placeholder. Conversation/draft adoption, AI, and case workflows follow the task plan.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
 

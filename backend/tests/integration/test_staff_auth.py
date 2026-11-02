@@ -71,6 +71,7 @@ from airport_assistant.infrastructure.database.staff_repository import PostgresS
 from airport_assistant.infrastructure.database.staff_provisioning import set_staff_credential, disable_staff_credential
 from airport_assistant.infrastructure.security.passwords import hash_password, BoundedPasswordVerifier
 from airport_assistant.modules.identity.staff import StaffService, StaffPolicy
+from airport_assistant.modules.identity.access import AccessService
 from airport_assistant.modules.identity.auth import AuthError
 
 PASSWORD = "Staff test passphrase 2026!"
@@ -131,10 +132,12 @@ async def harness(target,policy=StaffPolicy(),passwords=None,sender=None):
     settings=AuthSettings(SESSION_SECRET=target["key"],rate_window=target["window"])
     auth=AuthService(PostgresAuthRepository(db,target["schema"]),target["key"].encode(),
                      AuthPolicy(**settings.model_dump(exclude={"session_secret"})),sender)
-    staff=StaffService(auth,PostgresStaffRepository(db,target["schema"]),passwords or BoundedPasswordVerifier(),policy)
+    repository=PostgresStaffRepository(db,target["schema"])
+    access=AccessService(auth,repository)
+    staff=StaffService(auth,repository,passwords or BoundedPasswordVerifier(),access,policy)
     app=create_app(Settings(env="test",database_enabled=True,auth_enabled=True),
         database_settings=RuntimeDatabaseSettings(DATABASE_URL=target["url"]),auth_settings=settings,
-        services=ApplicationServices(ProcessHealthService(),auth,staff))
+        services=ApplicationServices(ProcessHealthService(),auth,staff,access))
     try:
         await db.open()
         yield Harness(target,db,auth,staff,app)

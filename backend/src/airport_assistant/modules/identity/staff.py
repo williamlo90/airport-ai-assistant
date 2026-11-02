@@ -6,6 +6,8 @@ from typing import Protocol
 from uuid import UUID, uuid4
 
 from airport_assistant.modules.identity.auth import AuthError, AuthService, SessionCredentials, normalized_contact
+from airport_assistant.modules.identity.membership import Membership
+from airport_assistant.modules.identity.access import AccessService
 
 
 @dataclass(frozen=True)
@@ -14,25 +16,6 @@ class StaffCredential:
     version: UUID
     password_hash: str = field(repr=False)
 
-
-@dataclass(frozen=True)
-class Membership:
-    id: UUID
-    organization_id: UUID
-    version: int
-    roles: frozenset[str]
-    queue_ids: frozenset[UUID]
-
-    def allows(self, action: str, organization_id: UUID, queue_id: UUID | None = None) -> bool:
-        if self.organization_id != organization_id:
-            return False
-        if action == "manage_memberships":
-            return "admin" in self.roles
-        if action in {"read_case", "reply_case"}:
-            return bool(self.roles & {"cs", "supervisor"}) and queue_id is not None and queue_id in self.queue_ids
-        if action == "assign_case":
-            return "supervisor" in self.roles and queue_id is not None and queue_id in self.queue_ids
-        return False
 
 
 class PasswordVerifier(Protocol):
@@ -54,11 +37,12 @@ class StaffPolicy:
 
 
 class StaffService:
-    def __init__(self, auth: AuthService, repository: StaffRepository, passwords: PasswordVerifier, policy: StaffPolicy = StaffPolicy()):
+    def __init__(self, auth: AuthService, repository: StaffRepository, passwords: PasswordVerifier, access: AccessService, policy: StaffPolicy = StaffPolicy()):
         self._auth = auth
         self._repository = repository
         self._passwords = passwords
         self._policy = policy
+        self._access = access
 
     async def login(self, tenant: UUID, token: str | None, csrf: str | None, contact: str, password: str, ip: str) -> SessionCredentials:
         await self._auth._bound(tenant, token, csrf, anonymous=True)
@@ -89,16 +73,8 @@ class StaffService:
         return SessionCredentials(session, raw, new_csrf)
 
     async def current(self, tenant: UUID, token: str | None):
-        session = await self._auth.current(tenant, token)
-        if session is None or session.kind != "staff":
-            raise AuthError(401, "AUTH_REQUIRED")
-        memberships = await self._repository.memberships(tenant, self._auth.digest("session", tenant, token))
-        if not memberships:
-            raise AuthError(401, "AUTH_REQUIRED")
-        return session, memberships
+        identity = await self._access.staff_identity(tenant, token)
+        return identity.session, identity.memberships
 
     async def require(self, tenant: UUID, token: str | None, action: str, organization_id: UUID, queue_id: UUID | None = None):
-        session, memberships = await self.current(tenant, token)
-        if not any(m.allows(action, organization_id, queue_id) for m in memberships):
-            raise AuthError(403, "ACTION_FORBIDDEN")
-        return session
+        return await self._access.require_staff_scope(tenant, token, action, organization_id, queue_id)
