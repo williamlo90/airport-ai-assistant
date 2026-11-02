@@ -89,6 +89,7 @@ Transaksi mengembalikan reference, booking_reference, currency, amount_minor, cu
 | Endpoint | Akses dan kontrak |
 | --- | --- |
 | GET /public/config | Tenant situs, bahasa, kategori dan informasi publik; tidak mengandung credential. |
+| POST /auth/sessions | HTTPS/same-origin bootstrap sesi anonim; tidak menerima identitas/tenant client. Respons200 session_kind,principal_id(null untuk anonim); token dan CSRF hanya cookie. |
 | POST /auth/challenges | Body contact,purpose; respons 202 generik, challenge_id opaque; rate limit per kontak dan IP/session. |
 | POST /auth/challenges/{id}/verify | Kode sekali pakai; sukses membuat sesi pelanggan. Tidak memberi role staf. Gagal dibatasi dan kode expired tidak bisa dipakai. |
 | POST /auth/logout | Revoke sesi server-side dan cookie. |
@@ -106,6 +107,16 @@ Transaksi mengembalikan reference, booking_reference, currency, amount_minor, cu
 Autentikasi staf memakai endpoint terpisah yang memvalidasi identitas staf terprovisi dan menghasilkan sesi sesuai membership aktif. Detail provider identitas tidak diekspos dalam kontrak bisnis. Pencabutan membership berlaku pada request berikutnya, bukan hanya setelah login ulang.
 
 Challenge pelanggan mencatat hash sesi anonim asal dan nonce anti-CSRF jika ada. Verify pada browser yang sama memeriksa token asal, tenant, challenge dan kode sekali pakai; dalam satu transaksi rotasi sesi, pindahkan ownership percakapan yang terbukti, revoke sesi lama dan cancel pending action drafts. Susun ulang draf setelah upgrade dengan akses baru dan konfirmasi baru. Browser/sesi lain yang hanya mengetahui challenge atau conversation ID tidak dapat mengklaim riwayat. Verifikasi lewat email tanpa sesi anonim tidak mengubah ownership percakapan browser.
+
+### Perincian AUTH-01 yang executable
+
+Semua path di atas berada di /api/v1. Purpose challenge saat ini customer_login; response202 berisi challenge_id,status=verification_requested. Verify menerima code string8digit, memberi respons200 session_kind=customer dan principal_id melalui cookie baru. /me hanya memuat kedua field tersebut; tidak memuat role staf atau hash. Bootstrap/logout body kosong atau null, field tambahan ditolak. Mutasi memakai HTTPS, Origin sama (termasuk port), cookie CSRF terikat sesi dan header X-CSRF-Token; bootstrap tidak memerlukan header X-CSRF-Token: sesi baru belum memiliki proof, sedangkan bootstrap sesi aktif memeriksa cookie CSRF yang terikat sesi serta Origin. Cookie __Host-airport_session HttpOnly/Secure/SameSite=Lax/Path=/, CSRF cookie __Host-airport_csrf Secure dan readable oleh frontend, tanpa Domain. Respons sesi/error memakai no-store.
+
+Kode di-HMAC, TTL default300detik, maksimal5percobaan, sekali pakai dan terikat tenant/sesi anonim/CSRF asal. Counter fixed-window tersimpan percontact/IP/session; failure/rate-limit tidak me-rollback counter. Session TTL default anonim24jam dan customer8jam, revocation serta rotasi server-side. Kebijakan configurable dan detail proof ada di [authentication guide](docs/backend/authentication.md).
+
+Sender default belum terpasang: request verifikasi mengembalikan503 VERIFICATION_UNAVAILABLE, bukan fake202. Pengiriman terkontrol hanya untuk tes, MAIL-05 tetap syarat pengiriman email nyata. Failed/expired/replayed/unknown challenge memberi422 VERIFICATION_FAILED generik; session tidak sah401, CSRF/origin403 CSRF_REQUIRED, batas429 RATE_LIMITED dengan Retry-After. Email dinormalisasi dengan domain ASCII/lowercase dan local part ASCII dipertahankan (SMTPUTF8 belum didukung); tidak menghapus plus-tag/titik secara universal. Verifikasi kontak tidak me-rebind principal lama atau mengaktifkan principal nonaktif.
+
+Rotasi/revoke sesi sudah diimplementasikan. Adopsi percakapan/draf masih AUTH-02 setelah tabelnya tersedia; verifikasi email follow-up tanpa browser masih MAIL-04. Ini tidak membuka login staf lewat verifikasi pelanggan.
 
 ## 5 Konfirmasi dan tindakan pelanggan
 

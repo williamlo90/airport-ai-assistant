@@ -12,15 +12,24 @@ import sys
 from airport_assistant.database_config import RuntimeDatabaseSettings
 from airport_assistant.infrastructure.database.connections import RuntimeDatabase
 from airport_assistant.modules.system.health import HealthService, ProcessHealthService
+from airport_assistant.auth_config import AuthSettings
+from airport_assistant.infrastructure.database.auth_repository import PostgresAuthRepository
+from airport_assistant.modules.identity.auth import AuthService,AuthPolicy,VerificationSender
 
 
 @dataclass(frozen=True)
 class ApplicationServices:
     health: HealthService
+    auth: AuthService|None=None
 
 
-def build_services() -> ApplicationServices:
-    return ApplicationServices(health=ProcessHealthService())
+def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings|None=None,sender:VerificationSender|None=None) -> ApplicationServices:
+    auth=None
+    if auth_settings is not None:
+        if database is None:raise ValueError("Authentication requires a database resource.")
+        auth=AuthService(PostgresAuthRepository(database),auth_settings.session_secret.get_secret_value().encode(),
+                         AuthPolicy(**auth_settings.model_dump(exclude={"session_secret"})),sender)
+    return ApplicationServices(health=ProcessHealthService(),auth=auth)
 
 
 @dataclass(frozen=True)

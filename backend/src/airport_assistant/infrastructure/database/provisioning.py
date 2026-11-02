@@ -10,6 +10,20 @@ from airport_assistant.infrastructure.database.migrations import MigrationError
 
 RUNTIME_ROLE = "airport_assistant_runtime"
 POLICY_ROLE = "airport_assistant_policy_owner"
+AUTH_ROLE = "airport_assistant_auth_owner"
+
+
+def prepare_auth_owner(connection,auth_role=AUTH_ROLE):
+    role_name(auth_role)
+    row=connection.execute(text("SELECT oid,rolsuper,rolcreaterole,rolcreatedb,rolbypassrls,rolreplication,rolinherit,rolcanlogin FROM pg_roles WHERE rolname=:name"),dict(name=auth_role)).first()
+    if row:
+        if any(row[1:]) or connection.execute(text("SELECT count(*) FROM pg_auth_members WHERE member=:oid"),dict(oid=row[0])).scalar_one():
+            raise MigrationError("Authentication owner must be an isolated NOLOGIN role.")
+    else:
+        connection.exec_driver_sql(sql.SQL("CREATE ROLE {} NOLOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOBYPASSRLS NOREPLICATION").format(sql.Identifier(auth_role)).as_string())
+    current=connection.execute(text("SELECT current_user")).scalar_one()
+    if current==auth_role:raise MigrationError("Separate migration credential is required.")
+    connection.exec_driver_sql(sql.SQL("GRANT {} TO {}").format(sql.Identifier(auth_role),sql.Identifier(current)).as_string())
 
 
 def role_name(value: str) -> None:

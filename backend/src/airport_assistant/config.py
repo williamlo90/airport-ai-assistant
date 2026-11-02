@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     port: int = Field(default=8000, ge=1, le=65535)
     max_request_body_bytes: int = Field(default=1_048_576, ge=1, le=16_777_216)
     database_enabled: bool = False
+    auth_enabled: bool = False
 
 
 def load_settings(env_file: Path | None = Path(".env")) -> Settings:

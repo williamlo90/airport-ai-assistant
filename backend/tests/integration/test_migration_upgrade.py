@@ -73,8 +73,8 @@ def target():
         engine.dispose()
 
 
-def upgrade(t):
-    return migrations.migrate(t["url"],schema=t["schema"],runtime_role=t["role"],policy_role=t["owner"])
+def upgrade(t,target_revision="0002_runtime_rls"):
+    return migrations.migrate(t["url"],schema=t["schema"],runtime_role=t["role"],policy_role=t["owner"],target_revision=target_revision)
 
 
 def runtime(t,scenario):
@@ -89,6 +89,10 @@ def runtime(t,scenario):
 def future_directory(tmp_path,monkeypatch,fixture=None,body=None):
     directory=tmp_path/"migrations"
     shutil.copytree(migrations.migration_directory(),directory)
+    # Freeze this historical upgrade recipe at the DB-03 prefix, independently
+    # of later product revisions. Never copy unfinished/new features into it.
+    for path in (directory/"versions").glob("*.py"):
+        if path.name not in {"0001_foundation.py","0002_runtime_rls.py"}:path.unlink()
     if fixture:
         shutil.copyfile(Path(__file__).parents[1]/"fixtures/migrations"/fixture,directory/"versions"/fixture)
     else:
@@ -126,8 +130,8 @@ def test_populated_upgrade_preserves_all_rows_and_legacy_read_projection(target)
 def test_expand_and_cyclic_fk_remain_tenant_isolated(target,tmp_path,monkeypatch):
     t=target;s=t["schema"];upgrade(t)
     future_directory(tmp_path,monkeypatch,fixture="0003_expand_cycle.py")
-    assert upgrade(t)=="0003_expand_cycle"
-    assert upgrade(t)=="0003_expand_cycle"
+    assert upgrade(t,target_revision="head")=="0003_expand_cycle"
+    assert upgrade(t,target_revision="head")=="0003_expand_cycle"
     async def scenario(db):
         a,b=t["contexts"];parent,child=uuid4(),uuid4()
         async with db.transaction(a) as c:
@@ -169,7 +173,7 @@ def test_failed_or_unsafe_future_upgrade_rolls_back_rows_schema_and_version(targ
         checked.append(True)
         return original(*args,**kwargs)
     monkeypatch.setattr(migrations,"verify_row_security",observe)
-    with pytest.raises(migrations.MigrationError):upgrade(t)
+    with pytest.raises(migrations.MigrationError):upgrade(t,target_revision="head")
     assert bool(checked)==(failure!="exception")
     assert migrations.migrate(t["url"],schema=s,action="current")=="0002_runtime_rls"
     assert snapshot(t["engine"],s)==before

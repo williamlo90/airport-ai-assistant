@@ -6,6 +6,7 @@ requires-python = ">=3.13,<3.14"
 dependencies = [
     "alembic>=1.14,<2",
     "certifi>=2025.1,<2027",
+    "email-validator>=2.2,<3",
     "fastapi>=0.115,<1",
     "psycopg[binary,pool]>=3.2,<4",
     "sqlalchemy>=2.0,<2.1",
@@ -19,6 +20,7 @@ airport-assistant-api = "airport_assistant.main:main"
 airport-assistant-db-check = "airport_assistant.database_check:main"
 airport-assistant-migrate = "airport_assistant.migrate:main"
 airport-assistant-db-provision = "airport_assistant.provision:main"
+airport-assistant-auth-setup = "airport_assistant.auth_setup:main"
 
 [dependency-groups]
 dev = [

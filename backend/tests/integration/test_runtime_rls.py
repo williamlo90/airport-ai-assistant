@@ -40,7 +40,7 @@ def target():
     try:
         with engine.begin() as c:
             prepare_roles(c,role,owner)
-        assert migrate(direct.url.get_secret_value(),schema=schema,runtime_role=role,policy_role=owner)=="0002_runtime_rls"
+        assert migrate(direct.url.get_secret_value(),schema=schema,runtime_role=role,policy_role=owner,target_revision="0002_runtime_rls")=="0002_runtime_rls"
         with engine.begin() as c:
             enable_login(c,role,password)
             a=insert(c,schema,"tenants",slug="a",display_name="A",timezone="UTC",supported_languages=["en"])
@@ -308,7 +308,7 @@ def test_configured_runtime_credential_enforces_isolation_in_scratch_schema():
     engine=create_migration_engine(direct.url.get_secret_value())
     try:
         with engine.begin() as c:prepare_roles(c,role,owner)
-        migrate(direct.url.get_secret_value(),schema=schema,runtime_role=role,policy_role=owner)
+        migrate(direct.url.get_secret_value(),schema=schema,runtime_role=role,policy_role=owner,target_revision="0002_runtime_rls")
         ids=[]
         with engine.begin() as c:
             for label in ("a","b"):

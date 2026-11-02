@@ -14,14 +14,20 @@ from airport_assistant.api.schemas import ErrorResponse
 from airport_assistant.config import ConfigurationError, Settings, load_settings
 from airport_assistant.composition import ApplicationServices, build_services, build_resources
 from airport_assistant.database_config import RuntimeDatabaseSettings, load_database_settings
+from airport_assistant.auth_config import AuthSettings,load_auth_settings
+from airport_assistant.modules.identity.auth import VerificationSender
+from airport_assistant.api.auth import router as auth_router
 
 
 def create_app(settings: Settings, *, services: ApplicationServices | None = None,
-               database_settings: RuntimeDatabaseSettings | None = None) -> FastAPI:
+               database_settings: RuntimeDatabaseSettings | None = None,
+               auth_settings:AuthSettings|None=None,verification_sender:VerificationSender|None=None) -> FastAPI:
     """Build the ASGI application from previously validated settings."""
     development_docs = settings.env != "production"
     if settings.database_enabled != (database_settings is not None):
         raise ConfigurationError("Database enablement and runtime configuration must match.")
+    if settings.auth_enabled != (auth_settings is not None) or (settings.auth_enabled and not settings.database_enabled):
+        raise ConfigurationError("Authentication requires explicit settings and an enabled database.")
     resources = build_resources(database_settings)
     app = FastAPI(
         title="Airport AI Assistant API",
@@ -33,10 +39,13 @@ def create_app(settings: Settings, *, services: ApplicationServices | None = Non
         lifespan=lambda app: resources.lifecycle(),
     )
     app.state.settings = settings
-    app.state.services = build_services() if services is None else services
+    app.state.services = (build_services(resources.database,auth_settings,verification_sender) if auth_settings else build_services()) if services is None else services
     app.state.resources = resources
     install_error_handlers(app)
     app.include_router(health_router)
+    if settings.auth_enabled:
+        if app.state.services.auth is None:raise ConfigurationError("Authentication services are required.")
+        app.include_router(auth_router)
     app.add_middleware(RequestBoundary, max_body_bytes=settings.max_request_body_bytes)
     return app
 
@@ -55,6 +64,9 @@ def main() -> None:
     args = parser.parse_args()
     try:
         settings = load_settings(None if args.no_env_file else args.env_file)
+        if settings.auth_enabled and not settings.database_enabled:
+            raise ConfigurationError("APP_AUTH_ENABLED requires APP_DATABASE_ENABLED.")
+        auth_settings=load_auth_settings(None if args.no_env_file else args.env_file) if settings.auth_enabled else None
         database_settings = load_database_settings(
             RuntimeDatabaseSettings, None if args.no_env_file else args.env_file,
         ) if settings.database_enabled else None
@@ -65,7 +77,7 @@ def main() -> None:
         print("Configuration valid.")
         return
     # Default Uvicorn access logs include raw paths/query strings.
-    uvicorn.run(create_app(settings, database_settings=database_settings), host=settings.host,
+    uvicorn.run(create_app(settings, database_settings=database_settings,auth_settings=auth_settings), host=settings.host,
                 port=settings.port, access_log=False,
                 loop="airport_assistant.composition:database_loop_factory" if settings.database_enabled else "auto")
 

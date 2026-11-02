@@ -6,6 +6,14 @@ from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
 from airport_assistant.api.schemas import ErrorDetail, ErrorResponse
+from airport_assistant.modules.identity.auth import AuthError
+
+AUTH_ERRORS={
+    "CSRF_REQUIRED":("Permintaan harus berasal dari browser dan sesi yang sah.",False),
+    "VERIFICATION_FAILED":("Verifikasi tidak dapat diselesaikan. Periksa kode atau minta kode baru.",False),
+    "VERIFICATION_UNAVAILABLE":("Pengiriman verifikasi belum tersedia. Coba lagi nanti.",True),
+    "AUTH_UNAVAILABLE":("Layanan autentikasi belum tersedia.",True),
+}
 
 
 ERRORS = {
@@ -26,8 +34,10 @@ ERRORS = {
 }
 
 
-def error_response(status: int, request_id: str, headers: dict | None = None) -> JSONResponse:
+def error_response(status: int, request_id: str, headers: dict | None = None, *, auth_code:str|None=None) -> JSONResponse:
     code, message, retryable = ERRORS.get(status, ("HTTP_ERROR", "Permintaan tidak dapat diproses.", False))
+    if auth_code in AUTH_ERRORS:
+        code=auth_code;message,retryable=AUTH_ERRORS[auth_code]
     body = ErrorResponse(error=ErrorDetail(
         code=code, message=message, request_id=request_id, retryable=retryable,
     ))
@@ -35,6 +45,12 @@ def error_response(status: int, request_id: str, headers: dict | None = None) ->
 
 
 def install_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(AuthError)
+    async def auth_error(request:Request,exc:AuthError):
+        headers={"Cache-Control":"no-store"}
+        if exc.status==429:headers["Retry-After"]=str(exc.retry_after or 900)
+        return error_response(exc.status,request.state.request_id,headers,auth_code=exc.code)
+
     @app.exception_handler(HTTPException)
     async def http_error(request: Request, exc: HTTPException):
         # Protocol headers only; never echo arbitrary exception headers/details.

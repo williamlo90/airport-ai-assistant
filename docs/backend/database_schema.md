@@ -669,3 +669,14 @@ Startup pool menolak login privileged, owner, role dengan parent membership, CRE
 Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ketika ia admin. Positive admin management hanya menarget principal lain dalam organisasi yang diizinkan. Runtime hanya boleh mengubah active/version pada membership, role pada membership_roles, dan queue_id pada membership_queues; tenant/principal/organization/membership target tidak dapat diretarget lewat UPDATE. Perubahan scope membutuhkan operasi eksplisit terhadap record yang sesuai, dengan pemeriksaan bisnis/audit pada fitur AUTH/admin berikutnya.
 
 [Pola migration DB-04](migration_workflow.md) memperinci penambahan tabel berikutnya dan bukti upgrade; tidak menambah entitas produk pada tahap ini.
+
+
+## 19 Implementasi AUTH-01
+
+Revision0003_customer_auth menambahkan sessions, verification_challenges dan auth_rate_limits, seluruhnya dengan PK tenant/id, timestamp, ENABLE+FORCE RLS dan indexes untuk lookup/FK/expiry/window. Session dan challenge menyimpan digest HMAC64hex, bukan token/kode/key mentah. Role runtime tidak mempunyai direct SELECT/INSERT/UPDATE tabel auth; operasi berjalan lewat fungsi terbatas milik auth-owner NOLOGIN non-BYPASS. Kontak/principal di-bind hanya melalui verifikasi yang sah; tidak ada grant staf dalam fungsi tersebut.
+
+Schema challenges AUTH-01 hanya purpose customer_login, origin_session_id dan binding_nonce_hash wajib karena flow ini browser-bound. Kolom case_id serta tujuan/verifikasi tanpa browser ditambahkan bersama fitur kasus/email; belum menjadi kolom atau flow yang bisa digunakan pada AUTH-01. Sesi rotated/revoked sudah tersimpan, sedangkan pemindahan conversation/draft menunggu AUTH-02.
+
+Table auth_rate_limits mempunyai common columns serta scope TEXT(boot/contact/issue_ip/issue_session/verify_ip/verify_session), subject_hash TEXT64hex, window_start TIMESTAMPTZ dan hits INTEGER positif. UQ tenant/scope/subject_hash/window_start mendukung UPSERT atomic. Nilai window berasal dari waktu server dan hit tetap commit saat permintaan ditolak. Rate helper tidak dapat dipanggil runtime secara langsung.
+
+Detail flow, konfigurasi dan batas proof berada di [authentication guide](authentication.md). Migration/provision owner dan session key disiapkan script lokal; key tidak disimpan pada tabel atau ditampilkan dalam output.

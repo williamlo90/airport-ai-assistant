@@ -17,15 +17,16 @@ INTERNAL_ALLOWED = {
     "modules": {"modules"},
     "integrations": {"integrations", "modules"},
     "infrastructure": {"infrastructure", "modules"},
-    "main": {"api", "config", "composition", "database_config"},
+    "main": {"api", "config", "composition", "database_config", "auth_config", "modules"},
     "worker": {"modules", "config", "composition"},
     "database_check": {"composition", "config", "database_config", "infrastructure"},
     "migrate": {"config", "database_config", "infrastructure"},
     "provision": {"composition", "database_config", "infrastructure"},
+    "auth_setup": {"auth_config", "composition", "database_config", "infrastructure"},
 }
 EXTERNAL_ALLOWED = {
     "api": {"fastapi", "starlette", "pydantic"},
-    "modules": set(),
+    "modules": {"email_validator"},
     "integrations": {"httpx"},
     "infrastructure": {"psycopg", "psycopg_pool", "certifi", "sqlalchemy", "alembic"},
     "main": {"fastapi", "uvicorn"},
@@ -33,6 +34,7 @@ EXTERNAL_ALLOWED = {
     "database_check": set(),
     "migrate": set(),
     "provision": {"dotenv"},
+    "auth_setup": {"dotenv", "sqlalchemy"},
 }
 IO_MODULES = {"socket", "urllib", "http", "sqlite3", "subprocess", "dbm", "shelve"}
 

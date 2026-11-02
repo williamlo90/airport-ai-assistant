@@ -73,7 +73,7 @@ def create_migration_engine(url: str, *, connect_timeout=10):
 
 def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade",
             target_revision="head", runtime_role="airport_assistant_runtime",
-            policy_role="airport_assistant_policy_owner") -> str | None:
+            policy_role="airport_assistant_policy_owner",auth_role="airport_assistant_auth_owner") -> str | None:
     validate_schema(schema)
     if action not in {"upgrade", "current"}:
         raise MigrationError("Unsupported migration action.")
@@ -90,7 +90,7 @@ def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade",
                 connection.exec_driver_sql(f"CREATE SCHEMA IF NOT EXISTS {quoted}")
                 connection.exec_driver_sql(f"REVOKE ALL ON SCHEMA {quoted} FROM PUBLIC")
                 config.attributes.update(connection=connection, schema=schema,
-                                         runtime_role=runtime_role, policy_role=policy_role)
+                                         runtime_role=runtime_role, policy_role=policy_role,auth_role=auth_role)
                 command.upgrade(config, target_revision)
             revision = MigrationContext.configure(connection, opts={
                 "version_table": "schema_migrations", "version_table_schema": schema,

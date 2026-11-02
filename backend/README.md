@@ -210,3 +210,13 @@ Hasil final DB-03: full suite live **192 passed** pada 2 November 2026. QA indep
 Tambahkan RUN_NEON_UPGRADE_TESTS=1 pada full suite untuk populated-upgrade dan siklus FK di schema sementara. Revision contoh hanya fixture test; tidak menambah tabel demonstrasi ke app atau mengubah head production0002. Tes ini bukan bukti performa backfill besar, rolling deployment, atau fitur bisnis yang belum diimplementasikan.
 
 Verifikasi DB-04: **201 tes live lulus**, dikonfirmasi ulang QA. Build bersih offline129passed72skipped serta HTTP bootstrap lulus. Smoke schema app tetap revision0002 dan sembilan tabel fondasi; fixture contoh tidak terpasang di app.
+
+## Customer authentication AUTH-01
+
+[Authentication guide](../docs/backend/authentication.md) memuat setup internal key, cookie/CSRF/origin, kontrak endpoint, rate/TTL dan batas delivery. Feature default nonaktif pada .env.example; setup script menyalakan auth/database dan dapat mendaftarkan host demo. Origin harus HTTPS; server HTTP bootstrap lokal tetap untuk health/development non-auth sampai proxy HTTPS disiapkan.
+
+```powershell
+uv run --locked --project backend airport-assistant-auth-setup --demo-host localhost
+```
+
+Sender nyata belum dipasang, sehingga API normal memberi503 untuk permintaan kirim kode. Controlled sender hanya ada di tes; tidak ada debug endpoint untuk mengambil OTP. Login staf dan pemindahan riwayat/draf bukan bagian AUTH-01.

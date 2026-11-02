@@ -13,7 +13,7 @@ from airport_assistant.composition import database_loop_factory
 from airport_assistant.database_config import MigrationDatabaseSettings, RuntimeDatabaseSettings, load_database_settings, validate_same_target
 from airport_assistant.infrastructure.database.connections import RuntimeDatabase
 from airport_assistant.infrastructure.database.migrations import create_migration_engine, migrate
-from airport_assistant.infrastructure.database.provisioning import RUNTIME_ROLE, POLICY_ROLE, prepare_roles, enable_login, runtime_url
+from airport_assistant.infrastructure.database.provisioning import RUNTIME_ROLE, POLICY_ROLE, prepare_roles, prepare_auth_owner, enable_login, runtime_url
 
 
 def main():
@@ -36,6 +36,7 @@ def main():
             phase="role_setup"
             with engine.begin() as connection:
                 prepare_roles(connection)
+                prepare_auth_owner(connection)
             phase="migration"
             revision=migrate(direct,runtime_role=RUNTIME_ROLE,policy_role=POLICY_ROLE)
             phase="login_setup"

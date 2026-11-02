@@ -64,22 +64,22 @@ class MigrationDatabaseSettings(BaseSettings):
         return value
 
 
-def load_database_settings(model, env_file: Path | None = Path(".env")):
+def load_database_settings(model, env_file: Path | None = Path(".env"), *, category="database"):
     try:
         if env_file is not None and not env_file.is_file():
-            raise ConfigurationError("Database configuration file not found.")
+            raise ConfigurationError(f"{category.capitalize()} configuration file not found.")
         return model(_env_file=env_file, _env_file_encoding="utf-8")
     except ValidationError as exc:
         public_names = {}
         for name, field in model.model_fields.items():
-            public = field.validation_alias or "APP_DB_" + name.upper()
+            public = field.validation_alias or model.model_config.get("env_prefix","") + name.upper()
             public_names[name] = public
             public_names[public] = public
         fields = sorted({public_names[error["loc"][0]] for error in exc.errors(include_input=False)
                          if error["loc"] and error["loc"][0] in public_names})
-        raise ConfigurationError("Missing or invalid database configuration: " + ", ".join(fields)) from None
+        raise ConfigurationError(f"Missing or invalid {category} configuration: " + ", ".join(fields)) from None
     except (OSError, UnicodeError):
-        raise ConfigurationError("Database configuration file could not be read.") from None
+        raise ConfigurationError(f"{category.capitalize()} configuration file could not be read.") from None
 
 
 def validate_same_target(runtime: RuntimeDatabaseSettings, migration: MigrationDatabaseSettings) -> None:

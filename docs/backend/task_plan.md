@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03 dan DB-04 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -309,3 +309,17 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Panduan migration_workflow.md mencakup PK/FK/index/RLS, add-then-link FK, expand/backfill/contract, batas transactional runner, recovery dan bukti upgrade. Tidak mengklaim backfill skala besar, rolling release, backup/restore atau fitur bisnis berikutnya sudah diuji.
 
 - Review QA: **lulus tanpa temuan material**. Suite independen **201 passed**, wheel resources/template terverifikasi, fixture0003 tidak masuk paket produksi, dan unit migration11tes lulus pada paket hasil build. Smoke app aktual: current dan upgrade tetap revision0002, sembilan tabel fondasi plus history utuh, tidak ada tabel/kolom demonstrasi.
+
+
+## Catatan pelaksanaan AUTH-01
+
+**Status: selesai - 2 November 2026.**
+
+- Revision0003_customer_auth menambah sesi, challenge dan persisted rate counter dengan ENABLE/FORCE RLS. Auth-owner NOLOGIN/non-BYPASS mendapat hak minimum, runtime hanya EXECUTE operasi terbatas. Token/CSRF/OTP memakai keyed digest dengan tag/tenant terpisah; secret di luar DB.
+- API HTTPS/same-origin dengan cookie __Host- Secure/HttpOnly untuk sesi, readable CSRF cookie yang terikat hash/header, penolakan duplicate Origin/Host/cookie/header, response no-store dan DTO tanpa token/hash/role staf.
+- Verifikasi terikat origin-session/tenant/CSRF/purpose, TTL dan bounded attempts. Atomic consume/contact binding/tokenrotation+revocation, parallel contact verification satu principal, expired/replayed/wrongbrowser/wrongtenant ditolak. NULL hash bukan kecocokan.
+- Regresi akhir **253 passed** dalam221.23detik dengan lima flag Neon aktif; database/API nyata, delivery hanya adapter terkontrol dalam tes. Provider nyata/MAIL-05 belum lulus dan default challenge API503 tanpa sender. Tidak ada OTP debug endpoint atau secret pada output/Git.
+- Review QA independen: lulus tanpa temuan material tersisa; full suite253passed, pemeriksaan wheel35tes, patch Origin13tes dan latest migration/flow/ACL2tes lulus. Kontrak bootstrap CSRF diselaraskan dengan implementasi.
+- Ekspor tracked files dan instalasi wheel non-editable: **153 passed, 100 skipped** dalam mode offline; konfigurasi contoh serta live HTTP health/404/405/chunked413/request-ID lulus. Tes Neon hanya dilewati pada mode offline tersebut.
+- Setup app aktual menerapkan revision0003_customer_auth, menyiapkan auth-owner dan metadata demo localhost. SESSION_SECRET dihasilkan/dipertahankan dan flag diaktifkan oleh script internal; .env tidak ditampilkan. Smoke HTTPS-ASGI terhadap runtime Neon lulus: bootstrap200, me200, tanpa sender503, logout204, revoked401. Tidak ada email dikirim.
+- AUTH-02 history/draft adoption dan AUTH-03 staff login tetap belum dimulai. Panduan setup, TLS/proxy, rate/expiry, batas delivery dan pekerjaan lanjutan ada di [authentication.md](authentication.md).
