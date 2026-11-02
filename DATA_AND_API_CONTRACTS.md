@@ -84,6 +84,14 @@ Contoh booking terotorisasi:
 
 Transaksi mengembalikan reference, booking_reference, currency, amount_minor, currency_exponent, status, refund_status jika tersedia, source_updated_at dan observed_at. Status tidak dikenal dinormalisasi sebagai unknown dengan label sumber terbatas; tidak dikonversi menjadi paid/failed. payment instructions URL hanya dari sumber terverifikasi dengan allowlist dan expiry jika tersedia. Tidak ada endpoint source POST/PATCH untuk pembayaran atau perwakilan dalam aplikasi.
 
+### Perincian SRC-01 yang executable
+
+Service mandiri reference_service menyediakan lima endpoint GET di atas, dengan SQLite read-only terpisah dan fixture fiktif. Credential Bearer dan konteks signed HMAC singkat diperlukan bersamaan; konteks tenant/subject ditetapkan backend. Protokol byte, TTL/replay, pagination dan demo client ada pada [reference source guide](reference_service/README.md). Header identitas publik tidak menjadi caller.
+
+Grant booking:read tidak memberi payment read. Transaksi minimal membutuhkan payment_status:read; currency/amount_minor/currency_exponent/refund_status hanya ada dengan payment_details:read. booking_reference pada transaksi hanya ditampilkan jika booking juga berhak dibaca. List melalui booking membutuhkan booking grant dan menyaring setiap transaksi sebelum pagination. Policy hanya versi persis dari booking berhak; relasi hanya milik subject caller. List memakai items,next_cursor dengan default20/maksimum100, cursor signed dan terikat tenant/subject/filter/limit/generation dataset. Unknown status tetap unknown; tidak ada URL instruksi pembayaran pada fixture ini.
+
+SRC-01 membuktikan sumber mandiri. Konektor aplikasi dan pemetaan principal/source_subject_ref tetap SRC-02; grants/security labels data turunan tetap SRC-03A/B.
+
 ## 4 Endpoint portal dan identitas
 
 | Endpoint | Akses dan kontrak |

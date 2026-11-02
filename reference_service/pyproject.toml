@@ -1,0 +1,28 @@
+[project]
+name = "airport-reference-service"
+version = "0.1.0"
+description = "Read-only fictional airport booking and transaction source"
+requires-python = ">=3.13,<3.14"
+dependencies = ["fastapi>=0.115,<1", "pydantic-settings>=2.6,<3", "python-dotenv>=1.0,<2", "uvicorn>=0.32,<1", "httpx>=0.28,<1", "tzdata>=2025.1,<2027"]
+
+[project.scripts]
+airport-reference-api = "airport_reference.main:main"
+airport-reference-setup = "airport_reference.setup:main"
+airport-reference-demo = "airport_reference.demo:main"
+
+[dependency-groups]
+dev = ["pytest>=8.3,<10"]
+
+[build-system]
+requires = ["hatchling>=1.26,<2"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/airport_reference"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"fixtures/dataset.json" = "airport_reference/fixtures/dataset.json"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"

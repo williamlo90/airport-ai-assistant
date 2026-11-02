@@ -25,6 +25,7 @@ Booking creation, payment processing, refund execution, and delegation managemen
 | [Customer authentication](docs/backend/authentication.md) | Session lifecycle, email challenges, cookie/CSRF protection, setup, and delivery limits. |
 | [Staff authentication](docs/backend/staff_authentication.md) | Provisioned staff login, live membership scopes, credential rotation, and password worker limits. |
 | [Shared authorization](docs/backend/authorization.md) | Trusted request identities, exact object binding, ownership and membership scopes, and integration requirements. |
+| [Reference source](reference_service/README.md) | Standalone source setup, signed API protocol, fictional actors/data, demo client, and tests. |
 | [Migration workflow](docs/backend/migration_workflow.md) | Revision creation, constraints/RLS, cyclic FKs, expand/contract, and upgrade verification. |
 | [Backend task plan](docs/backend/task_plan.md) | Implementation order, prerequisites, completion criteria, review evidence, and ownership exercises. |
 
@@ -37,6 +38,8 @@ AUTH-01 adds anonymous/customer sessions, browser-bound email challenges, atomic
 AUTH-03 adds local password login for provisioned staff, live organization/queue membership checks, credential rotation, and bounded Argon2id workers. Customer verification cannot create staff sessions. This adapter does not implement SSO or MFA. See the [staff authentication guide](docs/backend/staff_authentication.md).
 
 AUTH-04 centralizes request identity and object authorization for tenant, owner, organization, and queue scopes. The identity endpoints use the shared service; protected object behavior is verified with fixture projections and real Neon identities. Case/source/state enforcement follows each feature.
+
+SRC-01 provides an independent read-only reference API with SQLite and fictional parking/lounge bookings, transactions, historical policies, and explicit resource grants. Its 96 tests pass, including normal TCP requests and the signed local demo client. The assistant connector follows in SRC-02.
 
 The worker remains a placeholder. Conversation/draft adoption, AI, and case workflows follow the task plan.
 

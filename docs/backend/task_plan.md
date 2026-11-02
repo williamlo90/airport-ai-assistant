@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; **AUTH-04 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01, DB-02, DB-03, DB-04 dan AUTH-01 selesai**; **AUTH-03 selesai**; **AUTH-04 selesai**; **SRC-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -354,3 +354,18 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Wheel non-editable dari ekspor tracked files: **207 passed, 160 skipped** untuk mode offline; konfigurasi contoh dan live HTTP health/404/405/chunked413/request-ID lulus. Skips hanya integrasi Neon yang opt-in.
 - QA independen: lulus tanpa temuan material tersisa, mencakup36unit terbaru, target suite96tes dengan22integrasi Neon, pemeriksaan wheel/production OpenAPI, exact key binding, defaultdeny, scope role dan dokumentasi. Seluruh perubahan teks valid UTF-8 dan diff check bersih.
 - Smoke app aktual HTTPS-ASGI/runtime Neon lulus missing401, bootstrap/me200 anonim, staffme401, defaultsender503, logout204 dan revoked401. AccessService terpasang dan router fixture tidak ada pada production OpenAPI. Current schema tetap0004_staff_auth; tidak ada migration/grant baru, credential/env tidak diubah dan email tidak dikirim.
+
+
+## Catatan pelaksanaan SRC-01
+
+**Status: selesai - 2 November 2026.**
+
+- Package/API sumber mandiri di reference_service, dengan manifest/lock/tes dan SQLite terpisah. Dataset fiktif dua tenant, booking parkir/lounge, transaksi, policy historis serta owner/perwakilan/beneficiary/payer/outsider.
+- Lima GET sesuai kontrak; Bearer+HMACcaller tenant/subject/TTL/rawpath/query, grants per resource, status/details/payment-link redaction, policy versi tepat dan own relations. Cursor terikat scope/generation dan filtering izin sebelum pagination. Tidak ada API write booking/payment/relasi.
+- Storage mode=ro/query_only dengan snapshot transaksi request; seeder tervalidasi/FK/integrity/publikasi offline. Setup idempotent menghasilkan key lokal internal tanpa menampilkan secret; demo memakai normal HTTP authentication, localhost saja dan menolak redirect/proxy environment.
+- Panduan [reference_service/README.md](../../reference_service/README.md). Tidak ada perubahan schema/credential/env aplikasi Neon. SRC-02 konektor dan SRC-03A grants/security labels sisi aplikasi belum dimulai.
+
+- Suite sumber akhir **96 passed**; instalasi wheel non-editable dari ekspor tracked files mengulang **96 passed** dalam6.60detik, termasuk normal TCP API/demo, packaged fixture, setup/config dan ketiga console entry points. Tidak ada env/SQLite proyek ikut ekspor.
+- Audit QA independen lulus tanpa temuan material tersisa; suite96tes diulang dan race publikasi file baru diregresi sehingga target yang muncul bersamaan tidak ditimpa. Reset memakai lock kooperatif dan lifecycle stop/reset/restart; tidak mengklaim hot reseed atau perlindungan dari administrator filesystem yang tidak dipercaya.
+- Setup sumber lokal aktual berhasil menghasilkan key internal dan SQLite fiktif terpisah. Smoke TCP aktual lulus health, unsigned401, owner booking200, representative payment404, beneficiary status-only200, payer tanpa booking link200, outsider404. Key tidak tampil pada output/log dan server smoke sudah dihentikan.
+- Regresi backend tanpa perubahan source: **207 passed, 160 skipped** (tes Neon opt-in). Suite live367 dari AUTH-04 tetap bukti terakhir untuk backend yang tidak berubah; tidak menjalankan ulang Neon untuk perubahan source mandiri ini. SRC-02/SRC-03A tetap belum dimulai.
