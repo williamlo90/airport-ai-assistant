@@ -1,0 +1,53 @@
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*.json
+service-account*.json
+.secrets/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# JavaScript and build outputs
+node_modules/
+dist/
+build/
+.next/
+.vite/
+coverage/
+
+# Local state, uploads, logs, and sensitive test artifacts
+*.log
+*.sqlite
+*.sqlite3
+local/
+uploads/
+backups/
+test-results/
+playwright-report/
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+kubeconfig
+kubeconfig.*
+
+# Editor and OS state
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
