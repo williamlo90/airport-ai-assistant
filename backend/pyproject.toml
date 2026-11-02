@@ -4,9 +4,11 @@ version = "0.1.0"
 description = "Modular backend for Airport AI Assistant"
 requires-python = ">=3.13,<3.14"
 dependencies = [
+    "alembic>=1.14,<2",
     "certifi>=2025.1,<2027",
     "fastapi>=0.115,<1",
     "psycopg[binary,pool]>=3.2,<4",
+    "sqlalchemy>=2.0,<2.1",
     "pydantic-settings>=2.6,<3",
     "uvicorn>=0.32,<1",
 ]
@@ -14,6 +16,7 @@ dependencies = [
 [project.scripts]
 airport-assistant-api = "airport_assistant.main:main"
 airport-assistant-db-check = "airport_assistant.database_check:main"
+airport-assistant-migrate = "airport_assistant.migrate:main"
 
 [dependency-groups]
 dev = [
@@ -27,6 +30,9 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/airport_assistant"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"migrations" = "airport_assistant/_migrations"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

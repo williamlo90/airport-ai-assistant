@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. Schema bisnis, autentikasi, worker executable dan route bisnis belum tersedia.
+BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. DB-02 menambahkan tabel fondasi tenant/identitas; schema alur layanan, autentikasi, worker executable dan route bisnis belum tersedia.
 
 ## Prasyarat
 
@@ -135,3 +135,32 @@ try { uv run --locked --project backend pytest backend/tests/integration/test_ne
 Secara default tes ini skipped. `DB_TEST_ENV_FILE` dapat menunjuk file konfigurasi pengujian lain; CLI juga mendukung --env-file atau --no-env-file. CLI API dan DB-check memilih selector event loop pada Windows untuk Psycopg async; runner ASGI lain perlu konfigurasi loop yang setara.
 
 Rujukan: [Psycopg pools](https://www.psycopg.org/psycopg3/docs/advanced/pool.html), [async connections](https://www.psycopg.org/psycopg3/docs/advanced/async.html), [Neon pooling](https://neon.com/docs/connect/connection-pooling).
+
+## Migration fondasi DB-02
+
+Riwayat schema memakai Alembic dengan SQLAlchemy Core dan Psycopg direct connection. Source migration ada di `backend/migrations/`, ikut dibundel pada wheel sebagai resource paket. Tidak ada URL/credential pada file konfigurasi Alembic.
+
+Dari root repository, dengan server lama dihentikan bila mengunci virtualenv:
+
+```powershell
+uv sync --locked --project backend
+uv run --locked --project backend airport-assistant-migrate current
+uv run --locked --project backend airport-assistant-migrate upgrade
+```
+
+Script memuat hanya DATABASE_DIRECT_URL melalui konfigurasi migration; --env-file dan --no-env-file tersedia. Output hanya status/revision. Upgrade menambahkan schema app dan revision `0001_foundation`: sembilan tabel fondasi tenant/identitas beserta constraints, indexes dan trigger timestamp/timezone. Tidak menambahkan akun, data pelanggan, sesi, kasus atau role runtime.
+
+Seluruh upgrade, version tracking dan pembuatan schema dilakukan dalam satu transaksi. Advisory transaction lock mengurutkan runner untuk schema yang sama, statement timeout 30 detik dan lock timeout 3 detik. Menjalankan ulang upgrade pada head tidak membuat ulang tabel atau menghapus data. Schema yang berkonflik tidak di-stamp atau dihapus otomatis; review drift sebelum melanjutkan. Tidak ada perintah downgrade destruktif.
+
+Uji migration dari kosong memakai schema sementara acak `db02_test_<uuid>` pada database pengujian yang sama. Setelah tes, schema tepat tersebut dihapus dalam finally; app tidak dihapus. Constraint diuji memakai role migration untuk memisahkan bukti integritas relasi dari bukti RLS/runtime DB-03.
+
+```powershell
+$env:RUN_NEON_MIGRATION_TESTS = '1'
+try { uv run --locked --project backend pytest backend/tests/integration/test_foundation_migration.py } finally { Remove-Item Env:RUN_NEON_MIGRATION_TESTS }
+```
+
+Aktifkan RUN_NEON_DB_TESTS=1 juga untuk regresi koneksi DB-01 pada full suite. Tanpa flag, tes Neon dilewati. DB_TEST_ENV_FILE dapat menunjuk konfigurasi pengujian lain. Bila proses dimatikan paksa saat cleanup, tinjau hanya schema dengan prefix db02_test_ milik run pengujian tersebut; jangan menghapus app.
+
+Rujukan: [Alembic connection sharing](https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands), [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html).
+
+Verifikasi DB-02 pada 2 November 2026: **144 tes live lulus**, audit QA independen lulus. Schema app sudah ber-revision `0001_foundation`; upgrade ulang/current dan metadata sembilan tabel fondasi diverifikasi. RLS serta role runtime belum menjadi klaim DB-02.

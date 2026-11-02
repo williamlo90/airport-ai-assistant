@@ -20,15 +20,17 @@ INTERNAL_ALLOWED = {
     "main": {"api", "config", "composition", "database_config"},
     "worker": {"modules", "config", "composition"},
     "database_check": {"composition", "config", "database_config", "infrastructure"},
+    "migrate": {"config", "database_config", "infrastructure"},
 }
 EXTERNAL_ALLOWED = {
     "api": {"fastapi", "starlette", "pydantic"},
     "modules": set(),
     "integrations": {"httpx"},
-    "infrastructure": {"psycopg", "psycopg_pool", "certifi"},
+    "infrastructure": {"psycopg", "psycopg_pool", "certifi", "sqlalchemy", "alembic"},
     "main": {"fastapi", "uvicorn"},
     "worker": set(),
     "database_check": set(),
+    "migrate": set(),
 }
 IO_MODULES = {"socket", "urllib", "http", "sqlite3", "subprocess", "dbm", "shelve"}
 

@@ -133,16 +133,16 @@ Field kontrak `verified_email`/`verified_at` berasal dari contacts. Memisahkan t
 | active | BOOLEAN | NN |
 | version | INTEGER | NN |
 
-UQ `(tenant_id,principal_id,organization_id)`. **Principal M ↔ N organizations melalui memberships**. Kombinasi peran didukung melalui tabel berikut, bukan satu role tunggal.
+UQ `(tenant_id,principal_id,organization_id)` dan `(tenant_id,id,organization_id)` untuk FK organisasi pada membership_queues. **Principal M ↔ N organizations melalui memberships**. Kombinasi peran didukung melalui tabel berikut, bukan satu role tunggal.
 
 ### membership_roles dan membership_queues
 
 | Tabel | Kolom tambahan | Aturan |
 | --- | --- | --- |
 | membership_roles | membership_id UUID NN, role TEXT NN | FK → staff_memberships; CHECK role cs/supervisor/admin; UQ `(tenant_id,membership_id,role)` |
-| membership_queues | membership_id UUID NN, queue_id UUID NN | FK → staff_memberships dan service_queues; UQ `(tenant_id,membership_id,queue_id)` |
+| membership_queues | membership_id UUID NN, queue_id UUID NN, organization_id UUID NN | FK `(tenant_id,membership_id,organization_id)` → staff_memberships dan `(tenant_id,queue_id,organization_id)` → service_queues; UQ `(tenant_id,membership_id,queue_id)` |
 
-Keduanya tetap memiliki common id/PK. API `roles` dan `allowed_queue_ids` merupakan hasil penggabungan tabel penghubung. Queue membership harus berada pada organisasi membership; layanan identitas memvalidasi sebelum commit dengan pemeriksaan integritas database lintas tabel pada migration. Kombinasi admin+CS harus diberikan eksplisit dan diaudit; admin saja tidak memperoleh akses isi kasus.
+Keduanya tetap memiliki common id/PK. API `roles` dan `allowed_queue_ids` merupakan hasil penggabungan tabel penghubung. organization_id pada membership_queues harus cocok dengan organisasi membership dan queue melalui dua FK tiga kolom. Ini menolak pasangan lintas organisasi serta perubahan parent yang merusak relasi, tanpa trigger lintas tabel. Layanan identitas tetap memvalidasi kewenangan sebelum commit. Kombinasi admin+CS harus diberikan eksplisit dan diaudit; admin saja tidak memperoleh akses isi kasus.
 
 ### sessions
 
@@ -636,3 +636,12 @@ Schema dianggap siap diimplementasikan setelah audit konsistensi; kualitas runti
 - DELIVERY/PERF: migration, backup/restore, retention, query plan, resource, pool serta beban.
 
 Hasil yang belum dijalankan dicatat sebagai belum diuji, bukan lulus. Nomor kasus ditutup atau email diterima provider bukan bukti kepuasan pelanggan maupun kesiapan production seluruh sistem.
+
+
+## 17 Migration fondasi DB-02
+
+Revision Alembic `0001_foundation` mencakup sembilan tabel: tenants, tenant_hosts, organizations, service_queues, principals, contacts, staff_memberships, membership_roles dan membership_queues. Tabel schema_migrations menyimpan revision; bukan entitas pengguna.
+
+Seluruh ID memakai default gen_random_uuid(), timestamps memakai CURRENT_TIMESTAMP dan trigger updated_at. Batas nama 200 karakter, source_subject_ref 256, slug 63 dan hostname 253 diterapkan bersama pemeriksaan nonkosong/format. Email memakai batas 320 dan guard dasar; validasi email lengkap serta lookup canonical tetap milik layanan identitas, tanpa menghapus plus-tag/titik secara universal. Bahasa wajib array satu dimensi nonkosong berisi id/en tanpa elemen NULL. Timezone diperiksa ke pg_catalog.pg_timezone_names lewat trigger ber-search_path tetap.
+
+Migration dijalankan melalui direct credential dalam satu transaksi, termasuk schema/version. Advisory transaction lock per schema mencegah dua runner meng-upgrade bersamaan. Migration gagal di-rollback; tidak menggunakan CREATE TABLE IF NOT EXISTS untuk menutupi drift. Tidak ada runtime/public access grant atau seed pelanggan; least privilege/RLS mengikuti DB-03. Downgrade destruktif tidak tersedia melalui CLI; koreksi schema membutuhkan recovery migration yang direview.

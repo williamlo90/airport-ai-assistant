@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03 dan DB-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01, BE-02, BE-03, DB-01 dan DB-02 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -263,3 +263,17 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - Batas kelulusan: ini bukti koneksi/transaksi, bukan schema bisnis, least privilege runtime, RLS, isolasi tenant atau performa skala. Implementasi dan pengujian tersebut mengikuti DB-02/DB-03 serta tahap terkait.
 
 - QA penutupan: **lulus tanpa temuan material**. QA mengulang CLI live (exit 0, probe table removed) dan suite integrasi aktif secara independen: **108 passed**. Credential hanya dimuat dalam proses testing, dengan output audit terbatas pada hasil tersanitasi.
+
+
+## Catatan pelaksanaan DB-02
+
+**Status: selesai - 2 November 2026.**
+
+- Alembic 1.20.1 / SQLAlchemy 2.0.55 dipin; revision `0001_foundation` membuat sembilan tabel fondasi dan version table. Migration resources disertakan di wheel; direct credential hanya dimuat script.
+- PK/FK composite tenant, unique/partial unique, role/service/language checks, tenant timezone trigger, timestamp defaults/update trigger dan indexes diterapkan. membership_queues memuat organization_id dan dua FK tiga kolom untuk konsistensi organisasi pada insert maupun update parent.
+- Upgrade/version/schema dibungkus satu transaksi dan advisory transaction lock. CLI aman menyediakan upgrade/current, tanpa destructive downgrade atau stamping schema yang berkonflik.
+- Full suite dengan RUN_NEON_DB_TESTS=1 dan RUN_NEON_MIGRATION_TESTS=1: **144 passed** pada Neon. Tes membuat schema acak, migrasi dari kosong, mengulang upgrade, memeriksa pelanggaran relasi dan field, serta rollback DDL/version/schema ketika revision gagal. Schema pengujian dibersihkan di finally.
+- Instalasi wheel non-editable dari ekspor tracked files: **115 passed, 29 skipped** untuk mode offline; resource revision dan regresi HTTP/bootstrap lulus. Credential tidak ikut ekspor/commit dan output live ditangkap script lalu dibatasi ke summary.
+- Schema app terpasang revision `0001_foundation`: upgrade, current, dan repeat upgrade semuanya PASS. Pemeriksaan metadata memastikan sembilan tabel fondasi plus schema_migrations tersedia. Tidak ada seed pelanggan, grants runtime atau RLS; DB-03 menguji role/tenant policy terpisah.
+
+- Review QA: **lulus tanpa temuan material**. QA mengulang live suite **144 passed** serta clean wheel **115 passed, 29 skipped**, memverifikasi migration resources dipakai dari paket terpasang. Bukti penerapan app dicatat setelah audit kode dan pengujian schema terisolasi lulus.
