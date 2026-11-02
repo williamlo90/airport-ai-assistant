@@ -18,6 +18,15 @@ Spesifikasi desain yang menurunkan [PRODUCT_CONTRACT.md](PRODUCT_CONTRACT.md) da
 
 Error utama: 401 AUTH_REQUIRED; 403 ACTION_FORBIDDEN; 404 RESOURCE_NOT_FOUND; 409 VERSION_CONFLICT/IDEMPOTENCY_CONFLICT/DRAFT_CHANGED; 410 DRAFT_EXPIRED; 422 VALIDATION_ERROR; 429 RATE_LIMITED; 502 SOURCE_INVALID_RESPONSE; 503 SOURCE_UNAVAILABLE. Kegagalan sumber bukan 404 booking dan bukan status pembayaran gagal.
 
+### Fondasi HTTP (BE-02)
+
+- Endpoint operasional `GET /health/live` berada di luar base path bisnis dan mengembalikan `{"status":"ok","scope":"process"}`. Tidak memeriksa readiness database/provider. Belum ada endpoint readiness.
+- `X-Request-ID`: UUID valid tunggal dinormalisasi; header lain diganti UUID server. Error body dan header memakai ID sama. ID bukan dasar otorisasi.
+- Batas body awal 1 MiB melalui `APP_MAX_REQUEST_BODY_BYTES` (1 byte sampai 16 MiB). Byte aktual diperiksa juga tanpa Content-Length; kelebihan memberi 413 PAYLOAD_TOO_LARGE. Framing Content-Length invalid/ganda/tidak cocok yang mencapai ASGI memberi 400 BAD_REQUEST. Penolakan framing oleh server HTTP sebelum ASGI berada di luar envelope aplikasi.
+- Schema mutasi mewarisi `RequestModel`: extra fields ditolak, tipe strict, string default maksimum 4096 karakter. Batas field/domain lebih rinci ditentukan bersama endpoint fitur. Batas transport ini harus disesuaikan saat attachment multipart dibuat; tidak mengganti batas 5 MiB/file pada kontrak attachment.
+- Routing 405 memberi METHOD_NOT_ALLOWED; exception tak terduga memberi 500 INTERNAL_ERROR. Keduanya mengikuti envelope error. 500 tidak menginstruksikan retry otomatis, karena hasil side effect belum tentu diketahui. Header Allow tetap tersedia pada 405.
+- HTTPException biasa memakai pesan server terkontrol berdasarkan status; exception detail tidak dipublikasikan. Kode domain yang berbagi status (misalnya konflik draft/idempotency) ditambahkan melalui error domain terkontrol bersama fitur terkait.
+
 ## 2 Model data aplikasi
 
 Semua tabel tenant-scoped memiliki tenant_id NOT NULL, created_at, updated_at, unique `(tenant_id,id)` dan composite FK untuk relasi tenant. RLS dan repository checks sama-sama diterapkan. Audit/change events tidak diedit melalui endpoint biasa.

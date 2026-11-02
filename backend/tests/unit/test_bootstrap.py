@@ -14,7 +14,7 @@ from airport_assistant.main import create_app
 
 @pytest.fixture(autouse=True)
 def isolate_environment(monkeypatch):
-    for name in ("APP_ENV", "APP_HOST", "APP_PORT"):
+    for name in ("APP_ENV", "APP_HOST", "APP_PORT", "APP_MAX_REQUEST_BODY_BYTES"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -43,6 +43,9 @@ def test_missing_required_environment_has_safe_diagnostic():
         ("APP_PORT", "secret-sentinel"),
         ("APP_PORT", "65536"),
         ("APP_HOST", "secret-sentinel"),
+        ("APP_MAX_REQUEST_BODY_BYTES", "secret-sentinel"),
+        ("APP_MAX_REQUEST_BODY_BYTES", "0"),
+        ("APP_MAX_REQUEST_BODY_BYTES", "16777217"),
     ],
 )
 def test_invalid_environment_never_prints_values(monkeypatch, field, value):
@@ -71,7 +74,7 @@ def test_factory_serves_openapi_without_external_services():
     response = asyncio.run(request())
     assert response.status_code == 200
     assert response.json()["info"]["title"] == "Airport AI Assistant API"
-    assert response.json()["paths"] == {}
+    assert set(response.json()["paths"]) == {"/health/live"}
 
 
 def test_production_does_not_expose_development_docs():

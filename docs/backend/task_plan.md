@@ -1,6 +1,6 @@
 # Rencana tugas backend Airport AI Assistant
 
-Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
+Dokumen ini mengurutkan pekerjaan backend: apa yang dibuat, apa prasyaratnya, dan bukti apa yang dibutuhkan sebelum tugas disebut selesai. **BE-01 dan BE-02 selesai**; tugas lainnya **belum mulai**. Status implementasi dan bukti pemeriksaan dicatat di bagian akhir dokumen.
 
 Acuannya adalah [product contract](../../PRODUCT_CONTRACT.md), [arsitektur sistem](../../ARCHITECTURE.md), [arsitektur backend](backend_architecture.md), [schema database](database_schema.md), [kontrak data dan API](../../DATA_AND_API_CONTRACTS.md), serta [test plan](../../TEST_PLAN.md).
 
@@ -203,7 +203,7 @@ Dokumentasi dan catatan pribadi boleh dipakai. Bantuan AI diberikan bertingkat: 
 
 ## Tugas pertama yang dikerjakan
 
-Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02 dan tugas lainnya belum dimulai.
+Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02 melanjutkan fondasi HTTP; tugas lainnya belum dimulai.
 
 ## Catatan pelaksanaan BE-01
 
@@ -217,3 +217,17 @@ Implementasi dimulai dari **BE-01: backend minimal yang bisa dijalankan**. BE-02
 - API saat ini tidak memerlukan credential atau koneksi provider. Health endpoint, database, worker, identitas dan workflow bisnis mengikuti tugas berikutnya.
 
 - Review QA: **lulus tanpa temuan material**. QA meninjau diff dan menjalankan ulang 11 tes, instalasi bersih non-editable, validasi konfigurasi melalui console script, serta startup HTTP. Bukti instalasi bersih juga lulus pada pemeriksaan independen QA.
+
+
+## Catatan pelaksanaan BE-02
+
+**Status: selesai - 2 November 2026.**
+
+- Implementasi: `GET /health/live`, envelope error, normalisasi/generasi UUID request ID, batas body ASGI berdasarkan byte aktual, serta dasar schema mutasi strict/extra forbid. CLI mematikan access log URL mentah.
+- Kontrak HTTP dan instruksi pengujian diperbarui pada `DATA_AND_API_CONTRACTS.md` dan `backend/README.md`. Tidak ada route bisnis atau route dummy untuk pengujian yang dipasang pada aplikasi production.
+- Lingkungan: Windows, Python 3.13.6 dan uv 0.13.6; dependency tetap memakai lockfile BE-01 tanpa penambahan paket.
+- `backend/.venv/Scripts/python.exe -m pytest backend/tests`: **48 passed** (14 bootstrap, 34 boundary). Meliputi schema invalid/extra fields/string limits, JSON rusak, error 404/405/422/500, header protokol, redaksi exception/log, request ID pada 20 request bersamaan, batas byte persis/berlebih, panjang body palsu/ganda/invalid, serta kegagalan sesudah headers terkirim.
+- Ekspor bersih tracked files ke direktori sementara: instalasi wheel melalui `uv sync --locked --no-editable --project backend`, **48 tes lulus**, contoh konfigurasi valid. HTTP sungguhan memeriksa health 200, header UUID ternormalisasi, error 404 dan 405 beserta Allow, dan transfer chunked tanpa Content-Length ditolak 413 pada batas body konfigurasi. Query sentinel tidak muncul pada log server; proses dihentikan setelah uji.
+- Batas bukti: health hanya proses; belum readiness database/provider. Proteksi transport HTTP sebelum ASGI, slow clients, proxy/deployment serta upload attachment belum menjadi klaim BE-02. Schema mutasi fitur dan kode error domain menyusul bersama implementasi masing-masing.
+
+- Review QA: **lulus tanpa temuan material**. QA menjalankan ulang 48 tes dan helper instalasi bersih/live HTTP. Probe tambahan pada StreamingResponse FastAPI yang gagal setelah headers membuktikan hanya satu response.start, request ID tetap ada, dan exception yang keluar tersanitasi tanpa sentinel privat.

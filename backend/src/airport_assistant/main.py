@@ -7,6 +7,10 @@ from pathlib import Path
 import uvicorn
 from fastapi import FastAPI
 
+from airport_assistant.api.boundary import RequestBoundary
+from airport_assistant.api.errors import install_error_handlers
+from airport_assistant.api.health import router as health_router
+from airport_assistant.api.schemas import ErrorResponse
 from airport_assistant.config import ConfigurationError, Settings, load_settings
 
 
@@ -19,8 +23,12 @@ def create_app(settings: Settings) -> FastAPI:
         docs_url="/docs" if development_docs else None,
         redoc_url=None,
         openapi_url="/openapi.json" if development_docs else None,
+        responses={status: {"model": ErrorResponse} for status in (400, 404, 405, 413, 422, 500)},
     )
     app.state.settings = settings
+    install_error_handlers(app)
+    app.include_router(health_router)
+    app.add_middleware(RequestBoundary, max_body_bytes=settings.max_request_body_bytes)
     return app
 
 
@@ -44,7 +52,8 @@ def main() -> None:
     if args.check_config:
         print("Configuration valid.")
         return
-    uvicorn.run(create_app(settings), host=settings.host, port=settings.port)
+    # Default Uvicorn access logs include raw paths/query strings.
+    uvicorn.run(create_app(settings), host=settings.host, port=settings.port, access_log=False)
 
 
 if __name__ == "__main__":
