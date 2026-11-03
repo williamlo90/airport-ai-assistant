@@ -2,7 +2,8 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { createBootstrap } from './app/config/publicSite';
-import './app/bootstrap.css';
+import './styles/tokens.css';
+import './styles/global.css';
 
 const container = document.getElementById('root');
 

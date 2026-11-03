@@ -1,0 +1,150 @@
+.header {
+  height: 88px;
+  padding: 0 max(24px, calc((100% - 1200px) / 2));
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--color-brand);
+  color: white;
+}
+.brand {
+  grid-column: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+  text-decoration: none;
+  color: inherit;
+  font-size: 21px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.brand img {
+  flex: none;
+}
+.brand small {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  margin-top: 4px;
+}
+.header .language {
+  grid-column: 3;
+  justify-self: end;
+  background: rgb(255 255 255 / 16%);
+  color: white;
+  flex: none;
+}
+.header .language:hover {
+  background: rgb(255 255 255 / 24%);
+}
+.header :focus-visible {
+  outline-color: #ffdc79;
+}
+.customer {
+  max-width: 1264px;
+  padding: 40px 32px 64px;
+  margin: auto;
+  min-width: 0;
+}
+.skip {
+  position: fixed;
+  left: 12px;
+  top: 8px;
+  z-index: 30;
+  transform: translateY(-200%);
+  padding: 12px;
+  background: white;
+  color: var(--color-text);
+}
+.skip:focus {
+  transform: none;
+}
+.workspace {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: calc(100dvh - 88px);
+  max-width: 1600px;
+  margin: auto;
+}
+.navigation {
+  background: white;
+  padding: 24px 16px;
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 8px;
+}
+.navigation button {
+  width: 100%;
+  justify-content: flex-start;
+}
+.staff {
+  padding: 32px;
+  min-width: 0;
+}
+.customer > * + *,
+.staff > * + * {
+  margin-top: 24px;
+}
+@media (max-width: 850px) {
+  .workspace {
+    display: block;
+  }
+  .navigation {
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .navigation button {
+    width: auto;
+  }
+  .staff {
+    padding: 24px;
+  }
+}
+@media (max-width: 600px) {
+  .header {
+    display: flex;
+    height: 72px;
+    padding: 0 16px;
+    gap: 8px;
+  }
+  .brand {
+    font-size: 16px;
+    gap: 8px;
+    min-width: 0;
+  }
+  .brand img {
+    width: 28px;
+    height: 28px;
+  }
+  .brand small {
+    font-size: 11px;
+  }
+  .header .language {
+    padding: 10px 12px;
+    font-size: 14px;
+    max-width: 145px;
+  }
+  .customer {
+    padding: 24px 16px 40px;
+  }
+  .staff {
+    padding: 24px 16px;
+  }
+  .workspace {
+    min-height: calc(100dvh - 72px);
+  }
+}
+@media (max-width: 359px) {
+  .brand img {
+    display: none;
+  }
+  .header .language {
+    max-width: 118px;
+    font-size: 13px;
+  }
+}

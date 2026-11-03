@@ -4,6 +4,8 @@ interface Messages {
   readonly preview: string;
   readonly readiness: string;
   readonly switchLanguage: string;
+  readonly skip: string;
+  readonly loadingPreview: string;
 }
 
 export const messages = {
@@ -12,12 +14,16 @@ export const messages = {
     readiness:
       'The frontend is running. Customer support screens are being prepared.',
     switchLanguage: 'Bahasa Indonesia',
+    skip: 'Skip to content',
+    loadingPreview: 'Loading component preview…',
   },
   id: {
     preview: 'Pratinjau pengembangan frontend',
     readiness:
       'Frontend sudah berjalan. Layar layanan pelanggan sedang disiapkan.',
     switchLanguage: 'English',
+    skip: 'Langsung ke konten',
+    loadingPreview: 'Memuat pratinjau komponen…',
   },
 } as const satisfies Record<Locale, Messages>;
 

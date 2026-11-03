@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import type { BootstrapState } from './config/publicSite';
 import { messages } from '../locales/messages';
 import type { Locale } from '../locales/messages';
+import { CustomerShell } from './shells/Shells';
+
+const CorePreview = import.meta.env.DEV
+  ? lazy(() => import('../dev/CorePreview'))
+  : null;
 
 export function App({ bootstrap }: { readonly bootstrap: BootstrapState }) {
   const [locale, setLocale] = useState<Locale>(
@@ -30,7 +35,6 @@ export function App({ bootstrap }: { readonly bootstrap: BootstrapState }) {
 
   const copy = messages[locale];
   const nextLocale = locale === 'en' ? 'id' : 'en';
-  const canSwitch = bootstrap.site.supportedLocales.includes(nextLocale);
 
   function switchLanguage() {
     // Only the allowlisted language changes. No actor, host or tenant is read from query.
@@ -40,16 +44,33 @@ export function App({ bootstrap }: { readonly bootstrap: BootstrapState }) {
     setLocale(nextLocale);
   }
 
+  if (
+    CorePreview &&
+    new URLSearchParams(window.location.search).get('preview') === 'components'
+  ) {
+    return (
+      <Suspense fallback={<p role="status">{copy.loadingPreview}</p>}>
+        <CorePreview
+          site={bootstrap.site}
+          locale={locale}
+          onLanguageChange={switchLanguage}
+        />
+      </Suspense>
+    );
+  }
+
   return (
-    <main className="bootstrap">
-      <p className="bootstrap-label">{copy.preview}</p>
-      <h1>{title}</h1>
-      <p role="status">{copy.readiness}</p>
-      {canSwitch && (
-        <button type="button" onClick={switchLanguage}>
-          {copy.switchLanguage}
-        </button>
-      )}
-    </main>
+    <CustomerShell
+      site={bootstrap.site}
+      languageLabel={copy.switchLanguage}
+      onLanguageChange={switchLanguage}
+      skipLabel={copy.skip}
+    >
+      <section className="bootstrap">
+        <p className="bootstrap-label">{copy.preview}</p>
+        <h1>{title}</h1>
+        <p role="status">{copy.readiness}</p>
+      </section>
+    </CustomerShell>
   );
 }

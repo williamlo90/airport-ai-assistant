@@ -1,0 +1,40 @@
+@font-face {
+  font-family: Tuffy;
+  src: url('/assets/fonts/Tuffy.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: Tuffy;
+  src: url('/assets/fonts/Tuffy_Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-display: swap;
+}
+:root {
+  --color-brand: #1863bc;
+  --color-brand-hover: #124f98;
+  --color-text: #000c20;
+  --color-muted: #536174;
+  --color-ground: #f1f4fa;
+  --color-surface: #fff;
+  --color-line: #dce2eb;
+  --color-control: #8797ac;
+  --color-danger: #982c28;
+  --color-danger-bg: #fff1ef;
+  --color-positive: #24673f;
+  --color-positive-bg: #eaf6ee;
+  --color-warning: #78450a;
+  --color-warning-bg: #fff5df;
+  --color-focus: #a96b00;
+  --font-body: Tuffy, Arial, sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;
+}
