@@ -36,6 +36,22 @@ Navigation helpers copy only supported language/topic/status/view and developmen
 
 Both development harnesses are excluded from production. The navigation harness is a routing exercise, not the C-02 customer page. Vite preview verifies SPA deep links locally; HTTPS proxy and API/asset404 separation remain FE-ENV-01 responsibilities.
 
+## HTTP transport foundation
+
+`src/api/client.ts` provides `createApiClient` without React/router dependencies. It is not mounted into the UI yet. Requests target API-relative paths under `/api/v1`, use same-origin browser cookies, no-store caching and redirect rejection, and never supply an Origin/tenant/principal/Authorization header. Origin is browser-managed. No provider key or environment file is read.
+
+Business calls require a captured `BoundarySnapshot`, an auth-owned `BoundaryPort`, and a feature-owned `isRelevant()` resource/sequence check. The snapshot proof is validated against the backend's43-character URL-safe CSRF contract. The transport checks epoch/boundary/proof before dispatch and after response/body parsing. It rejects old results and calls the invalidation port for an obsolete boundary or401. It never replaces the command's proof with the latest cookie. The auth coordinator must implement gate closure, cancellation, cross-tab signals and cache/input reset in FE-AUTH-01; an injected port is not that implementation.
+
+Session operations use a separate, fixed endpoint/method allowlist and a coordinator-issued `SessionPermit`. The coordinator must close the business gate before bootstrap/verify/login/logout, capture the original proof and supply a current transition check. Only cookie-changing operations permit post-dispatch proof rotation; session inspection and challenge responses require unchanged proof. Bootstrap can omit a proof when no CSRF cookie exists. Authentication results require a stable `/me` recheck before opening the business gate. No automatic bootstrap, login or replay occurs on401.
+
+Every call requires an expected HTTP status and a runtime decoder; TypeScript casts do not replace response validation. `contracts.ts` includes session, challenge and empty-response decoders; feature-specific DTOs are added with their slices.204 never parses JSON. HTML, malformed JSON, invalid DTOs and unexpected success status fail safely. Auth challenge data does not invent an expiry field.
+
+There are **no automatic retries**, including GET and `retryable:true` responses. A caller supplies any stable Idempotency-Key explicitly; the client never generates a replacement. AbortSignal reaches fetch, timeouts abort the request (default15seconds, configurable up to120seconds), and listeners/timers are cleaned up. A dispatched mutation with network loss, timeout, cancellation, malformed success,408 or5xx has an **unknown** outcome; abort does not prove the server rolled back. Recovery/review and explicit retry belong to the feature contract.
+
+`errors.ts` retains only normalized code, status, UUID request ID, validated case reference, server retry hint and parsed429 Retry-After. It discards raw server messages, exceptions and response bodies. English/Indonesian presentation uses controlled text, with no fabricated field-error map for the backend's generic422.403 action/CSRF errors remain distinct and do not indiscriminately erase input: the auth/feature coordinator must quarantine and recheck access before reuse.
+
+Contract tests in `tests/contracts/client.test.ts` use synthetic fetch responses and coordinator ports. They verify transport options, late-response rejection, proof changes, status/DTO/error handling, cancellation and retry behavior. They do **not** prove live cookies, browser-generated Origin, cross-tab auth or HTTPS proxy/backend integration. Those remain FE-ENV-01/FE-AUTH-01.
+
 ## Public site configuration
 
 `src/app/config/publicSite.ts` selects the public site using **`window.location.hostname`**, not query parameters, user-entered tenant IDs, headers, or a fallback tenant. The reviewed local-development hosts are exactly `localhost` and `127.0.0.1`; both display **Westbridge Airport — AI Assistant**. Host canonicalization matches the existing backend contract: lowercase and remove trailing dots, then validate ASCII host syntax/length. Ports belong to the origin, not this hostname lookup.
@@ -79,6 +95,6 @@ The formatter and linter target the React scaffold and leave `prototype/` untouc
 
 ## Boundaries
 
-No backend, database, provider, credentials, or `.env` is needed for this stage. Vite and Vitest disable environment-file loading. There is no runtime API client or simulated AI in this entry. The prototype at port4173 remains a separate static design reference; it is not imported into the React app or bundled by its entry.
+No backend, database, provider, credentials, or `.env` is needed for this stage. Vite and Vitest disable environment-file loading. The API client foundation is not connected to this entry; there is no simulated AI. The prototype at port4173 remains a separate static design reference; it is not imported into the React app or bundled by its entry.
 
 Private planning documents remain local under `docs/frontend/`, outside Git. Features and tests are added alongside implementation rather than through empty configuration files or unused libraries.
