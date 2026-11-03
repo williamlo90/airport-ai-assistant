@@ -1,6 +1,16 @@
 # Westbridge Airport frontend
 
-React/TypeScript/Vite foundation. This entry currently displays a development readiness screen; the approved customer pages remain separate in [prototype/](prototype/README.md). Routing, host branding configuration, shared Tuffy/Sydney components, authentication, and API integration follow their own tasks.
+React/TypeScript/Vite foundation with reviewed public host configuration and English/Indonesian labels. This entry currently displays a development readiness screen; the approved customer pages remain separate in [prototype/](prototype/README.md). Shared Tuffy/Sydney components, routing, authentication, and API integration follow their own tasks.
+
+## Public site configuration
+
+`src/app/config/publicSite.ts` selects the public site using **`window.location.hostname`**, not query parameters, user-entered tenant IDs, headers, or a fallback tenant. The reviewed local-development hosts are exactly `localhost` and `127.0.0.1`; both display **Westbridge Airport — AI Assistant**. Host canonicalization matches the existing backend contract: lowercase and remove trailing dots, then validate ASCII host syntax/length. Ports belong to the origin, not this hostname lookup.
+
+An unconfigured host displays **Site unavailable** with no site identity or language controls. The HTML title is generic until a host has been resolved. Adding a deployment hostname requires an explicit reviewed configuration change; there are no wildcards or runtime URL overrides.
+
+English is the default. Use `?lang=id` or the language button for Indonesian; `?lang=en` selects English. Missing, unsupported, or duplicate language values use the configured default. This only changes interface labels/document language, not original customer text. Message/form preservation will be tested with those features when implemented.
+
+The public config contains only names, supported/default languages, and a local-development marker. It contains no tenant/principal IDs, credentials, permissions, API keys, or source identity mapping. It does not select a backend tenant: the backend resolves registered hosts independently and authorizes every request. This task verifies normalization and provisioning contracts against backend source, **not live database registration**. Before integrated deployment, FE-ENV-01 must verify the exact HTTPS hostname is registered to the intended tenant; local branding does not prove a backend connection. No public production domain is registered by this task.
 
 ## Requirements
 

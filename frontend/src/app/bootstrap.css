@@ -25,3 +25,20 @@ h1 {
   font-size: clamp(1.5rem, 4vw, 2rem);
   line-height: 1.25;
 }
+
+.bootstrap button {
+  min-height: 44px;
+  margin-top: 1rem;
+  padding: 0.6rem 1rem;
+  border: 1px solid #1863bc;
+  border-radius: 6px;
+  background: white;
+  color: #1863bc;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bootstrap button:focus-visible {
+  outline: 3px solid #1863bc;
+  outline-offset: 3px;
+}
