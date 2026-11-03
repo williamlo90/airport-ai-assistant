@@ -42,7 +42,7 @@ const copy = {
       ],
       about: [
         "Beranda bantuan, versi pertama.",
-        "Ini adalah pratinjau visual Airport AI Assistant. Bandara Nusantara merupakan nama contoh. Pencarian menelusuri panduan contoh di halaman ini; AI, akses booking, verifikasi email, dan pengiriman kasus belum dihubungkan.",
+        "Ini adalah pratinjau visual Airport AI Assistant. Nusantara Airport merupakan nama contoh. Pencarian menelusuri panduan contoh di halaman ini; AI, akses booking, verifikasi email, dan pengiriman kasus belum dihubungkan.",
       ],
     },
   },
@@ -89,7 +89,7 @@ const copy = {
       ],
       about: [
         "Your help centre, first look.",
-        "This is a visual preview of Airport AI Assistant. Bandara Nusantara is an example name. Search explores sample guides on this page; AI, booking access, email verification, and case submission are not connected yet.",
+        "This is a visual preview of Airport AI Assistant. Nusantara Airport is an example name. Search explores sample guides on this page; AI, booking access, email verification, and case submission are not connected yet.",
       ],
     },
   },
@@ -221,7 +221,7 @@ const faqs = [
   },
 ];
 let language =
-    new URLSearchParams(location.search).get("lang") === "en" ? "en" : "id",
+    new URLSearchParams(location.search).get("lang") === "id" ? "id" : "en",
   selected = "all",
   searchTerm = "",
   currentDialog = null;

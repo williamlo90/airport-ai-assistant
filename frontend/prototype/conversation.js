@@ -65,7 +65,7 @@ const words = {
     notChosen: "Belum disebutkan",
     previewTitle: "Coba alur percakapan",
     previewBody:
-      "Bandara Nusantara adalah nama contoh. Jawaban di sini mengikuti skenario lokal, bukan model AI atau informasi operasional nyata. Data hanya ada selama halaman ini terbuka; muat ulang akan menghapus percakapan.",
+      "Nusantara Airport adalah nama contoh. Jawaban di sini mengikuti skenario lokal, bukan model AI atau informasi operasional nyata. Data hanya ada selama halaman ini terbuka; muat ulang akan menghapus percakapan.",
     simulateError: "Simulasikan jawaban gagal berikutnya",
     errorArmed:
       "Simulasi aktif: pesan berikutnya akan menampilkan error, lalu bisa dicoba lagi.",
@@ -165,7 +165,7 @@ const words = {
     notChosen: "Not specified yet",
     previewTitle: "Try the conversation flow",
     previewBody:
-      "Bandara Nusantara is an example name. Replies follow local scenarios, not an AI model or real operational information. Data stays only while this page is open; reloading clears the conversation.",
+      "Nusantara Airport is an example name. Replies follow local scenarios, not an AI model or real operational information. Data stays only while this page is open; reloading clears the conversation.",
     simulateError: "Make the next sample reply fail",
     errorArmed:
       "Simulation enabled: the next message will show an error and can then be retried.",
@@ -237,7 +237,7 @@ const topics = [
   },
 ];
 const params = new URLSearchParams(location.search);
-let language = params.get("lang") === "en" ? "en" : "id";
+let language = params.get("lang") === "id" ? "id" : "en";
 let topic = topics.some((item) => item.id === params.get("topic"))
   ? params.get("topic")
   : "booking";
@@ -341,7 +341,7 @@ function renderTopics() {
 }
 function renderLabels() {
   document.documentElement.lang = language;
-  document.title = `${title(topic)} — Bandara Nusantara AI Assistant`;
+  document.title = `${title(topic)} — Nusantara Airport AI Assistant`;
   document
     .querySelectorAll("[data-copy]")
     .forEach((node) => (node.textContent = text(node.dataset.copy)));

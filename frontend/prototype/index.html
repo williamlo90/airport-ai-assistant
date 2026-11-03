@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#1863bc" />
-    <title>Bandara Nusantara — AI Assistant</title>
+    <title>Nusantara Airport — AI Assistant</title>
     <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
     <link
       rel="preload"
@@ -17,41 +17,45 @@
     <script src="app.js" defer></script>
   </head>
   <body>
-    <a class="skip" href="#main" data-i18n="skip">Langsung ke bantuan</a>
+    <a class="skip" href="#main" data-i18n="skip">Skip to help</a>
     <header class="header" id="header">
       <div class="header-inner">
         <button
           class="menu-toggle"
           aria-expanded="false"
           aria-controls="navigation"
-          aria-label="Buka menu"
+          aria-label="Open menu"
         >
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M4 7h16M4 12h16M4 17h16" />
           </svg>
         </button>
-        <nav id="navigation" aria-label="Navigasi utama">
-          <a href="#topics" data-i18n="explore">Pusat bantuan</a
+        <nav id="navigation" aria-label="Main navigation">
+          <a href="#topics" data-i18n="explore">Help centre</a
           ><button data-dialog="contact" data-i18n="contact">
-            Hubungi petugas
+            Contact support
           </button>
         </nav>
-        <a class="brand" href="#" aria-label="Bandara Nusantara — AI Assistant"
+        <a class="brand" href="#" aria-label="Nusantara Airport — AI Assistant"
           ><img src="assets/mark.svg" alt="" width="36" height="36" /><span
-            >Bandara Nusantara<small>AI Assistant</small></span
+            >Nusantara Airport<small>AI Assistant</small></span
           ></a
         >
         <div class="header-actions">
-          <button class="language" id="language" aria-label="Switch to English">
-            EN <span aria-hidden="true">⌄</span></button
+          <button
+            class="language"
+            id="language"
+            aria-label="Ganti ke Bahasa Indonesia"
+          >
+            ID <span aria-hidden="true">⌄</span></button
           ><button class="login" data-dialog="login" data-i18n="login">
-            Masuk</button
+            Sign in</button
           ><button
             class="mobile-contact"
             data-dialog="contact"
             data-i18n="staff"
           >
-            Petugas
+            Support
           </button>
         </div>
       </div>
@@ -59,35 +63,35 @@
     <main id="main">
       <section class="hero" aria-labelledby="welcome">
         <div class="hero-content">
-          <h1 id="welcome" data-i18n="welcome">Ada yang bisa kami bantu?</h1>
+          <h1 id="welcome" data-i18n="welcome">How can we help you?</h1>
           <form class="search" role="search" id="search-form">
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <circle cx="10.5" cy="10.5" r="6.5" />
               <path d="m16 16 4 4" />
             </svg>
             <label class="sr-only" for="query" data-i18n="searchLabel"
-              >Cari topik bantuan</label
+              >Search help topics</label
             >
             <input
               id="query"
               type="search"
-              placeholder="Coba “booking parkir” atau “pembayaran”"
+              placeholder="Search information or help"
               autocomplete="off"
               maxlength="160"
             />
             <button type="submit">
-              <span data-i18n="search">Cari bantuan</span
+              <span data-i18n="search">Search help</span
               ><svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M4 12h15m-6-6 6 6-6 6" />
               </svg>
             </button>
           </form>
           <p class="hero-note" data-i18n="heroNote">
-            Informasi yang Anda perlukan. Bantuan untuk langkah berikutnya.
+            The information you need. Help with your next step.
           </p>
         </div>
       </section>
-      <section class="helpers" aria-label="Pilih kebutuhan bantuan">
+      <section class="helpers" aria-label="Choose a help topic">
         <div class="helper-grid" id="helpers"></div>
       </section>
       <section
@@ -96,29 +100,31 @@
         aria-labelledby="topics-title"
       >
         <div class="knowledge-intro">
-          <p class="eyebrow" data-i18n="eyebrow">MULAI DARI SINI</p>
+          <p class="eyebrow" data-i18n="eyebrow">Help guides</p>
           <h2 id="topics-title" data-i18n="topicsTitle">
-            Temukan jawaban<br />yang Anda butuhkan.
+            Find the answers you need.
           </h2>
           <p data-i18n="topicsDescription">
-            Pilih topik untuk memahami layanan dan langkah yang bisa Anda ambil.
+            Choose a topic to understand our services and the steps you can
+            take.
           </p>
-          <div class="filters" id="filters" aria-label="Filter topik"></div>
+          <div class="filters" id="filters" aria-label="Filter topics"></div>
         </div>
         <div class="questions">
           <div class="results-heading">
-            <h3 id="results-title" data-i18n="common">Pertanyaan umum</h3>
-            <button id="reset" hidden data-i18n="reset">Lihat semua</button>
+            <h3 id="results-title" data-i18n="common">Common questions</h3>
+            <button id="reset" hidden data-i18n="reset">View all</button>
           </div>
           <p class="sr-only" id="result-status" role="status"></p>
           <div id="questions"></div>
           <div class="empty" id="empty" hidden>
-            <h3 data-i18n="emptyTitle">Belum ada jawaban yang cocok.</h3>
+            <h3 data-i18n="emptyTitle">No matching answers yet.</h3>
             <p data-i18n="emptyBody">
-              Coba kata lain, pilih topik, atau lihat cara menghubungi petugas.
+              Try another phrase, choose a topic, or find out how to contact
+              support.
             </p>
             <button class="primary" data-dialog="contact" data-i18n="contact">
-              Hubungi petugas
+              Contact support
             </button>
           </div>
         </div>
@@ -126,34 +132,34 @@
       <section class="contact-section">
         <div class="container contact-inner">
           <div>
-            <h2 data-i18n="moreHelp">Masih perlu bantuan?</h2>
+            <h2 data-i18n="moreHelp">Need more help?</h2>
             <p data-i18n="moreHelpBody">
-              Ada kebutuhan yang lebih baik dibicarakan dengan petugas.
+              Some questions are better discussed with a member of our team.
             </p>
           </div>
           <button class="primary" data-dialog="contact" data-i18n="contact">
-            Hubungi petugas
+            Contact support
           </button>
         </div>
       </section>
     </main>
     <footer class="container">
       <span
-        >Bandara Nusantara <span aria-hidden="true">·</span> AI Assistant</span
-      ><button data-dialog="about" data-i18n="preview">Pratinjau desain</button>
+        >Nusantara Airport <span aria-hidden="true">·</span> AI Assistant</span
+      ><button data-dialog="about" data-i18n="preview">Design preview</button>
     </footer>
     <dialog id="dialog" aria-labelledby="dialog-title">
       <div class="dialog-inner">
-        <button class="close" id="close" aria-label="Tutup">
+        <button class="close" id="close" aria-label="Close">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m6 6 12 12M18 6 6 18" />
           </svg>
         </button>
-        <p class="eyebrow" data-i18n="preview">Pratinjau desain</p>
+        <p class="eyebrow" data-i18n="preview">Design preview</p>
         <h2 id="dialog-title"></h2>
         <p id="dialog-body"></p>
         <button class="primary" id="dialog-done" data-i18n="understood">
-          Mengerti
+          Got it
         </button>
       </div>
     </dialog>

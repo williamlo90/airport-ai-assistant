@@ -2,6 +2,8 @@
 
 Pratinjau visual Airport AI Assistant. Beranda C-01 membuka percakapan C-02 dari empat kategori bantuan. Pencarian panduan, FAQ, dan pilihan ID/EN tetap tersedia di beranda.
 
+Bahasa utama antarmuka adalah **Inggris**, dengan identitas **Nusantara Airport — AI Assistant**. Bahasa Indonesia tetap tersedia melalui tombol ID atau `lang=id`; tanpa parameter bahasa, beranda dan percakapan memakai Inggris. Pesan yang sudah ditulis tetap dalam bahasa aslinya.
+
 ## Menjalankan
 
 Dari root proyek, jalankan di PowerShell:

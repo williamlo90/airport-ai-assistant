@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta
@@ -7,7 +7,7 @@
       content="width=device-width,initial-scale=1,interactive-widget=resizes-content"
     />
     <meta name="theme-color" content="#1863bc" />
-    <title>Percakapan — Bandara Nusantara AI Assistant</title>
+    <title>Conversation — Nusantara Airport AI Assistant</title>
     <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
     <link
       rel="preload"
@@ -21,52 +21,56 @@
     <script src="conversation.js" defer></script>
   </head>
   <body class="conversation-page">
-    <a class="skip" href="#message" data-copy="skip">Langsung ke pesan</a>
+    <a class="skip" href="#message" data-copy="skip">Skip to message</a>
     <header class="conversation-header">
       <div class="conversation-header-inner">
-        <a href="index.html" class="home-link" data-home
+        <a
+          href="index.html"
+          class="home-link"
+          data-home
+          aria-label="Help centre"
           ><svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m14 5-7 7 7 7" /></svg
-          ><span data-copy="home">Pusat bantuan</span></a
+          ><span data-copy="home">Help centre</span></a
         >
         <a
           class="brand"
           href="index.html"
           data-home
-          aria-label="Bandara Nusantara — AI Assistant"
+          aria-label="Nusantara Airport — AI Assistant"
           ><img src="assets/mark.svg" alt="" width="36" height="36" /><span
-            >Bandara Nusantara<small>AI Assistant</small></span
+            >Nusantara Airport<small>AI Assistant</small></span
           ></a
         >
-        <button class="language" id="language" aria-label="Switch to English">
-          EN <span aria-hidden="true">⌄</span>
+        <button
+          class="language"
+          id="language"
+          aria-label="Ganti ke Bahasa Indonesia"
+        >
+          ID <span aria-hidden="true">⌄</span>
         </button>
       </div>
     </header>
     <main class="conversation-layout" id="main">
       <aside class="topics-panel" aria-labelledby="topic-heading">
         <div class="topics-intro">
-          <h2 id="topic-heading" data-copy="helpFor">Bantuan untuk Anda</h2>
+          <h2 id="topic-heading" data-copy="helpFor">Help for your journey</h2>
           <p data-copy="intro">
-            Mulai dari kebutuhan Anda.<br />Kita cari langkah berikutnya.
+            Start with what you need. Find your next step.
           </p>
         </div>
-        <nav id="topic-nav" aria-label="Topik percakapan"></nav>
+        <nav id="topic-nav" aria-label="Choose a topic"></nav>
         <div class="preview-note">
-          <button id="preview-open" data-copy="preview">
-            Pratinjau desain
-          </button>
-          <p data-copy="previewNote">
-            Percakapan contoh. Tidak ada data yang dikirim.
-          </p>
+          <button id="preview-open" data-copy="preview">Design preview</button>
+          <p data-copy="previewNote">Sample conversation. No data is sent.</p>
         </div>
       </aside>
       <section class="conversation" aria-labelledby="conversation-title">
         <div class="conversation-heading">
           <div>
-            <h1 id="conversation-title">Bantuan booking</h1>
+            <h1 id="conversation-title">Booking support</h1>
             <p id="conversation-subtitle">
-              Untuk booking parkir dan lounge yang sudah ada.
+              For existing parking and lounge bookings.
             </p>
           </div>
           <button class="support-button" id="handoff">
@@ -74,26 +78,26 @@
               <path d="M5 13v-2a7 7 0 0 1 14 0v6c0 3-2 4-5 4" />
               <rect x="3" y="11" width="4" height="7" rx="2" />
               <rect x="17" y="11" width="4" height="7" rx="2" /></svg
-            ><span data-copy="support">Petugas</span>
+            ><span data-copy="support">Support</span>
           </button>
         </div>
         <div class="mobile-topic-row">
           <label class="sr-only" for="topic-select" data-copy="chooseTopic"
-            >Pilih topik</label
+            >Choose a topic</label
           ><select id="topic-select"></select
           ><button id="mobile-preview" data-copy="preview">
-            Pratinjau desain
+            Design preview
           </button>
         </div>
         <div
           class="chat-scroll"
           id="chat-scroll"
           role="region"
-          aria-label="Percakapan"
+          aria-label="Conversation"
           tabindex="0"
         >
           <p class="conversation-start" data-copy="sessionNote">
-            Ruang bantuan Anda
+            Your space for support
           </p>
           <div
             id="messages"
@@ -103,57 +107,51 @@
           ></div>
           <div class="assistant-pending" id="pending" hidden role="status">
             <span class="pending-dot" aria-hidden="true"></span
-            ><span data-copy="thinking">Menyiapkan jawaban contoh…</span>
+            ><span data-copy="thinking">Preparing a sample reply…</span>
           </div>
           <div class="reply-error" id="reply-error" hidden role="alert">
             <strong data-copy="errorTitle"
-              >Jawaban belum dapat ditampilkan.</strong
+              >The reply could not be displayed.</strong
             >
             <p data-copy="errorBody">
-              Pesan Anda tetap ada. Coba lagi atau lanjutkan dengan bantuan
-              petugas.
+              Your message is still here. Try again or continue with support.
             </p>
             <div>
-              <button id="retry" data-copy="retry">Coba lagi</button
+              <button id="retry" data-copy="retry">Try again</button
               ><button id="error-handoff" data-copy="contact">
-                Hubungi petugas
+                Contact support
               </button>
             </div>
           </div>
           <div
             class="suggestions"
             id="suggestions"
-            aria-label="Pilihan jawaban"
+            aria-label="Suggested replies"
           ></div>
           <div class="handoff-ready" id="handoff-ready" hidden>
-            <h2 data-copy="readyTitle">Cerita Anda tetap dibawa.</h2>
+            <h2 data-copy="readyTitle">Your story comes with you.</h2>
             <p data-copy="readyBody">
-              Lihat konteks yang sudah terkumpul sebelum melanjutkan ke
-              verifikasi dan review pengajuan.
+              See the context collected so far before moving to verification and
+              request review.
             </p>
             <button id="view-context" data-copy="viewContext">
-              Lihat konteks permintaan<svg
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M4 12h15m-6-6 6 6-6 6" />
-              </svg>
+              View request context
             </button>
           </div>
         </div>
         <form class="composer" id="composer">
           <label for="message" data-copy="messageLabel"
-            >Ceritakan kebutuhan Anda</label
+            >Tell us what you need</label
           >
           <div class="composer-input">
             <textarea
               id="message"
               rows="2"
               maxlength="2000"
-              placeholder="Tulis pesan Anda…"
+              placeholder="Write your message…"
               aria-describedby="composer-note message-error"
             ></textarea
-            ><button type="submit" id="send" aria-label="Kirim pesan">
+            ><button type="submit" id="send" aria-label="Send message">
               <svg viewBox="0 0 24 24" aria-hidden="true">
                 <path d="m12 4 7 8M12 4l-7 8m7-8v16" />
               </svg>
@@ -161,20 +159,20 @@
           </div>
           <p id="message-error" class="field-error" role="alert" hidden></p>
           <p id="composer-note" data-copy="composerNote">
-            Jangan kirim PIN, OTP, atau nomor kartu lengkap. Enter untuk kirim;
-            Shift+Enter untuk baris baru.
+            Do not share PINs, OTPs, or full card numbers. Enter to send;
+            Shift+Enter for a new line.
           </p>
         </form>
       </section>
     </main>
     <dialog id="dialog" aria-labelledby="dialog-title">
       <div class="dialog-inner">
-        <button class="close" id="dialog-close" aria-label="Tutup">
+        <button class="close" id="dialog-close" aria-label="Close">
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="m6 6 12 12M18 6 6 18" />
           </svg>
         </button>
-        <p class="eyebrow" id="dialog-kicker">Pratinjau desain</p>
+        <p class="eyebrow" id="dialog-kicker">Design preview</p>
         <h2 id="dialog-title"></h2>
         <div id="dialog-content"></div>
         <div class="dialog-actions" id="dialog-actions"></div>
