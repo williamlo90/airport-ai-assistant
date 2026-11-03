@@ -1,6 +1,6 @@
-# C-01 — Beranda bantuan
+# C-01 / C-02 — Beranda dan percakapan pelanggan
 
-Pratinjau visual pertama Airport AI Assistant. Buka beranda, coba kategori bantuan, pencarian panduan contoh, pilihan ID/EN, accordion, menu mobile, dan dialog petugas.
+Pratinjau visual Airport AI Assistant. Beranda C-01 membuka percakapan C-02 dari empat kategori bantuan. Pencarian panduan, FAQ, dan pilihan ID/EN tetap tersedia di beranda.
 
 ## Menjalankan
 
@@ -12,13 +12,28 @@ python -m http.server 4173 --bind 127.0.0.1 --directory frontend/prototype
 
 Buka **http://127.0.0.1:4173**. Hentikan dengan Ctrl+C. Tidak memerlukan `.env`, database, Docker, atau dependency frontend. Muat ulang browser setelah mengubah berkas.
 
+Langsung ke percakapan: **http://127.0.0.1:4173/conversation.html?topic=booking**. Pilihan `topic`: `information`, `booking`, `payment`, `contact`. `lang=en` membuka label Inggris. URL hanya memuat kategori dan bahasa, bukan cerita pengguna.
+
+## Mencoba C-02
+
+1. Buka kategori Bantuan booking → Parkir → Penerbangan saya terlambat. Baca arahan dan buka Panduan contoh.
+2. Tulis pesan sendiri atau pilih balasan terstruktur. Jika cerita sudah disampaikan sebelum layanan dipilih, klarifikasi layanan tidak meminta cerita yang sama lagi.
+3. Tulis tambahan tanpa mengirim, lalu ganti ID/EN. Tulisan dan pesan asli dipertahankan; riwayat tidak diterjemahkan otomatis. Balasan contoh berikutnya mengikuti bahasa yang dipilih.
+4. Pilih Petugas, Hubungi petugas dari menu topik, atau pilihan bantuan petugas di percakapan. Cerita dan layanan tetap dibawa. Lihat konteks permintaan menampilkan pesan yang sudah dikirim, bukan tulisan yang masih ada di composer.
+5. Buka Pratinjau desain → Simulasikan jawaban gagal berikutnya → Mengerti → kirim pesan. Ada loading lalu error. Coba lagi menjawab pesan yang sama tanpa menambahkan salinan pesan pengguna; jalur petugas tetap tersedia.
+6. Mencoba topik lain atau kembali ke beranda dengan pesan/tulisan yang ada memerlukan konfirmasi. Refresh dan navigasi browser memakai peringatan browser bila didukung. Percakapan hanya berada di memori halaman; meninggalkan atau memuat ulang halaman menghapusnya.
+
+Belum ada verifikasi email C-03 atau review/pengiriman C-04. Konteks petugas adalah pratinjau lokal, bukan kasus tercatat. Tidak membuat referensi kasus, status pembayaran, booking, atau konfirmasi pengiriman palsu.
+
+QA C-02, 3 November 2026: PASS untuk prototype lokal setelah perbaikan kesinambungan konteks petugas, nama aksesibel tombol kembali mobile, dan guard navigasi. Pengujian browser mencakup320/390/768/1440px, ID/EN, draft, klarifikasi, error/retry tanpa duplikasi, dan konfirmasi navigasi. Peringatan native Back/refresh bergantung pada dukungan serta interaksi browser; tidak menjamin pemulihan riwayat setelah keluar. Inspector final0FAIL/1WARN: ruang kosong pada percakapan awal dipertahankan agar composer stabil saat pesan bertambah. Viewport pendek juga diperiksa oleh lead; ini bukan pengujian keyboard OS mobile atau audit WCAG penuh.
+
 ## Batas tahap ini
 
 HTML/CSS/JS statis dipisahkan sebagai acuan visual sebelum dipindahkan ke React/TypeScript sesuai arsitektur proyek. Tidak mengganti struktur aplikasi frontend di `frontend/src/`.
 
 Bandara Nusantara adalah nama contoh. FAQ merupakan panduan ilustratif dari scope produk, bukan informasi operasional bandara nyata. Pencarian lokal membaca kedua bahasa dan mempertahankan teks pengguna saat bahasa tampilan berubah. Hasil filter serta jumlah panduan dihitung dari konten yang ditampilkan.
 
-AI, sumber booking, autentikasi, pengiriman kasus, dan email belum dihubungkan ke halaman ini. Dialog menjelaskan batas tersebut, tanpa membuat status berhasil atau nomor kasus. Tidak ada data disimpan di local storage atau dikirim keluar.
+AI, sumber booking, autentikasi, pengiriman kasus, dan email belum dihubungkan ke halaman ini. Balasan C-02 merupakan skenario deterministik lokal, bukan inferensi model atau hasil retrieval. Dialog Panduan contoh menjelaskan bahwa isinya ilustratif, bukan kebijakan bandara nyata. Tidak ada data disimpan di local storage atau dikirim keluar.
 
 ## Desain dan aset
 

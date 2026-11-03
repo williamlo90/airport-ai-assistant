@@ -25,7 +25,7 @@ const copy = {
     preview: "Pratinjau desain",
     understood: "Mengerti",
     all: "Semua topik",
-    browse: "Lihat panduan",
+    browse: "Mulai percakapan",
     close: "Tutup",
     menu: "Buka menu",
     navigation: "Navigasi utama",
@@ -72,7 +72,7 @@ const copy = {
     preview: "Design preview",
     understood: "Got it",
     all: "All topics",
-    browse: "Explore help",
+    browse: "Start a conversation",
     close: "Close",
     menu: "Open menu",
     navigation: "Main navigation",
@@ -220,7 +220,8 @@ const faqs = [
     ],
   },
 ];
-let language = "id",
+let language =
+    new URLSearchParams(location.search).get("lang") === "en" ? "en" : "id",
   selected = "all",
   searchTerm = "",
   currentDialog = null;
@@ -230,15 +231,11 @@ const arrow =
 function renderTopics() {
   $("#helpers").replaceChildren(
     ...topics.map((topic) => {
-      const button = document.createElement("button");
+      const button = document.createElement("a");
       button.className = "helper";
+      button.href = `conversation.html?topic=${topic.key}&lang=${language}`;
       // All markup here is authored static content; user input is rendered only with textContent.
       button.innerHTML = `<span class="icon"><svg viewBox="0 0 48 48" aria-hidden="true">${topic.icon}</svg></span><h2>${topic[language][0]}</h2><p>${topic[language][1]}</p><span class="helper-link">${topic.key === "contact" ? copy[language].contact : copy[language].browse}${arrow}</span>`;
-      button.addEventListener("click", () =>
-        topic.key === "contact"
-          ? showDialog("contact")
-          : selectTopic(topic.key, true),
-      );
       return button;
     }),
   );
@@ -351,6 +348,10 @@ function showDialog(kind) {
 }
 document.querySelectorAll("[data-dialog]").forEach((button) =>
   button.addEventListener("click", () => {
+    if (button.dataset.dialog === "contact") {
+      location.assign(`conversation.html?topic=contact&lang=${language}`);
+      return;
+    }
     closeMenu(true);
     showDialog(button.dataset.dialog);
   }),
