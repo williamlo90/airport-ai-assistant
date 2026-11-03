@@ -65,3 +65,7 @@ Remove-Item Env:RUN_NEON_AUTH_TESTS
 ```
 
 Tes menggunakan schema/role Neon sementara dan sender verifikasi terkontrol; credential dimuat script, tidak dicetak. Jalankan satu rangkaian setup Neon pada satu waktu, termasuk audit QA, karena provisioning role menyentuh ACL database bersama. Tes unit memakai backend/tests/unit/test_draft_rules.py. Skenario mencakup preview/koreksi/hash lama, session/tenant/owner, routing, expiry/cancel, race, integritas simpanan, restart, privilege runtime dan sesi yang habis di tengah operasi.
+
+## Konfirmasi CASE-02
+
+Schema0008 memperluas state dengan committed serta result_case_id/result_message_id/result_ref/committed_at; hash tetap mengikat input yang ditinjau, bukan pointer hasil. Confirm HTTP, consent, graph kasus dan idempotency sudah tersedia sesuai [panduan konfirmasi](case_confirmation.md). Tujuan dan kontak diperiksa ulang sebelum commit. Draf terminal tetap immutable; edit/cancel committed409 dengan result_ref. GET actions untuk committed mengikuti pemilik kasus saat ini, berbeda dari preview/confirm yang tetap terikat sesi pembuat. Receipt tidak kedaluwarsa bersama draf.

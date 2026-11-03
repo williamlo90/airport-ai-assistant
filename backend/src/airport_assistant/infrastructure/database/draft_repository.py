@@ -1,6 +1,8 @@
 """Draft storage on the shared bounded customer unit of work."""
 
 import json
+from uuid import UUID
+from datetime import datetime
 from psycopg.types.json import Jsonb
 
 from airport_assistant.infrastructure.database.conversation_repository import PostgresConversations,ConversationSQL
@@ -14,11 +16,13 @@ FIELDS='id,tenant_id,conversation_id,actor_principal_id,actor_session_id,created
 def draft_row(row):
     if row is None:return None
     try:
-        values=list(row)
+        values=list(row[:19])
         values[7]=ReportPayload.model_validate(row[7])
         values[8]=Destination.model_validate_json(json.dumps(row[8]))
         if values.pop(9)!=values[8].queue_id:raise ValueError('Mismatched destination.')
-        values[-1]=tuple(row[-1])
+        values[-1]=tuple(row[18])
+        if len(row)>19:
+            values.extend((UUID(row[19]) if row[19] else None,UUID(row[20]) if row[20] else None,row[21],datetime.fromisoformat(row[22]) if row[22] else None))
         return Draft(*values)
     except (ValueError,AuthError,TypeError):
         raise DraftError(500,'INTERNAL_ERROR') from None
@@ -44,8 +48,14 @@ class DraftSQL(ConversationSQL):
         return row[0] if row else None
 
     async def find_draft(self,id):
-        row=await(await self._c.execute(self.query('SELECT '+FIELDS+' FROM {s}.action_drafts WHERE tenant_id=%s AND id=%s FOR UPDATE'),(self._context.tenant_id,id))).fetchone()
+        results=",to_jsonb(action_drafts)->>'result_case_id',to_jsonb(action_drafts)->>'result_message_id',to_jsonb(action_drafts)->>'result_ref',to_jsonb(action_drafts)->>'committed_at'"
+        row=await(await self._c.execute(self.query('SELECT '+FIELDS+results+' FROM {s}.action_drafts WHERE tenant_id=%s AND id=%s FOR UPDATE'),(self._context.tenant_id,id))).fetchone()
         return draft_row(row)
+
+    async def case_result(self,id):
+        from airport_assistant.modules.cases.models import CommitResult
+        row=await(await self._c.execute(self.query('SELECT id,public_reference,initial_message_id FROM {s}.cases WHERE tenant_id=%s AND id=%s'),(self._context.tenant_id,id))).fetchone()
+        return CommitResult(case_id=row[0],result_ref=row[1],message_id=row[2]) if row else None
 
     async def create_draft(self,draft):
         columns='id,tenant_id,conversation_id,actor_principal_id,actor_session_id,created_session_id,action_type,payload,destination,destination_queue_id,displayed_summary,language,version,payload_hash,created_at,expires_at'

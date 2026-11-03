@@ -22,6 +22,12 @@ AUTH_ERRORS={
     "DRAFT_UNAVAILABLE":("Draf belum dapat diproses.",True),
     "DRAFT_DESTINATION_UNAVAILABLE":("Tujuan layanan belum tersedia. Coba lagi nanti.",True),
     "DRAFT_NOT_PENDING":("Draf ini sudah tidak dapat diubah atau dikonfirmasi.",False),
+    "CASE_UNAVAILABLE":("Pengajuan belum dapat diproses.",True),
+    "CASE_CONTACT_REQUIRED":("Isi email terverifikasi untuk tindak lanjut pengajuan.",False),
+    "CASE_CONTACT_VERIFICATION_REQUIRED":("Email pengajuan harus merupakan kontak Anda yang sudah terverifikasi.",False),
+    "CASE_DESTINATION_CHANGED":("Tujuan layanan berubah. Perbarui dan tinjau kembali draf.",False),
+    "IDEMPOTENCY_KEY_REQUIRED":("Kunci retry permintaan wajib tersedia dan valid.",False),
+    "IDEMPOTENCY_CONFLICT":("Kunci retry sudah digunakan untuk permintaan berbeda.",False),
 }
 
 
@@ -43,20 +49,20 @@ ERRORS = {
 }
 
 
-def error_response(status: int, request_id: str, headers: dict | None = None, *, auth_code:str|None=None) -> JSONResponse:
+def error_response(status: int, request_id: str, headers: dict | None = None, *, auth_code:str|None=None,result_ref:str|None=None) -> JSONResponse:
     code, message, retryable = ERRORS.get(status, ("HTTP_ERROR", "Permintaan tidak dapat diproses.", False))
     if auth_code in AUTH_ERRORS:
         code=auth_code;message,retryable=AUTH_ERRORS[auth_code]
     body = ErrorResponse(error=ErrorDetail(
-        code=code, message=message, request_id=request_id, retryable=retryable,
+        code=code, message=message, request_id=request_id, retryable=retryable,result_ref=result_ref,
     ))
-    return JSONResponse(status_code=status, content=body.model_dump(), headers=headers)
+    return JSONResponse(status_code=status, content=body.model_dump(exclude_none=True), headers=headers)
 
 
 def install_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(DraftError)
     async def draft_error(request:Request,exc:DraftError):
-        return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code)
+        return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code,result_ref=exc.result_ref)
 
     @app.exception_handler(ConversationError)
     async def conversation_error(request:Request,exc:ConversationError):

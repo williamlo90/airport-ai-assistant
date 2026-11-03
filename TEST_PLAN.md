@@ -159,3 +159,11 @@ Setiap run mencatat run_id, waktu, app commit, schema/fixture/dataset version, m
 QA dokumen wajib menunjukkan sumber requirement dan lokasi temuannya. QA implementasi wajib memeriksa bukti eksekusi, tidak hanya membaca rencana. Lead memeriksa ulang temuan kritis dan alasan menutup defect. Katalog ini menetapkan cakupan target; hasil implementasi per tahap dicatat di docs/backend/task_plan.md, bukan dianggap otomatis lulus untuk seluruh produk.
 
 CASE-01 memetakan SEC-01/02/07 ke isolasi draf tenant/aktor/sesi dan runtime RLS, WF-01 ke koreksi serta guard versi/hash internal, WF-02 ke persistent cancel tanpa eksekusi, dan WF-02A ke deadline sebelum/selama operasi. Konfirmasi HTTP dan commit consent/case/outbox WF-01–04 dituntaskan CASE-02. AUTH-02 memetakan SEC-12 ke verifikasi asal/bukan asal, rotasi/revoke, provenance dan retry pesan, pembatalan draf, race append/verify, GUC spoof, serta rollback saat fault/late expiry. Bukti ini mencakup percakapan mandiri; kasus/source-derived data dan email tanpa browser tetap membutuhkan pengujian fitur terkait.
+
+## Bukti executable CASE-02
+
+`backend/tests/unit/test_case_rules.py` dan `backend/tests/integration/test_case_commit.py` memetakan WF-01–04 pada create_case/request_handoff kasus baru berisi laporan pelanggan. WF-01 memeriksa versi/hash lama, WF-02 penolakan tanpa konfirmasi/cancel race, WF-02A expiry saat graph disimpan, WF-03 satu hasil untuk concurrent confirm/key race serta409 request berbeda, dan WF-04 kehilangan respons HTTP sesudah commit lalu pemulihan receipt.
+
+SEC-01/02/07 mencakup tenant/pemilik/browser, CSRF/key/authority input, raw RLS/privilege, kontak dan tujuan aktif; deferred constraints menolak orphan graph serta JSON null/hilang. Fault outbox membuktikan rollback keseluruhan dan retry sah. SEC-12 mencakup adopsi kasus umum anonim, provenance, pending cancel dan receipt pascalogin tanpa memakai ulang preview/consent lama.
+
+Queue/organisasi/kontak dikunci dengan hak row lock terbatas; actual UPDATE tetap ditolak. Scope ini tidak menutup WF-05/06 (tambahan informasi/existing case), SEC-11 data turunan privat, live handoff, worker atau email delivery. Endpoint status kasus/assignment/closure mengikuti CASE-03; CASE-02 pada tabel pengujian status di atas adalah ID skenario, bukan klaim fitur closure sudah tersedia.

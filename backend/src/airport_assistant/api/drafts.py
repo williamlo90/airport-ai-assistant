@@ -36,15 +36,17 @@ class DraftView(BaseModel):
     version:int
     payload_hash:str
     expires_at:datetime
-    state:Literal['pending','cancelled','expired']
+    state:Literal['pending','cancelled','expired','committed']
+    result_ref:str|None=None
 
 
 class ActionStatus(BaseModel):
     draft_id:UUID
-    state:Literal['pending','cancelled','expired']
+    state:Literal['pending','cancelled','expired','committed']
     version:int
-    expires_at:datetime
-    result_ref:None=None
+    expires_at:datetime|None
+    result_ref:str|None=None
+    case_id:UUID|None=None
 
 
 def service(request,response):
@@ -61,7 +63,7 @@ def view(draft):
     return DraftView(draft_id=draft.id,conversation_id=draft.conversation_id,action_type=draft.action_type,
         payload=draft.payload,destination=draft.destination,summary=draft.displayed_summary,
         language=draft.language,version=draft.version,payload_hash=draft.payload_hash,
-        expires_at=draft.expires_at,state=draft.state)
+        expires_at=draft.expires_at,state=draft.state,result_ref=draft.result_ref)
 
 
 @router.post('/action-drafts',status_code=201,response_model=DraftView)
@@ -86,5 +88,12 @@ async def cancel(id:UUID,request:Request,response:Response,identity:AccessIdenti
 
 @router.get('/actions/{id}',response_model=ActionStatus)
 async def status(id:UUID,request:Request,response:Response,identity:AccessIdentity=Depends(get_identity)):
-    draft=await service(request,response).get(identity,id)
-    return ActionStatus(draft_id=draft.id,state=draft.state,version=draft.version,expires_at=draft.expires_at)
+    service(request,response)
+    cases=request.app.state.services.cases
+    if cases is not None:
+        result=await cases.status(identity,id)
+        if isinstance(result,dict):return ActionStatus(**result)
+        draft=result
+    else:
+        draft=await service(request,response).get(identity,id)
+    return ActionStatus(draft_id=draft.id,state=draft.state,version=draft.version,expires_at=None if draft.state=='committed' else draft.expires_at,result_ref=draft.result_ref,case_id=draft.result_case_id)

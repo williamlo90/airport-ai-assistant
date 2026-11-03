@@ -25,7 +25,7 @@ def target(draft_target):
     before=row(t,'SELECT count(*) FROM {s}.messages')[0]
     settings=load_database_settings(MigrationDatabaseSettings,Path(os.environ.get('DB_TEST_ENV_FILE','.env')))
     for _ in range(2):
-        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'])=='0007_anonymous_adoption'
+        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'],target_revision='0007_anonymous_adoption')=='0007_anonymous_adoption'
     assert row(t,'SELECT count(*),count(origin_session_id) FROM {s}.messages')==(before,0)
     return t
 

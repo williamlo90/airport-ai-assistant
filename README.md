@@ -44,7 +44,7 @@ SRC-01 provides an independent read-only reference API with SQLite and fictional
 
 BEHAV-01 adds durable standalone conversations, owner-scoped customer messages, concurrent retry deduplication, and versioned language changes. Message receipt confirms storage; no AI job or case is created. See [conversations](docs/backend/conversations.md).
 
-CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. See [action drafts](docs/backend/action_drafts.md). Confirmation and business commit follow in CASE-02.
+CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. See [action drafts](docs/backend/action_drafts.md). CASE-02 adds explicit confirmation with an atomic case, consent, history, audit, outbox and idempotency receipt. See [case confirmation](docs/backend/case_confirmation.md). This submits customer reports; live handoff, workers and email delivery follow their dedicated tasks.
 
 AUTH-02 atomically adopts the originating browser's anonymous history during successful verification, preserves message provenance and retry identity, invalidates pending drafts, and rotates/revokes sessions. Other browsers cannot claim history using a challenge ID or code. See [anonymous adoption](docs/backend/anonymous_adoption.md).
 

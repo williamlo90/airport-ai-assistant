@@ -57,3 +57,9 @@ Suite memakai schema/role Neon sementara dan sender email terkontrol. Credential
 Pengujian mencakup browser asal, kode/challenge dicuri, tenant lain, existing principal, source mapping tetap utuh, pending/terminal draft, retry pesan, replay verifikasi, race append vs upgrade, GUC spoof/column privileges, fault injection setelah sebagian mutasi, dan late expiry dengan rollback. Fixtures BEHAV-01/CASE-01 tetap menguji prefix schema0005/0006; suite ini menguji perilaku adopsi schema0007.
 
 Pengiriman OTP provider nyata tetap MAIL-05. Normal API tetap mengembalikan503 bila sender belum tersedia; tidak ada kode debug atau bypass verifikasi untuk mendemokan adopsi.
+
+## Perluasan CASE-02 pada schema0008
+
+Kasus umum anonim dari sesi asal juga diadopsi di dalam transaksi verifikasi yang sama. Lock kasus terurut mendahului lock percakapan, mengikuti lock sesi. Helper privat memindahkan owner/contact, metadata pengirim pesan case-only dan origin_session_id; menambahkan participant case:read, history identity_verified serta audit. Tidak membaca body pesan, mengubah consent awal, mengantrekan outbox baru atau memilih email follow-up. Kasus yang dipindahkan tetap tanpa followup_contact_id.
+
+Pending draft tetap dibatalkan dan preview/confirm draf lama404. Pengecualian sempit adalah GET actions atas hasil committed: receipt milik kasus yang sudah diadopsi dapat dibaca principal saat ini, tanpa payload draf/email/body. Ini tidak memberi izin mengonfirmasi ulang draf anonim. Kasus source-derived dan percakapan case-bound tetap memerlukan fitur terkait, bukan dibuka melalui fallback. Tes CASE-02 membuktikan graph adopsi terbaru; suite AUTH-02 tetap memakai prefix0007 untuk bukti tahap asal.

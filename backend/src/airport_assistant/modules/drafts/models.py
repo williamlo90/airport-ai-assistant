@@ -15,8 +15,8 @@ from airport_assistant.modules.identity.access import OwnedObject
 
 
 class DraftError(Exception):
-    def __init__(self,status,code):
-        self.status,self.code=status,code
+    def __init__(self,status,code,result_ref=None):
+        self.status,self.code,self.result_ref=status,code,result_ref
         super().__init__(code)
 
 
@@ -72,6 +72,10 @@ class Draft:
     state:str='pending'
     case_id:UUID|None=None
     resource_security_labels:tuple=()
+    result_case_id:UUID|None=None
+    result_message_id:UUID|None=None
+    result_ref:str|None=None
+    committed_at:datetime|None=None
 
     def projection(self):
         return OwnedObject(self.tenant_id,self.id,'draft',self.actor_principal_id,self.actor_session_id,

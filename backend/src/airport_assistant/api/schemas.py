@@ -14,6 +14,7 @@ class ErrorDetail(BaseModel):
     message: str
     request_id: str
     retryable: bool
+    result_ref: str|None = None
 
 
 class ErrorResponse(BaseModel):

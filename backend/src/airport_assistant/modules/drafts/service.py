@@ -49,6 +49,8 @@ class DraftService:
             raise AuthError(404,'RESOURCE_NOT_FOUND')
         AccessService.require_object(identity,ResourceKey(identity.session.tenant_id,'draft',id),draft.projection(),action)
         require_integrity(draft)
+        if draft.state=='committed' and await tx.case_result(draft.result_case_id) is None:
+            raise AuthError(404,'RESOURCE_NOT_FOUND')
         return conversation,draft
 
     @staticmethod
@@ -99,7 +101,7 @@ class DraftService:
             conversation,draft=await self._load(tx,identity,id,'edit_draft')
             draft=await self._expired(tx,draft)
             if draft.state=='expired':error=DraftError(410,'DRAFT_EXPIRED')
-            elif draft.state!='pending':error=DraftError(409,'DRAFT_NOT_PENDING')
+            elif draft.state!='pending':error=DraftError(409,'DRAFT_NOT_PENDING',draft.result_ref)
             elif expected_version!=draft.version:error=DraftError(409,'VERSION_CONFLICT')
             else:
                 destination=await self._destination(tx,payload)
@@ -126,6 +128,6 @@ class DraftService:
                 await require_customer_session(tx)
                 if draft is None:raise AuthError(404,'RESOURCE_NOT_FOUND')
             if draft.state=='expired':error=DraftError(410,'DRAFT_EXPIRED')
-            elif draft.state!='cancelled':error=DraftError(409,'DRAFT_NOT_PENDING')
+            elif draft.state!='cancelled':error=DraftError(409,'DRAFT_NOT_PENDING',draft.result_ref)
         if error is not None:raise error
         return draft
