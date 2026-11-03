@@ -115,6 +115,7 @@ Backend membentuk `SecurityLabels` dari DTO utuh, termasuk scope detail pembayar
 | POST /auth/logout | Revoke sesi server-side dan cookie. |
 | GET /me | Identitas, tenant dan hak UI minimum; tidak mengembalikan seluruh permission tenant lain. |
 | POST /conversations | language id/en; sesi anonim diperbolehkan; kepemilikan server-side. |
+| GET /conversations/{id} | Metadata percakapan mandiri untuk pemilik: language,version,generation_epoch,last_sequence. Tidak mengembalikan riwayat. |
 | GET /conversations/{id}/events?after={cursor} | Event terotorisasi berurutan dan next_cursor; polling, respons kosong sah. |
 | POST /conversations/{id}/messages | body, client_message_id; idempotent; respons berisi message_id, sequence, processing_state. Bukan otomatis pengajuan kasus. |
 | PATCH /conversations/{id}/language | language dan expected_version; tidak mengubah referensi/tanggal/nominal. |
@@ -151,6 +152,12 @@ Kode di-HMAC, TTL default300detik, maksimal5percobaan, sekali pakai dan terikat 
 Sender default belum terpasang: request verifikasi mengembalikan503 VERIFICATION_UNAVAILABLE, bukan fake202. Pengiriman terkontrol hanya untuk tes, MAIL-05 tetap syarat pengiriman email nyata. Failed/expired/replayed/unknown challenge memberi422 VERIFICATION_FAILED generik; session tidak sah401, CSRF/origin403 CSRF_REQUIRED, batas429 RATE_LIMITED dengan Retry-After. Email dinormalisasi dengan domain ASCII/lowercase dan local part ASCII dipertahankan (SMTPUTF8 belum didukung); tidak menghapus plus-tag/titik secara universal. Verifikasi kontak tidak me-rebind principal lama atau mengaktifkan principal nonaktif.
 
 Rotasi/revoke sesi sudah diimplementasikan. Adopsi percakapan/draf masih AUTH-02 setelah tabelnya tersedia; verifikasi email follow-up tanpa browser masih MAIL-04. Ini tidak membuka login staf lewat verifikasi pelanggan.
+
+### Perincian BEHAV-01 yang executable
+
+POST create, GET metadata, POST message dan PATCH language tersedia untuk percakapan mandiri. Ownership memakai sesi anonim atau principal pelanggan terverifikasi dari backend. Bahasa mematuhi daftar tenant. Message response berisi processing_state received setelah transaksi commit; tidak mengantrekan agent atau membuat kasus. client_message_id UUID dideduplikasi menurut tenant/pengirim/percakapan: body sama menghasilkan message_id/sequence semula, body berbeda409 MESSAGE_CONFLICT. Body tepat1–4000karakter, bukan whitespace saja dan tanpa NUL. Body tidak diubah dan bahasa pesan mengikuti bahasa percakapan saat commit.
+
+Session SHARE lock mendahului conversation UPDATE lock. Revoke/expiry/tenant/principal aktif diperiksa di dalam transaksi; counter/version/pesan atomik. Pergantian bahasa dengan versi yang cocok menaikkan version/epoch tanpa menerjemahkan histori. Metadata tidak memuat owner/session/tenant IDs. Tabel ini hanya menerima laporan pengguna tanpa case/source binding; dukungan kasus/stream event menunggu implementasinya. [Panduan percakapan](docs/backend/conversations.md) memuat batas schema0005, RLS, retry, AUTH-02 dan pengujian.
 
 ## 5 Konfirmasi dan tindakan pelanggan
 

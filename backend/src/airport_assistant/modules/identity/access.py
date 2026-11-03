@@ -31,7 +31,7 @@ class AccessIdentity:
 
     @property
     def database_context(self) -> DatabaseContext:
-        return DatabaseContext(self.session.tenant_id, self.session.principal_id, self.session.kind)
+        return DatabaseContext(self.session.tenant_id, self.session.principal_id, self.session.kind, self.session.id)
 
 
 @dataclass(frozen=True)

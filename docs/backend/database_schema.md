@@ -285,6 +285,8 @@ Dua partial unique indexes: `(tenant_id,actor_principal_id,operation,key)` ketik
 
 ## 6 Percakapan pesan event dan checkpoint
 
+Implementasi BEHAV-01 pada revision0005_conversations adalah subset bertahap rancangan berikut. Conversations sudah memiliki owner XOR, language, version BIGINT, generation_epoch awal1, counter pesan last_sequence, case_id yang masih wajib NULL dan labels yang wajib[]. Messages sudah memiliki conversation_id, author_principal_id/author_session_id XOR, author_type customer, channel web, visibility customer, content_class private, source_kind user_report, body, language, client_message_id, sequence dan labels[]. Messages tidak memiliki case_id sebelum tabel cases tersedia. FK tenant-composite, partial unique dedupe dan FORCE RLS sudah executable. Handler, mode selain ai, event/checkpoint serta FK/binding cases ditambahkan bersama fitur terkait, bukan dianggap sudah terpasang. [Panduan percakapan](conversations.md) mencatat transaksi dan batas adopsi AUTH-02.
+
 ### conversations
 
 | Kolom tambahan | Tipe | Aturan |
@@ -309,7 +311,7 @@ Accept/reassign/close mengambil lock kasus lalu percakapan dalam urutan ID tetap
 | Kolom tambahan | Tipe | Aturan |
 | --- | --- | --- |
 | conversation_id / case_id | UUID | NULL, FK → conversations / cases; minimal satu terisi |
-| author_kind | TEXT | NN, customer/ai/staff/system |
+| author_type | TEXT | NN, customer/ai/staff/system |
 | author_principal_id / author_session_id | UUID | NULL, FK → principals / sessions |
 | channel | TEXT | NN, chat/email |
 | visibility | TEXT | NN, customer/internal |

@@ -126,6 +126,8 @@ class RuntimeDatabase:
                                                  (str(context.principal_id) if context and context.principal_id else "",))
                         await connection.execute("SELECT set_config('app.actor_kind', %s, true)",
                                                  (context.actor_kind if context else "anonymous",))
+                        await connection.execute("SELECT set_config('app.session_id', %s, true)",
+                                                 (str(context.session_id) if context and context.session_id else "",))
                         yield connection
                     except asyncio.CancelledError:
                         # Close locally before transaction exit: don't wait for a

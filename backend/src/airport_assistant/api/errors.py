@@ -8,6 +8,7 @@ from starlette.responses import JSONResponse
 from airport_assistant.api.schemas import ErrorDetail, ErrorResponse
 from airport_assistant.modules.identity.auth import AuthError
 from airport_assistant.modules.source.models import SourceFailure
+from airport_assistant.modules.conversations.service import ConversationError
 
 AUTH_ERRORS={
     "STAFF_LOGIN_FAILED":("Login staf tidak berhasil. Periksa kredensial atau hubungi administrator.",False),
@@ -15,6 +16,8 @@ AUTH_ERRORS={
     "VERIFICATION_FAILED":("Verifikasi tidak dapat diselesaikan. Periksa kode atau minta kode baru.",False),
     "VERIFICATION_UNAVAILABLE":("Pengiriman verifikasi belum tersedia. Coba lagi nanti.",True),
     "AUTH_UNAVAILABLE":("Layanan autentikasi belum tersedia.",True),
+    "CONVERSATION_UNAVAILABLE":("Percakapan belum dapat diproses.",True),
+    "MESSAGE_CONFLICT":("ID pesan sudah dipakai untuk isi yang berbeda.",False),
 }
 
 
@@ -47,6 +50,10 @@ def error_response(status: int, request_id: str, headers: dict | None = None, *,
 
 
 def install_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(ConversationError)
+    async def conversation_error(request:Request,exc:ConversationError):
+        return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code)
+
     @app.exception_handler(SourceFailure)
     async def source_error(request:Request,exc:SourceFailure):
         return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'})
