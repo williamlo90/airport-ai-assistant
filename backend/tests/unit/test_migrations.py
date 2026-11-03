@@ -20,7 +20,7 @@ def test_packaged_revision_has_one_head():
         assert directory == package / "_migrations"
     config = Config()
     config.set_main_option("script_location", str(directory))
-    assert ScriptDirectory.from_config(config).get_heads() == ["0006_action_drafts"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0007_anonymous_adoption"]
 
 
 @pytest.mark.parametrize("schema", ["public", "pg_catalog", "app;DROP SCHEMA app", 'a"b', "", "a" * 64])
@@ -76,7 +76,7 @@ def test_new_revision_is_offline_and_aborts_until_implemented(tmp_path,monkeypat
     graph=ScriptDirectory.from_config(config)
     assert len(graph.get_heads())==1
     script=graph.get_revision(graph.get_heads()[0])
-    assert script.down_revision=="0006_action_drafts"
+    assert script.down_revision=="0007_anonymous_adoption"
     with pytest.raises(NotImplementedError):script.module.upgrade()
 
 

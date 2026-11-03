@@ -63,7 +63,7 @@ Row session/challenge/contact dikunci untuk konsumsi/rotasi atomik. Dua verify p
 
 ## Bagian yang menunggu fitur berikutnya
 
-AUTH-02 akan menambahkan pemindahan ownership percakapan dan pembatalan draf dalam transaksi upgrade yang sama setelah tabel BEHAV/CASE tersedia. AUTH-01 sudah memutar/mencabut token tetapi belum memindahkan riwayat yang tabelnya belum ada. Challenge tanpa browser untuk email follow-up/case-contact memakai flow tersendiri saat MAIL-04; purpose yang tersedia sekarang hanya customer_login.
+AUTH-02 pada schema0007 memindahkan ownership percakapan mandiri asal, mempertahankan provenance pesan dan membatalkan pending draft dalam transaksi upgrade yang sama dengan rotasi/revoke. [Panduan adopsi anonim](anonymous_adoption.md) menjelaskan proof browser, retry, RLS dan rollback. Challenge tanpa browser untuk email follow-up/case-contact memakai flow tersendiri saat MAIL-04; purpose yang tersedia sekarang hanya customer_login.
 
 ## Pengujian
 

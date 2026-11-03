@@ -25,7 +25,7 @@ Ownership hanya berlaku untuk percakapan mandiri. Migration0005 menolak case_id 
 
 Pesan pada tahap ini selalu laporan pengguna (`source_kind=user_report`), channel web, visibility customer, author_type customer dan content_class private. Pesan pengguna bukan fakta booking/pembayaran dari sumber. Model/client tidak dapat mengubahnya menjadi source_fact, staff_reply, system atau generic_notification.
 
-Verifikasi anonim ke pelanggan saat ini merotasi dan mencabut sesi, tetapi **belum memindahkan percakapan**. Riwayat anonim tidak dapat diambil dengan hanya mengetahui ID percakapan atau challenge. Adopsi atomik beserta pembatalan draf pending akan diselesaikan pada AUTH-02 setelah CASE-01. Jangan menjanjikan kesinambungan riwayat setelah login sebelum tugas itu selesai.
+AUTH-02 pada schema0007 merotasi/mencabut sesi sekaligus memindahkan percakapan mandiri dari browser asal ke principal terverifikasi. Message IDs/sequence/body tetap utuh, retry tetap dedupe, provenance anonim tersimpan dan pending draft dibatalkan. Mengetahui ID percakapan/challenge atau kode pada browser lain tidak cukup. [Panduan adopsi](anonymous_adoption.md) menjelaskan batas sumber/kasus dan kegagalan atomik.
 
 ## Urutan, retry dan transaksi
 

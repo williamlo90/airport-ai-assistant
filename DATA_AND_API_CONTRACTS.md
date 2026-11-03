@@ -151,7 +151,13 @@ Kode di-HMAC, TTL default300detik, maksimal5percobaan, sekali pakai dan terikat 
 
 Sender default belum terpasang: request verifikasi mengembalikan503 VERIFICATION_UNAVAILABLE, bukan fake202. Pengiriman terkontrol hanya untuk tes, MAIL-05 tetap syarat pengiriman email nyata. Failed/expired/replayed/unknown challenge memberi422 VERIFICATION_FAILED generik; session tidak sah401, CSRF/origin403 CSRF_REQUIRED, batas429 RATE_LIMITED dengan Retry-After. Email dinormalisasi dengan domain ASCII/lowercase dan local part ASCII dipertahankan (SMTPUTF8 belum didukung); tidak menghapus plus-tag/titik secara universal. Verifikasi kontak tidak me-rebind principal lama atau mengaktifkan principal nonaktif.
 
-Rotasi/revoke sesi sudah diimplementasikan. Adopsi percakapan/draf masih AUTH-02 setelah tabelnya tersedia; verifikasi email follow-up tanpa browser masih MAIL-04. Ini tidak membuka login staf lewat verifikasi pelanggan.
+Rotasi/revoke dan adopsi browser-bound AUTH-02 sudah diimplementasikan. Percakapan mandiri dipindahkan ke principal; pesan mempertahankan ID/sequence/body dan origin_session_id, sehingga retry tidak menggandakan pesan. Pending draft asal dibatalkan, bukan diadopsi sebagai consent; deadline yang lewat menjadi expired. Verifikasi email follow-up tanpa browser masih MAIL-04. Ini tidak membuka login staf atau memberi grants sumber melalui verifikasi pelanggan.
+
+### Perincian AUTH-02 yang executable
+
+Schema0007 memperluas auth_verify tanpa mengubah endpoint/signature login. Origin session/token/CSRF, challenge/nonce, kode, tenant, rate/attempt dan expiry dibuktikan sebelum perubahan. Session lock UPDATE menunggu mutasi anonim yang memegang SHARE; ownership, metadata/provenance pesan, draf, kontak, sesi pengganti dan challenge disimpan atomik. Version/epoch percakapan naik sekali. Error atau late expiry membatalkan seluruh mutasi adopsi; rate/attempt accounting yang sah tetap dipertahankan untuk late expiry. Runtime tidak dapat menulis provenance atau memakai penanda adoption GUC sebagai role/izin.
+
+Sesi customer baru dapat mengakses riwayat asal, tetapi draf lama404 dan perlu dibuat ulang. Existing principal menerima riwayat asal saja; mapping source dan role tetap utuh. Case-bound/source-labeled history tidak diperluas melalui fallback ownership. [Panduan adopsi](docs/backend/anonymous_adoption.md) menjelaskan metadata baru, lock order, batas bukti dan pengujian.
 
 ### Perincian BEHAV-01 yang executable
 

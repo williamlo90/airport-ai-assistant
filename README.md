@@ -42,9 +42,11 @@ AUTH-04 centralizes request identity and object authorization for tenant, owner,
 
 SRC-01 provides an independent read-only reference API with SQLite and fictional parking/lounge bookings, transactions, historical policies, and explicit resource grants. Its 96 tests pass, including normal TCP requests and the signed local demo client. SRC-02 connects the backend to that API through a bounded asynchronous HTTP adapter with strict response validation and server-owned caller mappings. Three customer read endpoints are available when enabled; policy and relation methods remain internal. SRC-03A adds current per-resource grant checks and immutable security labels with monotone aggregation. See [source authorization](docs/backend/source_authorization.md). Enforcement across actual cases, model context, and outbound jobs follows in SRC-03B.
 
-BEHAV-01 adds durable standalone conversations, owner-scoped customer messages, concurrent retry deduplication, and versioned language changes. Message receipt confirms storage; no AI job or case is created. See [conversations](docs/backend/conversations.md). Anonymous history adoption remains AUTH-02 after action drafts are available in CASE-01.
+BEHAV-01 adds durable standalone conversations, owner-scoped customer messages, concurrent retry deduplication, and versioned language changes. Message receipt confirms storage; no AI job or case is created. See [conversations](docs/backend/conversations.md).
 
-CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. See [action drafts](docs/backend/action_drafts.md). Confirmation and business commit follow AUTH-02 in CASE-02.
+CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. See [action drafts](docs/backend/action_drafts.md). Confirmation and business commit follow in CASE-02.
+
+AUTH-02 atomically adopts the originating browser's anonymous history during successful verification, preserves message provenance and retry identity, invalidates pending drafts, and rotates/revokes sessions. Other browsers cannot claim history using a challenge ID or code. See [anonymous adoption](docs/backend/anonymous_adoption.md).
 
 The worker remains a placeholder. AI and case workflows follow the task plan.
 

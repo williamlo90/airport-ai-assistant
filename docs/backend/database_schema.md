@@ -296,6 +296,7 @@ Implementasi BEHAV-01 pada revision0005_conversations adalah subset bertahap ran
 | --- | --- | --- |
 | customer_principal_id | UUID | NULL, FK → principals |
 | anonymous_session_id | UUID | NULL, FK → sessions |
+| adopted_from_session_id / adopted_at | UUID / TIMESTAMPTZ | NULL bersama; composite FK sesi asal; terisi hanya setelah ownership menjadi principal melalui AUTH-02 |
 | case_id | UUID | NULL, FK → cases |
 | handler_membership_id | UUID | NULL, FK → staff_memberships |
 | language | TEXT | NN, id/en |
@@ -316,6 +317,7 @@ Accept/reassign/close mengambil lock kasus lalu percakapan dalam urutan ID tetap
 | conversation_id / case_id | UUID | NULL, FK → conversations / cases; minimal satu terisi |
 | author_type | TEXT | NN, customer/ai/staff/system |
 | author_principal_id / author_session_id | UUID | NULL, FK → principals / sessions |
+| origin_session_id | UUID | NULL, composite FK sesi; provenance pesan anonim yang kemudian diatribusikan ke principal terverifikasi |
 | channel | TEXT | NN, chat/email |
 | visibility | TEXT | NN, customer/internal |
 | content_class | TEXT | NN, private/generic_notification |
@@ -680,7 +682,7 @@ Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ket
 
 Revision0003_customer_auth menambahkan sessions, verification_challenges dan auth_rate_limits, seluruhnya dengan PK tenant/id, timestamp, ENABLE+FORCE RLS dan indexes untuk lookup/FK/expiry/window. Session dan challenge menyimpan digest HMAC64hex, bukan token/kode/key mentah. Role runtime tidak mempunyai direct SELECT/INSERT/UPDATE tabel auth; operasi berjalan lewat fungsi terbatas milik auth-owner NOLOGIN non-BYPASS. Kontak/principal di-bind hanya melalui verifikasi yang sah; tidak ada grant staf dalam fungsi tersebut.
 
-Schema challenges AUTH-01 hanya purpose customer_login, origin_session_id dan binding_nonce_hash wajib karena flow ini browser-bound. Kolom case_id serta tujuan/verifikasi tanpa browser ditambahkan bersama fitur kasus/email; belum menjadi kolom atau flow yang bisa digunakan pada AUTH-01. Sesi rotated/revoked sudah tersimpan, sedangkan pemindahan conversation/draft menunggu AUTH-02.
+Schema challenges AUTH-01 hanya purpose customer_login, origin_session_id dan binding_nonce_hash wajib karena flow ini browser-bound. Kolom case_id serta tujuan/verifikasi tanpa browser ditambahkan bersama fitur kasus/email; belum menjadi kolom atau flow yang bisa digunakan pada AUTH-01. Schema0007 AUTH-02 menyimpan provenance conversation/message, memindahkan ownership asal dan membatalkan pending draft bersama rotasi/revoke. Body/ID/sequence pesan tetap utuh; atribusi principal mempertahankan deduplikasi setelah login. Runtime tidak dapat menulis provenance dan auth-owner hanya mendapat metadata/update terfokus, bukan body pesan. [Adopsi anonim](anonymous_adoption.md) memuat kontrak executable.
 
 Table auth_rate_limits mempunyai common columns serta scope TEXT(boot/contact/issue_ip/issue_session/verify_ip/verify_session), subject_hash TEXT64hex, window_start TIMESTAMPTZ dan hits INTEGER positif. UQ tenant/scope/subject_hash/window_start mendukung UPSERT atomic. Nilai window berasal dari waktu server dan hit tetap commit saat permintaan ditolak. Rate helper tidak dapat dipanggil runtime secara langsung.
 

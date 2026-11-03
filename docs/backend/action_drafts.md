@@ -52,7 +52,7 @@ ENABLE/FORCE RLS memeriksa sesi aktif, tenant, aktor, sesi pembuat serta akses p
 
 Layanan bisnis berada di modules/drafts; repository menyediakan unit transaksi yang sama dengan percakapan. Urutan lock adalah sesi SHARE, conversation UPDATE, lalu draft UPDATE. Koreksi bersamaan dengan expected_version sama hanya memiliki satu pemenang. Cancel yang bersaing dengan koreksi tetap menghasilkan terminal state tanpa lost update. Tidak ada pemanggilan provider di dalam transaksi ini.
 
-AUTH-02 berikutnya memindahkan ownership percakapan yang terbukti dan membatalkan pending draft sesi asal secara atomik bersama verifikasi. Tahap ini belum memindahkan riwayat/draf saat login. Draf tidak dipakai ulang sebagai persetujuan setelah rotasi sesi.
+AUTH-02 memindahkan ownership percakapan yang terbukti dan membatalkan pending draft sesi asal secara atomik bersama verifikasi. Draf terminal dipertahankan; deadline yang sudah lewat menjadi expired. Draf tidak dipindahkan ke sesi baru atau dipakai ulang sebagai persetujuan. Lihat [adopsi anonim](anonymous_adoption.md); pengajuan baru memerlukan draf dan konfirmasi baru.
 
 ## Pengujian
 

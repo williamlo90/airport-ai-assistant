@@ -39,7 +39,7 @@ Projection dibangun dari data backend yang dipercaya, tidak dideserialisasi dari
 ## Aturan izin
 
 - Anonymous hanya membaca/menggunakan conversation atau draft mandiri milik session_id persis. ID percakapan atau session lama tidak cukup untuk mengambil ownership.
-- Customer hanya mengakses projection mandiri yang owner_principal_id-nya cocok. Riwayat anonim tidak diadopsi secara implisit; AUTH-02 tetap setelah BEHAV-01/CASE-01.
+- Customer hanya mengakses projection mandiri yang owner_principal_id-nya cocok. AUTH-02 memindahkan riwayat asal hanya melalui proof verifikasi browser-bound yang atomik; ID atau claim ownership tidak mengadopsi riwayat. Draf sesi asal dibatalkan, bukan diwariskan sebagai izin/consent.
 - Staff tidak menggunakan jalur ownership pelanggan walaupun principal_id sama.
 - Conversation mandiri: read_conversation/append_message. Draft mandiri: read_draft/edit_draft/confirm_draft/cancel_draft. Ini pemeriksaan ACL; expiry, state, consent, expected_version dan commit tidak digantikan oleh izin tersebut.
 - Case staff: read_case/reply_case memerlukan CS atau supervisor dan queue aktif dalam organisasi yang sama. assign_case memerlukan supervisor pada scope tersebut. Admin tidak otomatis mendapat akses kasus; admin organisasiA + CS organisasiB tidak menjadi CS organisasiA.

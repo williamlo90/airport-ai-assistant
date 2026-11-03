@@ -1,4 +1,4 @@
-"""CASE-01 real Neon: ownership, previews, stale approvals and lifecycle races."""
+"""CASE-01 schema0006 coverage; current adoption is tested at0007."""
 
 import asyncio
 from contextlib import asynccontextmanager
@@ -38,7 +38,7 @@ def target(conversation_target):
     preserved=run(preserve())
     settings=load_database_settings(MigrationDatabaseSettings,Path(os.environ.get('DB_TEST_ENV_FILE','.env')))
     for _ in range(2):
-        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'])=='0006_action_drafts'
+        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'],target_revision='0006_action_drafts')=='0006_action_drafts'
     assert row(t,'SELECT body FROM {s}.messages WHERE conversation_id=:id',id=preserved)[0]=='Preserved through draft upgrade'
     with t['engine'].begin() as db:
         for tenant in (t['a'],t['b']):

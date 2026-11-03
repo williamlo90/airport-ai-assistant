@@ -1,4 +1,4 @@
-"""BEHAV-01 on real restricted Neon, including cross-connection races."""
+"""Frozen BEHAV-01 schema0005 coverage; current adoption is tested at0007."""
 
 import asyncio
 from contextlib import asynccontextmanager
