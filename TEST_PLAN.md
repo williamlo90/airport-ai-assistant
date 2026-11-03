@@ -167,3 +167,11 @@ CASE-01 memetakan SEC-01/02/07 ke isolasi draf tenant/aktor/sesi dan runtime RLS
 SEC-01/02/07 mencakup tenant/pemilik/browser, CSRF/key/authority input, raw RLS/privilege, kontak dan tujuan aktif; deferred constraints menolak orphan graph serta JSON null/hilang. Fault outbox membuktikan rollback keseluruhan dan retry sah. SEC-12 mencakup adopsi kasus umum anonim, provenance, pending cancel dan receipt pascalogin tanpa memakai ulang preview/consent lama.
 
 Queue/organisasi/kontak dikunci dengan hak row lock terbatas; actual UPDATE tetap ditolak. Scope ini tidak menutup WF-05/06 (tambahan informasi/existing case), SEC-11 data turunan privat, live handoff, worker atau email delivery. Endpoint status kasus/assignment/closure mengikuti CASE-03; CASE-02 pada tabel pengujian status di atas adalah ID skenario, bukan klaim fitur closure sudah tersedia.
+
+## Bukti executable CASE-03
+
+Unit `backend/tests/unit/test_case_lifecycle_rules.py` memeriksa matriks status, closure shape/reason/evidence, versi strict, kewenangan input dan intent same_issue eksplisit. Integrasi `backend/tests/integration/test_case_lifecycle.py` memetakan skenario CASE-01/02/03 pada tabel pengujian ke status/assignment, manual closure dan reopen dengan atau tanpa assignee aktif. ID skenario CASE tersebut berbeda dari ID task implementasi.
+
+Bukti mencakup self-claim race, supervisor reassign, close-vs-update/version race, continuation retry/conflict, tenant/owner/anonymous/admin/queue ACL, CSRF, fault sebelum history, sesi kedaluwarsa saat update, pencabutan membership yang menunggu transaksi lalu ditolak pada request berikutnya, raw SQL history/provenance guard dan auth-owner row-lock tanpa UPDATE principal ID. Paused GET bersamaan update membuktikan history prefix cocok dengan versi kasus awal. Regresi adopsi anonim dan graph/receipt CASE-02 dijalankan pada schema0009.
+
+Penutupan no_response tidak menghasilkan rating atau klaim puas. Hasil closure tersimpan dalam status/history publik, bukan bukti email diterima. Kasus tetap report-only; inbound email ambigu/review, live handler/ended mode, source-derived private data dan delivery email menunggu MAIL/CHAT/SRC terkait.

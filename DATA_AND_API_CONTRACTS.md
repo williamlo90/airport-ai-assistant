@@ -244,6 +244,18 @@ Perubahan memakai version check. Respons sukses mengembalikan version baru dan c
 
 Conversation ai → waiting_staff saat handoff terkonfirmasi; waiting_staff → human saat accepted; kasus ditutup mengakhiri sesi terkait menjadi ended. Perubahan meningkatkan generation_epoch. Publication AI memerlukan epoch dan mode ai yang cocok. Restart tidak mengembalikan human/ended menjadi ai. Kelanjutan AI setelah kasus selesai memerlukan percakapan baru, bukan takeover diam-diam.
 
+### Perincian CASE-03 yang executable
+
+GET /cases/{id}, GET /staff/cases/{id} dan GET /staff/queues/cases tersedia untuk kasus laporan berlabel kosong. Antrean adalah100item pertama berizin, filter status opsional, urutan updated_at/id. Scope petugas memerlukan CS/supervisor pada organisasi dan queue aktif; admin saja tidak membaca kasus. Respons status/detail membawa versi, next_actor/action, closure result dan history publik. History dibatasi resulting_version<=versi kasus yang dibaca, sehingga merupakan snapshot konsisten pada pembacaan awal.
+
+PATCH assignment menerima expected_version dan assignee_id berupa UUID membership. CS hanya self-claim kasus unassigned dan sekaligus menerima menjadi in_progress; supervisor dapat preassign new atau reassign aktif. Assignee memerlukan principal/membership/role/queue/organisasi dan credential lokal beserta kontak terverifikasi yang aktif. Mengosongkan assignment hanya pada new oleh supervisor. Closed menolak perubahan staf.
+
+PATCH status menerima expected_version,status,next_action serta close_reason/resolution untuk closed. Duplicate memakai related_case_id berhak dan pemilik sama; API menampilkan related_case_ref hanya jika tetap berhak dibaca. no_response mewajibkan followup_evidence. Closure result tersimpan dan dapat dibaca pelanggan; pengiriman email/close-email job belum diimplementasikan.
+
+POST /cases/{id}/continue menerima expected_version,intent same_issue,message asli pelanggan dan client_request_id UUID. Hanya pemilik customer terverifikasi; kasus harus closed. Assignee sah dipertahankan dan status in_progress, selain itu assignment null/status new. Close fields sekarang dibersihkan, snapshot lama dipertahankan. Request ID sama+digest command sama tidak menambah mutasi/history dan memberi tampilan kasus saat ini; request berbeda409, write lama key baru409. Intent ambigu/thanks/new_issue tidak diinterpretasikan sebagai reopen; pemrosesan email tetap MAIL-04.
+
+Schema0009 memastikan case/history atomik dengan lock, CHECK, scoped RLS, column grants, immediate/deferred guards dan history immutable. Runtime tidak dapat memalsukan identity_verified history/audit atau memasang history masa depan. Auth-owner principal SELECT/INSERT dipisahkan dari privilege UPDATE lock-only. Auth adoption/receipt CASE-02 tetap berlaku tanpa memperluas consent atau ownership runtime. [Panduan lifecycle](docs/backend/case_lifecycle.md). Live conversation handler/ended mode mengikuti CHAT-01/02.
+
 ## 8 Email webhook dan delivery
 
 POST /integrations/email/{account_alias}/events memvalidasi signature pada raw body, timestamp dan account configuration. account_alias tidak cukup sebagai autentikasi. Event replay tidak membuat message/job baru. Payload tidak menimpa tenant dari mapping server. Return 2xx setelah event tersimpan; jika storage gagal, return non-2xx untuk retry.

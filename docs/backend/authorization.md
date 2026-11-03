@@ -2,7 +2,7 @@
 
 AUTH-04 menyatukan identitas sesi, membership dan izin objek pada AccessService. /api/v1/me dan /api/v1/staff/me memakai dependency identitas bersama. StaffService.current/require juga memanggil layanan yang sama. Health dan bootstrap sesi tetap tersedia menurut kontraknya; bootstrap bukan akses ke objek privat.
 
-Tahap ini menyediakan fondasi yang executable. Percakapan, draf dan kasus pada tes masih projection metadata fiktif. Belum ada endpoint produk untuk case, conversation, cursor, blob, booking, payment atau tool. Pemeriksaan pada jalur tersebut wajib dipasang dan dibuktikan bersama fitur masing-masing; QUALITY-01 menutup pengujian lintas jalurnya.
+AUTH-04 menyediakan fondasi yang executable dengan projection metadata pada tes tahap tersebut. Implementasi berikutnya sudah memasang endpoint percakapan BEHAV-01, draf CASE-01, konfirmasi CASE-02 dan [lifecycle kasus CASE-03](case_lifecycle.md), masing-masing dengan pemeriksaan transaksi dan RLS nyata. Cursor, blob dan model/tool mengikuti fitur terkait; QUALITY-01 menutup pengujian lintas jalurnya. Bukti fixture AUTH-04 tetap hanya mencakup fondasi, bukan pengganti tes fitur tersebut.
 
 ## Identitas berasal dari backend
 

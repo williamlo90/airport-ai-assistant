@@ -58,7 +58,7 @@ Aturan berlaku dalam membership yang sama, bukan gabungan role seluruh organisas
 | manage_memberships | Admin dalam organisasi tersebut; pemeriksaan target/self-escalation tetap wajib saat endpoint admin dibuat. |
 | Tindakan tidak dikenal | Tolak. |
 
-Admin organisasiA + CS organisasiB tidak menjadi CS organisasiA. Admin tanpa CS/supervisor tidak membaca isi kasus. AUTH-03 membuktikan kebijakan ini dengan fixture objek/queue dan identitas nyata; endpoint kasus belum ada. AUTH-04 dan fitur kasus harus memasang pemeriksaan yang sama pada transaksi tindakan, bukan mengandalkan hasil pemeriksaan yang lama.
+Admin organisasiA + CS organisasiB tidak menjadi CS organisasiA. Admin tanpa CS/supervisor tidak membaca isi kasus. AUTH-03 membuktikan kebijakan ini dengan fixture objek/queue dan identitas nyata. [CASE-03](case_lifecycle.md) menerapkannya pada endpoint kasus dan transaksi Neon sebenarnya, dengan pembacaan ulang serta lock izin; hasil pemeriksaan login tidak dipakai sebagai izin permanen. CS self-claim unassigned adalah aturan bisnis CASE-03 tersendiri, sementara generic assign_case pada foundation tetap supervisor-only.
 
 ## Kompatibilitas dan rollout
 

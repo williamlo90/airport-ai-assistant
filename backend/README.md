@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-BE-01 menyediakan bootstrap FastAPI yang executable. BE-02 menambahkan liveness, error terstruktur, request ID dan batas input. DB-01 menyediakan koneksi database opt-in yang sudah diuji pada Neon untuk pooled/direct, TLS, commit/rollback dan penggunaan ulang pool. DB-02 menambahkan tabel fondasi tenant/identitas; DB-03 menambahkan role runtime terbatas, RLS dan konteks transaksi. Autentikasi pelanggan dan staf tersedia dalam scope AUTH-01/03 di bagian akhir panduan. Schema alur layanan, worker executable dan route bisnis menyusul.
+Backend FastAPI modular menyediakan autentikasi pelanggan/staf, percakapan, draf terkonfirmasi, pengajuan kasus dan lifecycle layanan pelanggan. Neon PostgreSQL memakai koneksi pooled/direct terpisah, migration versioned, runtime terbatas dan FORCE RLS. Panduan [konfirmasi](../docs/backend/case_confirmation.md) dan [penanganan kasus](../docs/backend/case_lifecycle.md) menjelaskan scope executable. Worker, AI, live handoff dan pengiriman email mengikuti tahap terkait pada task plan.
 
 ## Prasyarat
 

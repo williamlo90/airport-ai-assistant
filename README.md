@@ -48,7 +48,9 @@ CASE-01 adds session-bound action drafts with server-selected destinations, comp
 
 AUTH-02 atomically adopts the originating browser's anonymous history during successful verification, preserves message provenance and retry identity, invalidates pending drafts, and rotates/revokes sessions. Other browsers cannot claim history using a challenge ID or code. See [anonymous adoption](docs/backend/anonymous_adoption.md).
 
-The worker remains a placeholder. AI and case workflows follow the task plan.
+CASE-03 adds scoped CS/supervisor assignment, manual status and closure with immutable history, and explicit customer continuation with versioned retry handling. Customer status reads expose the recorded outcome; email delivery and live conversation handling follow their dedicated tasks. See [case lifecycle](docs/backend/case_lifecycle.md).
+
+The worker remains a placeholder. AI and remaining workflows follow the task plan.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
 

@@ -29,7 +29,7 @@ def target(adoption_target):
     t=adoption_target
     settings=load_database_settings(MigrationDatabaseSettings,Path(os.environ.get('DB_TEST_ENV_FILE','.env')))
     for _ in range(2):
-        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'])=='0008_case_commit'
+        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'],target_revision='0008_case_commit')=='0008_case_commit'
     return t
 
 

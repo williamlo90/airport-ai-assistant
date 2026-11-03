@@ -22,6 +22,7 @@ from airport_assistant.api.source import router as source_router
 from airport_assistant.api.conversations import router as conversation_router
 from airport_assistant.api.drafts import router as draft_router
 from airport_assistant.api.cases import router as case_router
+from airport_assistant.api.case_lifecycle import router as case_lifecycle_router
 from airport_assistant.source_config import SourceSettings,load_source_settings
 
 
@@ -60,6 +61,7 @@ def create_app(settings: Settings, *, services: ApplicationServices | None = Non
         if app.state.services.conversations is not None:app.include_router(conversation_router)
         if app.state.services.drafts is not None:app.include_router(draft_router)
         if app.state.services.cases is not None:app.include_router(case_router)
+        if app.state.services.case_lifecycle is not None:app.include_router(case_lifecycle_router)
     if settings.source_enabled:
         if app.state.services.source is None:raise ConfigurationError("Source read services are required.")
         app.include_router(source_router)
