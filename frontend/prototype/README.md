@@ -1,4 +1,4 @@
-# Customer design prototypes — C-01 through C-04
+# Airport AI Assistant — design prototypes
 
 Pratinjau visual Airport AI Assistant. Beranda C-01 membuka percakapan C-02 dari empat kategori bantuan. Pencarian panduan, FAQ, dan pilihan ID/EN tetap tersedia di beranda.
 
@@ -99,6 +99,24 @@ Open [Staff workspace](http://127.0.0.1:4173/workspace.html). Add `?lang=id` for
 
 Fixture lists are small, explicitly scoped samples; they do not demonstrate a live queue count, cursor/pagination, staff capabilities or server eligibility. Those API gaps remain in the task plan. Updated fixtures are lost on reload; no private data is placed in persistent storage or URLs.
 
-Source: workspace.html/css/js. Private evidence and audit record: docs/frontend/fe_vis_04.md and local/fe-vis-04/. FE-VIS-04 visual approval is pending.
+Source: workspace.html/css/js. Private evidence and audit record: docs/frontend/fe_vis_04.md and local/fe-vis-04/. User approved the FE-VIS-04 appearance on3November2026.
 
-QA FE-VIS-04: PASS for this isolated visual prototype. Actual desktop/mobile widths, role/scope examples, lifecycle prerequisites, dirty-input retention, mobile Back/scroll, dialogs, closure validation and recovery states were checked. User visual approval is pending. Real authentication, authorization, staff directory, queue APIs and mutations require their implementation tasks.
+QA FE-VIS-04: PASS for this isolated visual prototype. Actual desktop/mobile widths, role/scope examples, lifecycle prerequisites, dirty-input retention, mobile Back/scroll, dialogs, closure validation and recovery states were checked. User approved the FE-VIS-04 appearance. Real authentication, authorization, staff directory, queue APIs and mutations require their implementation tasks.
+
+## FE-VIS-05 — receipt and submission recovery
+
+Open [C-05 recorded-request sample](http://127.0.0.1:4173/submission.html?preview=receipt). It shares the approved customer shell, with a complete copyable case reference, case status/next actor/action, and a separate email-delivery state. No email is claimed sent or read. The displayed request and contact are fictional design data.
+
+The one-time `preview=receipt` selects a visual example and is immediately removed. The address then contains only an opaque sample draft UUID and language. **Reload the page** or choose **Reload this link**: it shows recovery, not success, and never sends or confirms a request automatically. Base `submission.html` without a pointer shows the missing-link guidance instead.
+
+Use **Preview state** to inspect10 states: recorded, recorded with unavailable case updates, unknown result, checking, reload recovery, pending, expired, missing link, lookup unavailable, and request unavailable. Use **Sample lookup result**, then the customer-facing **Check submission status**, to explore a simulated committed/pending/expired/unavailable/restricted read result. There is no server lookup or submission behind these controls.
+
+- Pending requires reviewing the latest details and confirming explicitly. Its link opens the separate C-04 visual design; it does not recover a real pending report or carry consent/idempotency keys.
+- Expired opens a fresh review design without reusing the expired pointer. A committed reference is not invalidated by the old draft's review deadline.
+- Missing/invalid link does not generate a replacement request. An unknown UUID cannot look up the known fixture's receipt; the example returns generic unavailable.
+- If commitment is known but case updates fail, the reference remains available and case fields say unavailable. Retry reads case updates only. A recovered view does not invent email/destination metadata absent from CaseView.
+- Copy reports success only after clipboard write succeeds; otherwise it selects the full reference for manual copy. EN/ID changes preserve the same reference and original report text. Case details opens an honest not-connected dialog; C-06 is the next visual task.
+
+Source: submission.html/css/js. No API, cookie access, authentication, provider, email, private persistent storage, or keys/payload in URLs. Functional reconciliation, authorization and duplicate prevention still require FE-CASE-02 and its integrated tests. Private evidence: docs/frontend/fe_vis_05.md and local/fe-vis-05/. Independent QA passed this visual prototype; user visual approval is pending.
+
+QA FE-VIS-05: PASS for the isolated C-05 prototype. Full reference copy/manual fallback, reload recovery, pending/expired/missing/unknown states, receipt-versus-case availability, bilingual feedback, dialog focus and actual desktop/mobile widths were checked. Reference height adapts to wrapping and font/viewport changes. This does not prove live receipt lookup, authorization, idempotent case creation or email delivery. User visual approval is pending.

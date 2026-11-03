@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#1863bc" />
+    <title>Request status — Westbridge Airport</title>
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="request.css?v=fe-vis-03-20261103-2" />
+    <link rel="stylesheet" href="submission.css?v=vis05-3" />
+    <script src="submission.js?v=vis05-3" defer></script>
+  </head>
+  <body class="request-page submission-page">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="request-header">
+      <a href="index.html" id="back-link"
+        >← <span id="back-text">Help centre</span></a
+      ><a class="brand" href="index.html" id="brand"
+        ><img src="assets/mark.svg" alt="" width="36" height="36" /><span
+          >Westbridge Airport<small>AI Assistant</small></span
+        ></a
+      ><button class="language" id="language">ID</button>
+    </header>
+    <div class="preview-tools">
+      <span id="preview-label"
+        >Design preview · Sample outcomes · No request is sent</span
+      ><label for="scene" id="scene-label">Preview state</label
+      ><select id="scene"></select>
+      <div class="lookup-tools">
+        <label for="lookup" id="lookup-label">Sample lookup result</label
+        ><select id="lookup"></select
+        ><button class="preview-reload" id="reload-example">
+          Reload this link
+        </button>
+      </div>
+    </div>
+    <main class="request-layout" id="main" tabindex="-1">
+      <aside class="journey">
+        <p class="journey-title" id="journey-title">Your support request</p>
+        <ol id="steps"></ol>
+        <p class="journey-note" id="journey-note">
+          Keep your reference for any follow-up about this request.
+        </p>
+      </aside>
+      <div id="screen"></div>
+    </main>
+    <dialog id="detail-note" aria-labelledby="detail-title">
+      <h2 id="detail-title">Case details</h2>
+      <p id="detail-copy">
+        Case details will be shown in the next design preview. This button does
+        not load private case data.
+      </p>
+      <div class="dialog-actions">
+        <button class="primary" id="close-detail">
+          Back to request status
+        </button>
+      </div>
+    </dialog>
+  </body>
+</html>

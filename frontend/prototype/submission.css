@@ -1,0 +1,240 @@
+/* C-05 extends the already approved C-03/C-04 customer shell. */
+.submission-page .lookup-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: flex-end;
+}
+.preview-reload {
+  min-height: 44px;
+  padding: 8px 12px;
+  color: var(--blue);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.receipt-head {
+  padding: 28px;
+  border-bottom: 1px solid var(--line);
+}
+.receipt-head h2 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+.reference-line {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+}
+.reference-value {
+  font: inherit !important;
+  font-size: 16px !important;
+  letter-spacing: 0.2px;
+  line-height: 1.5;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #b6c2d2;
+  border-radius: 6px;
+  padding: 12px;
+  background: #f8faff;
+  color: var(--ink);
+}
+.reference-line .secondary {
+  flex: none;
+}
+.reference-hint {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.receipt-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  margin-bottom: 18px;
+}
+.receipt-dot {
+  width: 8px;
+  height: 8px;
+  background: #226246;
+  border-radius: 50%;
+  flex: none;
+}
+.receipt-dot.neutral {
+  background: var(--muted);
+}
+.receipt-details {
+  padding: 24px 28px;
+}
+.receipt-details h2 {
+  font-size: 20px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+.receipt-details dl {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  gap: 14px 20px;
+  margin: 0;
+}
+.receipt-details dt {
+  color: var(--muted);
+}
+.receipt-details dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.receipt-details + .receipt-details {
+  border-top: 1px solid var(--line);
+}
+.receipt-note {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-top: 16px;
+}
+.receipt-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.receipt-actions a {
+  min-height: 48px;
+  text-decoration: none;
+}
+.recovery-paper {
+  padding: 28px;
+}
+.recovery-paper h2 {
+  font-size: 22px;
+  line-height: 1.3;
+  margin-bottom: 12px;
+}
+.recovery-paper p {
+  line-height: 1.7;
+}
+.recovery-paper p + p {
+  margin-top: 14px;
+}
+.recovery-paper .actions {
+  margin-top: 24px;
+}
+.status-explanation {
+  margin-top: 18px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.subtle-divider {
+  border-top: 1px solid var(--line);
+  margin-top: 22px;
+  padding-top: 22px;
+}
+.request-summary {
+  font-size: 18px;
+  font-weight: 700;
+}
+.result-message {
+  font-size: 14px;
+  margin-top: 10px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.result-message:empty {
+  display: none;
+}
+.submission-page button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.submission-page dialog p {
+  line-height: 1.7;
+}
+.receipt-label {
+  display: block;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.recovery-paper .primary,
+.recovery-paper .secondary {
+  white-space: normal;
+  text-align: center;
+}
+.submission-page .receipt-details p {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .submission-page .lookup-tools {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    justify-content: start;
+    gap: 8px 10px;
+  }
+  .submission-page .lookup-tools select {
+    width: 100%;
+    min-width: 0;
+  }
+  .preview-reload {
+    grid-column: 1/-1;
+    justify-self: start;
+    padding-left: 0;
+  }
+  .receipt-head,
+  .receipt-details,
+  .recovery-paper {
+    padding: 22px 20px;
+  }
+  .reference-line {
+    flex-direction: column;
+  }
+  .reference-line .secondary {
+    align-self: flex-start;
+    min-width: 120px;
+  }
+  .reference-value {
+    font-size: 14px !important;
+  }
+  .receipt-details dl {
+    display: block;
+  }
+  .receipt-details dt {
+    margin-top: 14px;
+    font-size: 14px;
+  }
+  .receipt-details dd {
+    margin-top: 5px;
+  }
+  .receipt-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .receipt-actions > a,
+  .receipt-actions > button {
+    width: 100%;
+  }
+  .receipt-actions .secondary {
+    background: transparent;
+  }
+  .submission-page .journey ol {
+    gap: 12px;
+  }
+  .submission-page .journey li {
+    font-size: 13px;
+  }
+}
+.submission-page textarea.reference-value {
+  min-height: 74px;
+  height: 74px;
+  resize: none;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.reference-line .secondary {
+  align-self: flex-start;
+}
