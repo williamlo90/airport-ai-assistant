@@ -2,7 +2,7 @@
 
 Pratinjau visual Airport AI Assistant. Beranda C-01 membuka percakapan C-02 dari empat kategori bantuan. Pencarian panduan, FAQ, dan pilihan ID/EN tetap tersedia di beranda.
 
-Bahasa utama antarmuka adalah **Inggris**, dengan identitas **Nusantara Airport — AI Assistant**. Bahasa Indonesia tetap tersedia melalui tombol ID atau `lang=id`; tanpa parameter bahasa, beranda dan percakapan memakai Inggris. Pesan yang sudah ditulis tetap dalam bahasa aslinya.
+Bahasa utama antarmuka adalah **Inggris**, dengan identitas **Westbridge Airport — AI Assistant**. Bahasa Indonesia tetap tersedia melalui tombol ID atau `lang=id`; tanpa parameter bahasa, beranda dan percakapan memakai Inggris. Pesan yang sudah ditulis tetap dalam bahasa aslinya.
 
 ## Menjalankan
 
@@ -33,13 +33,13 @@ QA C-02, 3 November 2026: PASS untuk prototype lokal setelah perbaikan kesinambu
 
 HTML/CSS/JS statis dipisahkan sebagai acuan visual sebelum dipindahkan ke React/TypeScript sesuai arsitektur proyek. Tidak mengganti struktur aplikasi frontend di `frontend/src/`.
 
-Bandara Nusantara adalah nama contoh. FAQ merupakan panduan ilustratif dari scope produk, bukan informasi operasional bandara nyata. Pencarian lokal membaca kedua bahasa dan mempertahankan teks pengguna saat bahasa tampilan berubah. Hasil filter serta jumlah panduan dihitung dari konten yang ditampilkan.
+Westbridge Airport adalah nama contoh. FAQ merupakan panduan ilustratif dari scope produk, bukan informasi operasional bandara nyata. Pencarian lokal membaca kedua bahasa dan mempertahankan teks pengguna saat bahasa tampilan berubah. Hasil filter serta jumlah panduan dihitung dari konten yang ditampilkan.
 
 AI, sumber booking, autentikasi, pengiriman kasus, dan email belum dihubungkan ke halaman ini. Balasan C-02 merupakan skenario deterministik lokal, bukan inferensi model atau hasil retrieval. Dialog Panduan contoh menjelaskan bahwa isinya ilustratif, bukan kebijakan bandara nyata. Tidak ada data disimpan di local storage atau dikirim keluar.
 
 ## Desain dan aset
 
-Referensi tunggal: Sydney blue/light yang dipilih pengguna; ukuran dan alasan adaptasi tercatat dalam [audit visual](../../docs/frontend/sydney_visual_reference.md). Implementasi, ikon SVG, dan isi ditulis untuk proyek ini. Tidak memakai berkas tema atau foto demo.
+Referensi tunggal: Sydney blue/light yang dipilih pengguna. Implementasi, ikon SVG, dan isi ditulis untuk proyek ini. Tidak memakai berkas tema atau foto demo.
 
 - Font **Tuffy 1.28**, regular400/bold700, diambil dari [arsip resmi 2012-06-14](https://tulrich.com/fonts/tuffy-20120614.zip). [Pernyataan penulis](https://tulrich.com/fonts/) menempatkannya dalam public domain, dengan pemberian izin tanpa syarat bila pelepasan public domain tidak dimungkinkan. Salinan asli [LICENSE.txt](assets/fonts/LICENSE.txt) ikut dibundel. Font disajikan lokal.
 - Hero **assets/airport-terminal.png**, dibuat menggunakan image generation untuk proyek ini; bukan foto lokasi bandara nyata. Mode: generate, latar opaque. Prompt disimpan di bawah.

@@ -1,6 +1,6 @@
 # Menjalankan backend
 
-Backend FastAPI modular menyediakan autentikasi pelanggan/staf, percakapan, draf terkonfirmasi, pengajuan kasus dan lifecycle layanan pelanggan. Neon PostgreSQL memakai koneksi pooled/direct terpisah, migration versioned, runtime terbatas dan FORCE RLS. Panduan [konfirmasi](../docs/backend/case_confirmation.md) dan [penanganan kasus](../docs/backend/case_lifecycle.md) menjelaskan scope executable. Worker, AI, live handoff dan pengiriman email mengikuti tahap terkait pada task plan.
+Backend FastAPI modular menyediakan autentikasi pelanggan/staf, percakapan, draf terkonfirmasi, pengajuan kasus dan lifecycle layanan pelanggan. Neon PostgreSQL memakai koneksi pooled/direct terpisah, migration versioned, runtime terbatas dan FORCE RLS. Panduan konfirmasi dan penanganan kasus menjelaskan scope executable. Worker, AI, live handoff dan pengiriman email mengikuti tahap terkait pada task plan.
 
 ## Prasyarat
 
@@ -205,7 +205,7 @@ Hasil final DB-03: full suite live **192 passed** pada 2 November 2026. QA indep
 
 ## Pola upgrade DB-04
 
-[Migration workflow](../docs/backend/migration_workflow.md) menjelaskan pembuatan revision offline, PK/FK/index/RLS, siklus FK, expand/contract dan bukti upgrade. `airport-assistant-migrate new --message "..."` membuat file scaffold dari checkout tanpa membaca credential; implementasikan file sebelum upgrade. Setelah upgrade, guard menolak tabel tanpa ENABLE/FORCE RLS atau dengan runtime sebagai owner dan me-rollback transaksi.
+Migration workflow menjelaskan pembuatan revision offline, PK/FK/index/RLS, siklus FK, expand/contract dan bukti upgrade. `airport-assistant-migrate new --message "..."` membuat file scaffold dari checkout tanpa membaca credential; implementasikan file sebelum upgrade. Setelah upgrade, guard menolak tabel tanpa ENABLE/FORCE RLS atau dengan runtime sebagai owner dan me-rollback transaksi.
 
 Tambahkan RUN_NEON_UPGRADE_TESTS=1 pada full suite untuk populated-upgrade dan siklus FK di schema sementara. Revision contoh hanya fixture test; tidak menambah tabel demonstrasi ke app atau mengubah head production0002. Tes ini bukan bukti performa backfill besar, rolling deployment, atau fitur bisnis yang belum diimplementasikan.
 
@@ -213,7 +213,7 @@ Verifikasi DB-04: **201 tes live lulus**, dikonfirmasi ulang QA. Build bersih of
 
 ## Customer authentication AUTH-01
 
-[Authentication guide](../docs/backend/authentication.md) memuat setup internal key, cookie/CSRF/origin, kontrak endpoint, rate/TTL dan batas delivery. Feature default nonaktif pada .env.example; setup script menyalakan auth/database dan dapat mendaftarkan host demo. Origin harus HTTPS; server HTTP bootstrap lokal tetap untuk health/development non-auth sampai proxy HTTPS disiapkan.
+Authentication guide memuat setup internal key, cookie/CSRF/origin, kontrak endpoint, rate/TTL dan batas delivery. Feature default nonaktif pada .env.example; setup script menyalakan auth/database dan dapat mendaftarkan host demo. Origin harus HTTPS; server HTTP bootstrap lokal tetap untuk health/development non-auth sampai proxy HTTPS disiapkan.
 
 ```powershell
 uv run --locked --project backend airport-assistant-auth-setup --demo-host localhost
@@ -224,32 +224,32 @@ Sender nyata belum dipasang, sehingga API normal memberi503 untuk permintaan kir
 
 ## Staff authentication AUTH-03
 
-[Staff authentication guide](../docs/backend/staff_authentication.md) menjelaskan login password lokal untuk staf terprovisi, scope membership/queue, pencabutan, CLI credential interaktif dan batas rilis. POST /api/v1/staff/auth/login memerlukan sesi anonim/CSRF; GET /api/v1/staff/me membaca membership terbaru. Logout memakai endpoint umum. Credential tidak membuat membership baru dan tidak dikirim melalui email pelanggan.
+Staff authentication guide menjelaskan login password lokal untuk staf terprovisi, scope membership/queue, pencabutan, CLI credential interaktif dan batas rilis. POST /api/v1/staff/auth/login memerlukan sesi anonim/CSRF; GET /api/v1/staff/me membaca membership terbaru. Logout memakai endpoint umum. Credential tidak membuat membership baru dan tidak dikirim melalui email pelanggan.
 
 Revision0004_staff_auth dipasang melalui migration runner; histori0001–0003 tidak berubah. Runtime tidak mempunyai akses tabel credential langsung. Uji terfokus: unit/test_staff_passwords.py dan integration/test_staff_auth.py dengan RUN_NEON_AUTH_TESTS=1.
 
 
 ## Shared authorization AUTH-04
 
-[Authorization guide](../docs/backend/authorization.md) memuat identitas bersama, helper proof read/mutation, exact tenant/kind/id, ownership dan scope staf, serta concealed404/visible403. /me dan /staff/me memakai AccessService; tidak ada migration atau endpoint resource produksi baru. Uji terfokus: unit/test_access_policy.py dan integration/test_access_http.py dengan RUN_NEON_AUTH_TESTS=1.
+Authorization guide memuat identitas bersama, helper proof read/mutation, exact tenant/kind/id, ownership dan scope staf, serta concealed404/visible403. /me dan /staff/me memakai AccessService; tidak ada migration atau endpoint resource produksi baru. Uji terfokus: unit/test_access_policy.py dan integration/test_access_http.py dengan RUN_NEON_AUTH_TESTS=1.
 
 
 ## Source connector SRC-02
 
-[Source integration](../docs/backend/source_integration.md) memuat setup internal key/mapping, tiga GET customer portal, lima metode read adapter, batas HTTP, validasi DTO dan error. APP_SOURCE_ENABLED opt-in; kebijakan/relasi tetap internal. Diagnostic localhost memakai airport-assistant-source-check; tidak menjadi bypass login customer.
+Source integration memuat setup internal key/mapping, tiga GET customer portal, lima metode read adapter, batas HTTP, validasi DTO dan error. APP_SOURCE_ENABLED opt-in; kebijakan/relasi tetap internal. Diagnostic localhost memakai airport-assistant-source-check; tidak menjadi bypass login customer.
 
 ## Source grants dan security labels SRC-03A
 
-[Source authorization](../docs/backend/source_authorization.md) menjelaskan pemeriksaan grants yang selalu baru, pembentukan label dari DTO, union lintas konten dan restore repository. Gerbang private source dipasang bersama konektor; tidak menggantikan ACL objek, sesi atau keanggotaan kasus. Tes unit: `python -m pytest backend/tests/unit/test_source_labels.py`; tes bridge: set `RUN_NEON_AUTH_TESTS=1` dan `RUN_SOURCE_NETWORK_TESTS=1`, lalu `python -m pytest backend/tests/integration/test_source_bridge.py`. Perintah dijalankan dari root proyek dengan environment backend terpasang dan environment source mandiri siap. Kredensial tetap dimuat script pengujian, bukan dicetak. Case/blob/model/email sebenarnya mengikuti SRC-03B.
+Source authorization menjelaskan pemeriksaan grants yang selalu baru, pembentukan label dari DTO, union lintas konten dan restore repository. Gerbang private source dipasang bersama konektor; tidak menggantikan ACL objek, sesi atau keanggotaan kasus. Tes unit: `python -m pytest backend/tests/unit/test_source_labels.py`; tes bridge: set `RUN_NEON_AUTH_TESTS=1` dan `RUN_SOURCE_NETWORK_TESTS=1`, lalu `python -m pytest backend/tests/integration/test_source_bridge.py`. Perintah dijalankan dari root proyek dengan environment backend terpasang dan environment source mandiri siap. Kredensial tetap dimuat script pengujian, bukan dicetak. Case/blob/model/email sebenarnya mengikuti SRC-03B.
 
 ## Percakapan dasar BEHAV-01
 
-[Panduan percakapan](../docs/backend/conversations.md) menjelaskan create/get metadata, kirim pesan idempotent menurut client_message_id dan perubahan bahasa dengan expected_version. API aktif bersama auth dan database melalui composition normal; tabel dasar revision0005_conversations. Gunakan `python -m airport_assistant.migrate upgrade` dari root untuk memasang migration melalui credential direct yang dimuat internal. Sesi dan ownership diperiksa ulang dalam transaksi, dengan RLS pada percakapan serta pesan. Status received hanya menandakan pesan tersimpan; belum ada balasan agent, kasus atau polling event. AUTH-02 mempertahankan riwayat asal setelah verifikasi browser yang sah.
+Panduan percakapan menjelaskan create/get metadata, kirim pesan idempotent menurut client_message_id dan perubahan bahasa dengan expected_version. API aktif bersama auth dan database melalui composition normal; tabel dasar revision0005_conversations. Gunakan `python -m airport_assistant.migrate upgrade` dari root untuk memasang migration melalui credential direct yang dimuat internal. Sesi dan ownership diperiksa ulang dalam transaksi, dengan RLS pada percakapan serta pesan. Status received hanya menandakan pesan tersimpan; belum ada balasan agent, kasus atau polling event. AUTH-02 mempertahankan riwayat asal setelah verifikasi browser yang sah.
 
 ## Action draft CASE-01
 
-[Panduan draf](../docs/backend/action_drafts.md) menjelaskan POST/GET/PATCH/DELETE action-drafts serta GET actions. Migration0006 menambahkan preview laporan, tujuan server, versi/hash dan fixed TTL15menit. Sesi pembuat tetap wajib meskipun principal sama; source facts, attachments, existing case dan konfirmasi bisnis belum tersedia. Sesi aktif, conversation dan draft dikunci dalam urutan tetap; expiry410 tetap menyimpan state expired. Tes Neon: `python -m pytest backend/tests/integration/test_drafts.py -q --tb=short` dengan RUN_NEON_AUTH_TESTS=1. Jalankan satu setup Neon pada satu waktu agar provisioning ACL tidak berbenturan. Commit bisnis mengikuti CASE-02.
+Panduan draf menjelaskan POST/GET/PATCH/DELETE action-drafts serta GET actions. Migration0006 menambahkan preview laporan, tujuan server, versi/hash dan fixed TTL15menit. Sesi pembuat tetap wajib meskipun principal sama; source facts, attachments, existing case dan konfirmasi bisnis belum tersedia. Sesi aktif, conversation dan draft dikunci dalam urutan tetap; expiry410 tetap menyimpan state expired. Tes Neon: `python -m pytest backend/tests/integration/test_drafts.py -q --tb=short` dengan RUN_NEON_AUTH_TESTS=1. Jalankan satu setup Neon pada satu waktu agar provisioning ACL tidak berbenturan. Commit bisnis mengikuti CASE-02.
 
 ## Adopsi riwayat AUTH-02
 
-[Panduan adopsi anonim](../docs/backend/anonymous_adoption.md) menjelaskan schema0007 dan transaksi verifikasi browser asal. Ownership/provenance, pembatalan draf, konsumsi challenge serta rotasi/revoke atomik. Retry pesan setelah login memakai ID semula; draf perlu dibuat ulang. Jalankan `python -m pytest backend/tests/integration/test_anonymous_adoption.py -q --tb=short` dengan RUN_NEON_AUTH_TESTS=1 untuk menguji schema0007. Fixtures BEHAV/CASE tetap memverifikasi prefix historis0005/0006; flow provider email nyata tetap MAIL-05.
+Panduan adopsi anonim menjelaskan schema0007 dan transaksi verifikasi browser asal. Ownership/provenance, pembatalan draf, konsumsi challenge serta rotasi/revoke atomik. Retry pesan setelah login memakai ID semula; draf perlu dibuat ulang. Jalankan `python -m pytest backend/tests/integration/test_anonymous_adoption.py -q --tb=short` dengan RUN_NEON_AUTH_TESTS=1 untuk menguji schema0007. Fixtures BEHAV/CASE tetap memverifikasi prefix historis0005/0006; flow provider email nyata tetap MAIL-05.

@@ -8,6 +8,9 @@ credentials*.json
 service-account*.json
 .secrets/
 
+# Private project documentation (kept locally)
+/docs/
+
 # Python
 .venv/
 venv/
