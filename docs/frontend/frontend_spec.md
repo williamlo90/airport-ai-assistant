@@ -31,13 +31,13 @@ Frontend tidak membuat booking baru, mengeksekusi pembayaran/refund, mengubah st
 
 ## 2. Arah visual tunggal
 
-Referensi: [Sydney, Premium Plus di Zendesk Marketplace](https://www.zendesk.com/marketplace/themes/33/sydney/). Preview yang dipilih pengguna: [Sydney mobile/desktop](https://resources.premiumplus.io/hubfs/Zendesk%20Marketplace/12_sydney-responsive.jpg). Referensi ini adalah acuan desain, bukan keputusan memakai Zendesk sebagai platform atau membeli temanya.
+Referensi tunggal: Sydney, Premium Plus. Pengguna kemudian mengunci [demo yang sedang dibuka di Chrome](https://sydney.premiumplus.io/hc/en-us), light mode dengan aksen biru. [Preview Marketplace](https://resources.premiumplus.io/hubfs/Zendesk%20Marketplace/12_sydney-responsive.jpg) yang dipilih sebelumnya merupakan referensi awal; keadaan demo kini menjadi acuan konkret. Hasil ukur dan inventaris aset berada di [sydney_visual_reference.md](sydney_visual_reference.md). Ini acuan desain, bukan keputusan memakai Zendesk sebagai platform atau membeli temanya.
 
-Yang diadaptasikan: latar terang, ruang yang lapang pada portal, pertanyaan utama yang mudah ditemukan, kategori bantuan yang jelas, aksen hijau dari preview, navigasi sederhana dan bentuk komponen yang konsisten. Nama/konten/iconography disesuaikan dengan layanan bandara kita. Tidak mengambil logo, copy pemasaran atau aset berbayar tema sebagai aset aplikasi.
+Yang diadaptasikan: latar terang, ruang yang lapang pada portal, pertanyaan utama yang mudah ditemukan, kategori bantuan yang jelas, aksen biru dari demo terkunci, navigasi sederhana dan bentuk komponen yang konsisten. Nama/konten/iconography disesuaikan dengan layanan bandara kita. Tidak mengambil logo, copy pemasaran atau aset tema tanpa izin penggunaan yang sesuai.
 
 Ruang kerja CS memakai bahasa visual Sydney yang sama dengan jarak lebih rapat, label lebih ringkas dan area kerja lebih luas. Tidak menyalin homepage menjadi dashboard atau menambahkan hero/KPI/grafik tanpa pekerjaan pengguna yang jelas.
 
-Font, kode warna, ukuran heading, radius, border dan spacing final belum dibekukan. Sebelum memperbanyak layar, tiga layar acuan harus memperlihatkan font yang benar-benar dimuat dan kandidat token yang dipakai bersama. Tidak otomatis mengunci usulan biru kehijauan lama: keputusan pengguna adalah mengikuti Sydney. Warna status dibedakan dari warna merek dan selalu disertai teks.
+Family font dikunci **Lato** dari distribusi resmi berlisensi SIL OFL1.1, dengan400/700 sebagai bobot awal. Pengukuran warna, heading, radius dan spacing demo sudah dicatat; penerapannya menjadi token final setelah halaman pertama diperiksa pengguna. Tidak memakai font pengganti tanpa alasan yang ditinjau. Warna status dibedakan dari warna merek dan selalu disertai teks. Keterbacaan dapat memerlukan penyesuaian teks sekunder terhadap warna demo.
 
 Target pemeriksaan awal: mobile390px, tablet768px dan desktop1440px, ditambah uji lebar320px dan zoom200%. Body portal sekitar16px, area sentuh utama sekurangnya44px; ukuran akhir ditetapkan pada layar contoh berdasarkan keterbacaan. Tidak ada overflow halaman horizontal. Tabel yang memang perlu scroll memakai area scroll tersendiri.
 
@@ -226,4 +226,6 @@ Untuk tiap layar, catat aktor/pekerjaan, entry/exit, data/API, tindakan, keadaan
 
 Audit dokumen memeriksa keputusan Q1–18, Sydney sebagai referensi tunggal, product contract, API aktual, dependensi, keamanan dan acceptance. Lulus audit dokumen berarti spec siap menjadi dasar perancangan, bukan UI sudah lulus visual atau fitur selesai.
 
-Setelah audit dokumen: buat tiga layar acuan dan pilih token konkret bersama pengguna; susun frontend_architecture.md untuk teknologi/struktur/state/API/design-system; susun frontend_task_plan.md untuk vertical slices dan dependensi nyata; QA audit rancangan teknis sebelum memperluas implementasi. Task dan kontrak backend yang perlu ditambah diturunkan dari DEP, tanpa diam-diam mengubah scope atau mengaktifkan mock sebagai layanan nyata.
+Urutan visual terbaru dari pengguna: kunci keadaan demo → bedah tampilannya → kerjakan **C-01 terlebih dahulu** → bandingkan render di browser dan perbaiki → baru lanjutkan dua layar acuan lainnya setelah arah halaman pertama diterima. Uji tambahan dengan isi yang menyulitkan bersifat opsional selama eksplorasi visual; penerimaan fungsional dan aksesibilitas dasar tetap mengikuti kriteria pada dokumen ini.
+
+Susun frontend_architecture.md untuk teknologi/struktur/state/API/design-system dan frontend_task_plan.md untuk vertical slices/dependensi nyata sebelum memperluas implementasi; QA audit rancangan teknisnya. Task dan kontrak backend yang perlu ditambah diturunkan dari DEP, tanpa diam-diam mengubah scope atau mengaktifkan mock sebagai layanan nyata.
