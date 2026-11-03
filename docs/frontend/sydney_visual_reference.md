@@ -66,9 +66,9 @@ Untuk halaman kita, empat pilihan bantuan tetap mengikuti frontend spec. Sydney 
 
 Computed font-family pada body, judul, link dan search adalah **Lato, sans-serif**. Halaman menunjuk stylesheet Google Fonts untuk Lato weights100/300/400/700/900. Sampel elemen utama yang diukur memakai400 dan700. Ini memverifikasi family dan konfigurasi CSS; inventaris aset browser tidak mengekspos berkas font pada sesi ini, sehingga tidak dijadikan bukti nama berkas/versi biner atau glyph yang benar-benar dirender.
 
-Sumber distribusi yang dipakai untuk implementasi: [Lato di Google Fonts](https://github.com/google/fonts/tree/main/ofl/lato), dengan [OFL.txt resmi](https://raw.githubusercontent.com/google/fonts/main/ofl/lato/OFL.txt). Lisensinya **SIL Open Font License1.1**. Penggunaan/embed/distribusi bersama aplikasi diperbolehkan sesuai syarat lisensi; copyright notice dan lisensi harus ikut ketika berkas font dibundel. Font tidak dijual sendiri. Tidak perlu membeli tema Sydney hanya untuk memakai distribusi Lato ini.
+Distribusi [Lato di Google Fonts](https://github.com/google/fonts/tree/main/ofl/lato), dengan [OFL.txt resmi](https://raw.githubusercontent.com/google/fonts/main/ofl/lato/OFL.txt), memakai **SIL Open Font License1.1**. Ini menjelaskan font demo yang diamati; proyek tidak membundel Lato.
 
-Pilihan implementasi: Lato400 dan700 lebih dahulu, disimpan sebagai aset aplikasi ketika komponen frontend pertama dibuat. Simpan versi sumber, checksum dan OFL bersama berkasnya; jangan menyalin font dari cache/proprietary theme. Self-host menghindari keharusan koneksi Google Fonts saat demo berjalan. Pada halaman contoh, periksa bahwa Lato terpakai dan bukan fallback sebelum menilai lebar teks serta line wrapping. Belum ada berkas font yang ditambahkan dalam tahap audit ini.
+Pilihan implementasi pengguna: **Tuffy 1.28 regular400/bold700**, dari [penulis asli](https://tulrich.com/fonts/) yang merilisnya sebagai public domain, dengan pemberian izin tanpa syarat bila pelepasan public domain tidak dimungkinkan. Berkas font dan pernyataan asli disimpan lokal pada prototype. Sumber, checksum, dan provenance hero berada di [README prototype](../../frontend/prototype/README.md). Periksa Tuffy terpakai sebelum menilai lebar teks dan line wrapping; metriknya berbeda dari Lato.
 
 ## 6. Inventaris hak penggunaan aset
 
@@ -86,10 +86,10 @@ Panduan [penggantian gambar Premium Plus](https://guide.premiumplus.io/hc/en-us/
 
 ## 7. Penerapan ke halaman pertama
 
-Tahap berikutnya hanya **C-01 Beranda bantuan**. Gunakan Lato, ritme ruang, keluarga warna biru/putih/pucat dan hirarki Sydney sebagai acuan, lalu isi dengan identitas serta kebutuhan bandara kita. Header demo/buy-theme, copy pemasaran dan foto asli demo tidak dipakai. Foto dan ikon pengganti harus memiliki asal serta hak penggunaan yang tercatat sebelum dibundel.
+Implementasi pertama hanya **C-01 Beranda bantuan**. Gunakan Tuffy pilihan pengguna, ritme ruang, keluarga warna biru/putih/pucat dan hirarki Sydney sebagai acuan, lalu isi dengan identitas serta kebutuhan bandara kita. Header demo/buy-theme, copy pemasaran dan foto asli demo tidak dipakai. Foto hero dihasilkan khusus untuk proyek dan ikon ditulis sebagai SVG sendiri; provenance berada di README prototype.
 
 Bandingkan di browser pada viewport yang sama: proporsi header/hero, lebar konten, posisi dan alignment judul, wrapping teks, tinggi input, ukuran ikon, jarak kategori dan perilaku mobile. Perbandingan mempertimbangkan adaptasi yang sengaja dipilih: branding, empat kebutuhan bantuan, aset asli dan perbaikan keterbacaan. Tidak memakai skor pixel-diff seluruh halaman sebagai klaim kesamaan karena kontennya memang berbeda.
 
 Perbaiki halaman pertama sampai arah visualnya diterima pengguna, baru lanjut ke review pengajuan dan ruang kerja CS dengan token yang sama. Tidak mendesain ketiga halaman sekaligus sebelum kualitas halaman pertama terlihat. Uji tambahan dengan laporan/nama sangat panjang bersifat opsional pada tahap eksplorasi visual ini; pemeriksaan dasar keterbacaan, mobile, fokus dan tindakan utama tetap dilakukan sesuai frontend spec.
 
-Belum ada coding UI, instalasi framework, pengambilan berkas tema, pembelian lisensi atau pengiriman data/form ke pemilik demo pada tahap ini.
+Pratinjau visual statis C-01 tersedia di [frontend/prototype](../../frontend/prototype/README.md), terpisah dari implementasi React/TypeScript yang direncanakan. Tidak mengambil berkas tema atau mengirim data/form kepada pemilik demo. Persetujuan visual pengguna dan integrasi aplikasi tetap merupakan tahap berikutnya.

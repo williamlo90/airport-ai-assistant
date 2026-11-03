@@ -21,6 +21,7 @@ Booking creation, payment processing, refund execution, and delegation managemen
 | [Data and API contracts](DATA_AND_API_CONTRACTS.md) | Domain entities, API behavior, confirmation, and state transitions. |
 | [Test plan](TEST_PLAN.md) | Planned verification, acceptance gates, and evidence requirements. |
 | [Frontend specification](docs/frontend/frontend_spec.md) | Agreed user flows, Sydney visual direction, screen states, API dependencies, and acceptance criteria. |
+| [Homepage design preview](frontend/prototype/README.md) | Run the first Sydney-inspired help page locally; Tuffy font, bilingual sample guides, and responsive layout. |
 | [Backend architecture](docs/backend/backend_architecture.md) | Backend responsibilities, module dependencies, and request flow. |
 | [Database schema](docs/backend/database_schema.md) | PostgreSQL tables, field types, keys, relationships, constraints, indexes, and isolation rules. |
 | [Customer authentication](docs/backend/authentication.md) | Session lifecycle, email challenges, cookie/CSRF protection, setup, and delivery limits. |

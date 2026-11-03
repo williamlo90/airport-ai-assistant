@@ -37,7 +37,7 @@ Yang diadaptasikan: latar terang, ruang yang lapang pada portal, pertanyaan utam
 
 Ruang kerja CS memakai bahasa visual Sydney yang sama dengan jarak lebih rapat, label lebih ringkas dan area kerja lebih luas. Tidak menyalin homepage menjadi dashboard atau menambahkan hero/KPI/grafik tanpa pekerjaan pengguna yang jelas.
 
-Family font dikunci **Lato** dari distribusi resmi berlisensi SIL OFL1.1, dengan400/700 sebagai bobot awal. Pengukuran warna, heading, radius dan spacing demo sudah dicatat; penerapannya menjadi token final setelah halaman pertama diperiksa pengguna. Tidak memakai font pengganti tanpa alasan yang ditinjau. Warna status dibedakan dari warna merek dan selalu disertai teks. Keterbacaan dapat memerlukan penyesuaian teks sekunder terhadap warna demo.
+Family font aplikasi dikunci **Tuffy 1.28**, regular400/bold700 dari [sumber resmi penulis](https://tulrich.com/fonts/), sesuai pilihan pengguna setelah pembahasan font. Tuffy dirilis sebagai public domain; pernyataan aslinya ikut dibundel dan font disajikan lokal. Lato tetap merupakan hasil pengamatan demo Sydney, bukan font yang dibundel ke aplikasi. Pengukuran warna, heading, radius dan spacing demo sudah dicatat; penerapannya menjadi token final setelah halaman pertama diperiksa pengguna. Warna status dibedakan dari warna merek dan selalu disertai teks. Keterbacaan dapat memerlukan penyesuaian teks sekunder terhadap warna demo.
 
 Target pemeriksaan awal: mobile390px, tablet768px dan desktop1440px, ditambah uji lebar320px dan zoom200%. Body portal sekitar16px, area sentuh utama sekurangnya44px; ukuran akhir ditetapkan pada layar contoh berdasarkan keterbacaan. Tidak ada overflow halaman horizontal. Tabel yang memang perlu scroll memakai area scroll tersendiri.
 
