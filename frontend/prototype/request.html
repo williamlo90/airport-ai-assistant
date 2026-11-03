@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#1863bc" />
+    <title>Support request — Westbridge Airport AI Assistant</title>
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="request.css?v=fe-vis-03-20261103-2" />
+    <script src="request.js?v=fe-vis-03-20261103-2" defer></script>
+  </head>
+  <body class="request-page">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="request-header">
+      <a href="conversation.html?topic=booking" id="back-link"
+        >← <span id="back-text">Back to conversation</span></a
+      ><a class="brand" href="index.html"
+        ><img src="assets/mark.svg" alt="" width="36" height="36" /><span
+          >Westbridge Airport<small>AI Assistant</small></span
+        ></a
+      ><button id="language" class="language">ID</button>
+    </header>
+    <div class="preview-tools">
+      <span id="preview-label">Design preview · No data is sent</span
+      ><label for="scene" id="scene-label">Preview state</label
+      ><select id="scene"></select>
+    </div>
+    <main class="request-layout" id="main" tabindex="-1">
+      <aside class="journey">
+        <p class="journey-title" id="journey-title">Your support request</p>
+        <ol id="steps"></ol>
+        <p class="journey-note" id="journey-note">
+          Your story stays with your request. You will not need to explain it
+          again.
+        </p>
+      </aside>
+      <div id="screen"></div>
+    </main>
+    <dialog id="editor" aria-labelledby="editor-title">
+      <div class="dialog-heading">
+        <h2 id="editor-title"></h2>
+        <button id="close-editor" class="close" aria-label="Close editor">
+          ×
+        </button>
+      </div>
+      <form id="edit-form" novalidate>
+        <div id="edit-fields"></div>
+        <p class="field-error" id="edit-error" role="alert"></p>
+        <div class="dialog-actions">
+          <button type="button" class="secondary" id="cancel-edit">
+            Cancel</button
+          ><button type="submit" class="primary" id="save-edit">
+            Save changes
+          </button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="leave" aria-labelledby="leave-title">
+      <h2 id="leave-title">Leave this review?</h2>
+      <p id="leave-body">
+        Your sample report will stay in this page while you continue editing.
+        Nothing has been submitted.
+      </p>
+      <div class="dialog-actions">
+        <button class="primary" id="keep-review">Keep reviewing</button
+        ><button class="secondary" id="leave-review">Cancel request</button>
+      </div>
+    </dialog>
+  </body>
+</html>

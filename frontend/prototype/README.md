@@ -1,4 +1,4 @@
-# C-01 / C-02 — Beranda dan percakapan pelanggan
+# Customer design prototypes — C-01 through C-04
 
 Pratinjau visual Airport AI Assistant. Beranda C-01 membuka percakapan C-02 dari empat kategori bantuan. Pencarian panduan, FAQ, dan pilihan ID/EN tetap tersedia di beranda.
 
@@ -25,7 +25,7 @@ Langsung ke percakapan: **http://127.0.0.1:4173/conversation.html?topic=booking*
 5. Buka Pratinjau desain → Simulasikan jawaban gagal berikutnya → Mengerti → kirim pesan. Ada loading lalu error. Coba lagi menjawab pesan yang sama tanpa menambahkan salinan pesan pengguna; jalur petugas tetap tersedia.
 6. Mencoba topik lain atau kembali ke beranda dengan pesan/tulisan yang ada memerlukan konfirmasi. Refresh dan navigasi browser memakai peringatan browser bila didukung. Percakapan hanya berada di memori halaman; meninggalkan atau memuat ulang halaman menghapusnya.
 
-Belum ada verifikasi email C-03 atau review/pengiriman C-04. Konteks petugas adalah pratinjau lokal, bukan kasus tercatat. Tidak membuat referensi kasus, status pembayaran, booking, atau konfirmasi pengiriman palsu.
+C-03/C-04 kini tersedia sebagai contoh visual terpisah pada request.html. Percakapan C-02 belum meneruskan data ke halaman itu; request.html memakai fixture sendiri. Konteks petugas tetap pratinjau lokal, bukan kasus tercatat. Tidak membuat referensi kasus, status pembayaran, booking, atau konfirmasi pengiriman nyata.
 
 QA C-02, 3 November 2026: PASS untuk prototype lokal setelah perbaikan kesinambungan konteks petugas, nama aksesibel tombol kembali mobile, dan guard navigasi. Pengujian browser mencakup320/390/768/1440px, ID/EN, draft, klarifikasi, error/retry tanpa duplikasi, dan konfirmasi navigasi. Peringatan native Back/refresh bergantung pada dukungan serta interaksi browser; tidak menjamin pemulihan riwayat setelah keluar. Inspector final0FAIL/1WARN: ruang kosong pada percakapan awal dipertahankan agar composer stabil saat pesan bertambah. Viewport pendek juga diperiksa oleh lead; ini bukan pengujian keyboard OS mobile atau audit WCAG penuh.
 
@@ -64,3 +64,24 @@ Pemeriksaan visual pada 1440/768/390px dan lebar sempit320px. Inspector awal men
 Uji interaksi manual mencakup pencarian cocok/tidak cocok, reset, filter kategori, accordion, perpindahan bahasa dengan input tetap, dialog dan penutupan via Escape, serta menu mobile. Tangkapan layar dan laporan lokal berada di `local/frontend-preview/` dan tidak dibundel sebagai hasil evaluasi production.
 
 QA browser independen, 3 November 2026: PASS untuk scope prototype statis setelah perbaikan fokus filter/reset dan menu/dialog mobile. QA memeriksa 1440/768/390/320px, pemuatan Tuffy, pencarian dua bahasa, tidak ada overflow horizontal, serta tidak ada klaim pengiriman nyata. Saran tambahan lebar target tombol bahasa ditindaklanjuti menjadi44px dan diperiksa ulang oleh lead. Ini bukan audit WCAG penuh atau pengujian integrasi backend.
+
+## FE-VIS-03 — email verification and request review
+
+Open [C-03 — Verify email](http://127.0.0.1:4173/request.html?step=verify) or [C-04 — Review request](http://127.0.0.1:4173/request.html?step=review). Both use the existing prototype server on4173. Add `&lang=id` for Indonesian. This is an isolated visual prototype, not the React application at5173 or the integrated HTTPS environment.
+
+The **Preview state** selector exposes12 design fixtures: email address,8-digit code, invalid/expired code, rate limit, sender unavailable, verifying; and review, validation error, sending, expired review, changed destination, unknown result. No request is sent. The code input accepts any8digits solely to explore the review screen; it grants no identity/access. Email is an example.com fixture. Input and edits exist only in memory, with no local/session storage or private URL parameters.
+
+Try:
+
+1. Request a sample code; enter an incomplete code to see inline validation. Request a new code and confirm the old code is cleared. There is no invented code-expiry countdown. The rate-limit fixture explicitly uses a sample Retry-After60seconds and remains paused until another fixture is selected.
+2. Choose **Sender unavailable**, then **Try again**: it returns to email entry while retaining the address and report. It does not claim an email was sent.
+3. In review, edit request details, original report, references or reply details. Save updates the local sample preview and returns focus to the edit trigger. Escape/Cancel discards that editor's changes. The fixture accepts only the selected example email as verified; new addresses require verification and are not silently accepted.
+4. Switch EN/ID: interface labels change, original report and summary remain as written. Request language is separate from interface language. Changing service updates the sample destination; destination itself is read-only.
+5. Expired review disables Send; get a new sample preview and review again. Changed destination requires reviewing the updated preview before Send. Unknown result disables editing/resubmission and offers a status check, which reports that status is unavailable in this preview. It never creates a receipt or automatically retries.
+6. Cancel request opens a confirmation. Keep reviewing returns to the same report; cancellation only closes this sample review. Edited reports prompt on header navigation and register best-effort browser unload protection. Reload cannot restore edits or submission state.
+
+C-03/C-04 follow the approved Tuffy/Sydney/Westbridge visual direction. New assets, styles and JS are confined to request.html, request.css and request.js; C-01/C-02 user adjustments remain untouched. Backend validation, email sending, verification, server-generated previews/hashes/deadlines, status lookup and stable-idempotency recovery are implemented in their own tasks.
+
+Visual QA and evidence are recorded privately under docs/frontend/fe_vis_03.md and local/fe-vis-03/. Design acceptance by the user is still pending.
+
+QA FE-VIS-03: PASS for the isolated visual prototype after rechecking resend-code clearing, recovery from sender unavailable, and44px Edit targets. Actual desktop/mobile widths, dialogs/focus, EN/ID retention, edits and failure/unknown states were checked. This does not prove real verification, API submission, email delivery or full accessibility conformance. User visual approval remains pending.
