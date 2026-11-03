@@ -166,17 +166,24 @@ Semua mutasi pengajuan/tambahan informasi atas nama pelanggan memakai action dra
 | Endpoint | Kontrak |
 | --- | --- |
 | POST /action-drafts | Body action_type,conversation_id,case_id jika relevan,payload; backend menyaring dan mengotorisasi. Menghasilkan draft_id,version,summary,destination,expires_at,payload_hash. |
+| GET /action-drafts/{id} | Pratinjau penuh milik aktor dan sesi pembuat; expiry dinormalisasi saat dibaca. |
 | PATCH /action-drafts/{id} | Koreksi payload dengan expected_version; versi bertambah, persetujuan versi lama tidak berlaku. |
 | DELETE /action-drafts/{id} | Membatalkan pending draft; tidak menghapus kasus yang sudah committed. |
 | POST /action-drafts/{id}/confirm | expected_version dan payload_hash yang telah ditampilkan; Idempotency-Key wajib; hanya sesi pemilik/UI terautentikasi atau sesi anonim yang diizinkan untuk kasus umum. |
 | GET /actions/{draft_id} | Hasil commit milik aktor: pending/committed/cancelled/expired dan result_ref. Dipakai setelah timeout, bukan mencoba key baru. |
 | POST /cases/{id}/continue | Balasan eksplisit untuk masalah sama pada kasus closed, terverifikasi; idempotent dan versioned. |
 
-create_case payload: category,service_type,summary,customer_report,booking_reference?,transaction_reference?,contact_email?,attachment_ids[],destination_queue_id. Backend menghitung queue yang sah, memvalidasi referensi dan tidak mempercayai tenant/owner/status dari model. Kasus umum tanpa booking tidak memerlukan source subject. Kontak diperlukan untuk tindak lanjut email; email belum diverifikasi tidak berhak menerima detail pribadi.
+create_case payload: category,service_type,summary,customer_report,booking_reference?,transaction_reference?,contact_email?,attachment_ids[]. Backend menghitung destination_queue_id yang sah dan mengembalikannya sebagai output destination; client/model tidak memasok tujuan, tenant, owner atau status. Referensi laporan divalidasi formatnya dan tidak membuktikan kepemilikan. Pengambilan fakta sumber tetap membutuhkan otorisasi sumber tersendiri. Kasus umum tanpa booking tidak memerlukan source subject. Kontak diperlukan untuk tindak lanjut email; email belum diverifikasi tidak berhak menerima detail pribadi.
 
 Confirm menyimpan consent actor/time/hash, kasus atau case message, audit, idempotency result dan outbox dalam satu transaksi. Untuk request_handoff dengan case yang sudah ada tidak membuat case baru. Jika tidak ada petugas, pengajuan offline memerlukan email serta konfirmasi sebelum hasil case reference ditampilkan.
 
 Replay key dan request hash sama mengembalikan hasil sebelumnya; key sama payload berbeda memberi 409. Race dua confirm pada draft sama menghasilkan satu hasil karena draft dikunci dan result_ref unik. Pembatalan setelah commit memberi 409 dan referensi hasil, tidak diam-diam menghapus kasus. Bukti idempotency dipertahankan selama action/case masih ada; key tidak direcycle di tengah retry.
+
+### Perincian CASE-01 yang executable
+
+Create/get/edit/cancel dan GET actions tersedia untuk create_case/request_handoff pada percakapan mandiri, tanpa confirm/consent/hasil kasus. Draf terikat actor XOR serta created_session_id untuk anonim maupun pelanggan terverifikasi. Principal yang sama pada sesi lain tidak meneruskan draf. TTL15menit menurut waktu database tidak diperpanjang koreksi. PATCH mengganti payload utuh, menaikkan version dan hash canonical atas seluruh isi pratinjau, tujuan, bahasa, identitas dan deadline. Guard internal require_confirmation menolak versi/hash lama, tetapi bukan eksekusi atau otorisasi tindakan.
+
+Tujuan memakai queue aktif dan organisasi aktif tenant yang sama: exactservice lalu generalfallback, urutan UUID deterministik. Tanpa tujuan sah,503 dan tidak ada draf. Snapshot tujuan berubah hanya melalui koreksi. Summary/laporan1–200/1–4000karakter wajib nonwhitespace tanpa NUL; referensi/email opsional; attachments harus kosong. Case_id, add_case_information dan private source observations menunggu implementasi terkait. State pending/cancelled/expired tersimpan; terminal immutable. Edit/cancel draf expired memberi410 setelah transisi expiry disimpan. Sesi yang habis di tengah operasi memberi401 dengan rollback. [Panduan action drafts](docs/backend/action_drafts.md) menjelaskan batas CASE-01, RLS dan pengujian; CASE-02 tetap wajib revalidasi tujuan/izin dan commit atomik setelah AUTH-02.
 
 ## 6 Endpoint petugas dan admin
 

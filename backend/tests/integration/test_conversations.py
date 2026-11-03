@@ -36,7 +36,7 @@ def target(auth_target):
                        token_hash='a'*64,csrf_secret_hash='b'*64,
                        expires_at=datetime.now(timezone.utc)+timedelta(hours=1))
     for _ in range(2):
-        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'])=='0005_conversations'
+        assert migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'],target_revision='0005_conversations')=='0005_conversations'
     assert row(t,'SELECT id FROM {s}.principals WHERE id=:id',id=preserved['principal'])[0]==preserved['principal']
     assert row(t,'SELECT token_hash,csrf_secret_hash,revoked_at FROM {s}.sessions WHERE id=:id',id=session)==('a'*64,'b'*64,None)
     return t

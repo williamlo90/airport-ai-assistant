@@ -1,23 +1,21 @@
 """Customer conversation rules inside one repository transaction per operation."""
 
 from dataclasses import dataclass
-from contextlib import asynccontextmanager
 from typing import Protocol, AsyncContextManager
 from uuid import UUID, uuid4
 
 from airport_assistant.modules.identity.access import AccessIdentity, AccessService, OwnedObject, ResourceKey
 from airport_assistant.modules.identity.auth import AuthError
 from airport_assistant.modules.identity.context import DatabaseContext
+from airport_assistant.modules.identity.customer_transaction import (
+    CustomerSessionLost as ConversationSessionLost, customer_transaction, require_customer_session,
+)
 
 
 class ConversationError(Exception):
     def __init__(self, status: int, code: str):
         self.status, self.code = status, code
         super().__init__(code)
-
-
-class ConversationSessionLost(Exception):
-    """Repository confirmed session loss after a rolled-back RLS failure."""
 
 
 @dataclass(frozen=True)
@@ -72,20 +70,10 @@ class ConversationService:
 
     @staticmethod
     async def _active(tx):
-        if not await tx.session_active():
-            raise AuthError(401,'AUTH_REQUIRED')
+        await require_customer_session(tx)
 
-    @asynccontextmanager
-    async def _transaction(self,identity):
-        try:
-            async with self._repository.transaction(self._context(identity)) as tx:
-                await self._active(tx)
-                yield tx
-                # Expiry is not frozen by the session row lock. Check again
-                # before returning data or committing writes, including replay.
-                await self._active(tx)
-        except ConversationSessionLost:
-            raise AuthError(401,'AUTH_REQUIRED') from None
+    def _transaction(self,identity):
+        return customer_transaction(self._repository,identity)
 
     @staticmethod
     def _require(identity, id, conversation, action):

@@ -44,6 +44,8 @@ SRC-01 provides an independent read-only reference API with SQLite and fictional
 
 BEHAV-01 adds durable standalone conversations, owner-scoped customer messages, concurrent retry deduplication, and versioned language changes. Message receipt confirms storage; no AI job or case is created. See [conversations](docs/backend/conversations.md). Anonymous history adoption remains AUTH-02 after action drafts are available in CASE-01.
 
+CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. See [action drafts](docs/backend/action_drafts.md). Confirmation and business commit follow AUTH-02 in CASE-02.
+
 The worker remains a placeholder. AI and case workflows follow the task plan.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.

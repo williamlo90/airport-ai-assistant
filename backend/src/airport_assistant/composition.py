@@ -23,6 +23,8 @@ from airport_assistant.modules.source.grants import CurrentSourceGrants
 from airport_assistant.modules.source.labels import PrivateSourceAccess
 from airport_assistant.modules.conversations.service import ConversationService
 from airport_assistant.infrastructure.database.conversation_repository import PostgresConversations
+from airport_assistant.modules.drafts.service import DraftService
+from airport_assistant.infrastructure.database.draft_repository import PostgresDrafts
 from airport_assistant.integrations.source.client import SourceHttpClient
 from airport_assistant.infrastructure.database.source_subjects import PostgresSourceSubjects
 from airport_assistant.infrastructure.database.staff_repository import PostgresStaffRepository
@@ -39,6 +41,7 @@ class ApplicationServices:
     source_grants: CurrentSourceGrants|None=None
     private_source_access: PrivateSourceAccess|None=None
     conversations: ConversationService|None=None
+    drafts: DraftService|None=None
 
 
 def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings|None=None,sender:VerificationSender|None=None,source_client=None,tenant_map=None) -> ApplicationServices:
@@ -57,8 +60,9 @@ def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings
     source_grants=CurrentSourceGrants(source,source_client) if source is not None else None
     private_source_access=PrivateSourceAccess(source_grants) if source_grants is not None else None
     conversations=ConversationService(PostgresConversations(database)) if access is not None else None
+    drafts=DraftService(PostgresDrafts(database)) if access is not None else None
     return ApplicationServices(health=ProcessHealthService(),auth=auth,staff=staff,access=access,source=source,
-                               source_grants=source_grants,private_source_access=private_source_access,conversations=conversations)
+                               source_grants=source_grants,private_source_access=private_source_access,conversations=conversations,drafts=drafts)
 
 
 @dataclass(frozen=True)

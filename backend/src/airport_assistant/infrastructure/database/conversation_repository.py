@@ -25,7 +25,7 @@ class PostgresConversations:
     async def transaction(self,context):
         try:
             async with self._database.transaction(context) as connection:
-                yield ConversationSQL(connection,self._schema,context)
+                yield self.unit(connection,context)
         except DatabaseError as error:
             if error.sqlstate == '42501':
                 # The failed statement has already rolled back. Confirm actual
@@ -36,6 +36,9 @@ class PostgresConversations:
                 if not active:
                     raise ConversationSessionLost() from None
             raise
+
+    def unit(self,connection,context):
+        return ConversationSQL(connection,self._schema,context)
 
 
 class ConversationSQL:

@@ -245,3 +245,7 @@ Revision0004_staff_auth dipasang melalui migration runner; histori0001–0003 ti
 ## Percakapan dasar BEHAV-01
 
 [Panduan percakapan](../docs/backend/conversations.md) menjelaskan create/get metadata, kirim pesan idempotent menurut client_message_id dan perubahan bahasa dengan expected_version. API aktif bersama auth dan database melalui composition normal; schema baru revision0005_conversations. Gunakan `python -m airport_assistant.migrate upgrade` dari root untuk memasang migration melalui credential direct yang dimuat internal. Sesi dan ownership diperiksa ulang dalam transaksi, dengan RLS pada percakapan serta pesan. Status received hanya menandakan pesan tersimpan; belum ada balasan agent, kasus atau polling event. Riwayat anonim belum diadopsi setelah verifikasi sampai AUTH-02 selesai bersama draft CASE-01.
+
+## Action draft CASE-01
+
+[Panduan draf](../docs/backend/action_drafts.md) menjelaskan POST/GET/PATCH/DELETE action-drafts serta GET actions. Migration0006 menambahkan preview laporan, tujuan server, versi/hash dan fixed TTL15menit. Sesi pembuat tetap wajib meskipun principal sama; source facts, attachments, existing case dan konfirmasi bisnis belum tersedia. Sesi aktif, conversation dan draft dikunci dalam urutan tetap; expiry410 tetap menyimpan state expired. Tes Neon: `python -m pytest backend/tests/integration/test_drafts.py -q --tb=short` dengan RUN_NEON_AUTH_TESTS=1. Jalankan satu setup Neon pada satu waktu agar provisioning ACL tidak berbenturan. Berikutnya AUTH-02 sebelum CASE-02.

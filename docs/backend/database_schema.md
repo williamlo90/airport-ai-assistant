@@ -224,11 +224,14 @@ UQ `(tenant_id,case_id,principal_id)`. **Principal M ↔ N cases**. Sesi anonim 
 
 ### action_drafts
 
+Implementasi CASE-01 pada revision0006_action_drafts menerima create_case/request_handoff mandiri dan state pending/cancelled/expired. Selain actor XOR, created_session_id UUID NN mengikat semua draf ke sesi pembuat dengan composite FK tenant/sessions. Payload berisi laporan pengguna tervalidasi; destination JSON menyimpan snapshot queue/organisasi dan harus cocok dengan destination_queue_id. Language, created_at, fixed expiry15menit dan seluruh material pratinjau ikut hash canonical. Version fisik BIGINT. Case_id wajib NULL dan resource_security_labels wajib[]; committed/result pointers/consent serta existing-case action ditambahkan pada CASE-02/fitur terkait. Trigger menahan perubahan terminal dan mencegah edit pending setelah deadline; RLS memeriksa sesi aktif, pemilik, sesi pembuat dan percakapan. [Panduan draf](action_drafts.md) menjelaskan invariannya.
+
 | Kolom tambahan | Tipe | Aturan |
 | --- | --- | --- |
 | conversation_id | UUID | NN, FK → conversations |
 | case_id | UUID | NULL, FK → cases |
 | actor_principal_id / actor_session_id | UUID | Masing-masing NULL, FK → principals / sessions; tepat satu terisi |
+| created_session_id | UUID | NN, FK → sessions; semua draf terikat sesi pembuat, termasuk aktor principal |
 | action_type | TEXT | NN, create_case/add_case_information/request_handoff |
 | destination_queue_id | UUID | NN, FK → service_queues; backend memilih tujuan sah |
 | payload | JSONB | NN, sesuai schema action type |

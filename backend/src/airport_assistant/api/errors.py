@@ -9,6 +9,7 @@ from airport_assistant.api.schemas import ErrorDetail, ErrorResponse
 from airport_assistant.modules.identity.auth import AuthError
 from airport_assistant.modules.source.models import SourceFailure
 from airport_assistant.modules.conversations.service import ConversationError
+from airport_assistant.modules.drafts.models import DraftError
 
 AUTH_ERRORS={
     "STAFF_LOGIN_FAILED":("Login staf tidak berhasil. Periksa kredensial atau hubungi administrator.",False),
@@ -18,6 +19,9 @@ AUTH_ERRORS={
     "AUTH_UNAVAILABLE":("Layanan autentikasi belum tersedia.",True),
     "CONVERSATION_UNAVAILABLE":("Percakapan belum dapat diproses.",True),
     "MESSAGE_CONFLICT":("ID pesan sudah dipakai untuk isi yang berbeda.",False),
+    "DRAFT_UNAVAILABLE":("Draf belum dapat diproses.",True),
+    "DRAFT_DESTINATION_UNAVAILABLE":("Tujuan layanan belum tersedia. Coba lagi nanti.",True),
+    "DRAFT_NOT_PENDING":("Draf ini sudah tidak dapat diubah atau dikonfirmasi.",False),
 }
 
 
@@ -50,6 +54,10 @@ def error_response(status: int, request_id: str, headers: dict | None = None, *,
 
 
 def install_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(DraftError)
+    async def draft_error(request:Request,exc:DraftError):
+        return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code)
+
     @app.exception_handler(ConversationError)
     async def conversation_error(request:Request,exc:ConversationError):
         return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code)

@@ -44,6 +44,7 @@ Neon tidak perlu dibuktikan ulang sebagai produk yang tersedia. Yang diuji adala
 | SEC-12 | Mulai anonim lalu verify pada browser yang sama vs browser lain yang mengetahui ID | Upgrade sah menjaga riwayat, rotate token, revoke sesi lama dan cancel draf; browser lain tidak mengadopsi riwayat. |
 | WF-01 | Draf diubah setelah ringkasan tampil | Konfirmasi versi lama 409; payload terbaru perlu persetujuan baru. |
 | WF-02 | Pengguna membatalkan atau belum menyetujui | Tidak ada case/outbox commit; model tidak bisa membuat consent. |
+| WF-02A | Deadline draf terlewati sebelum/selama edit atau cancel | State expired tersimpan; mutasi410, GET/status expired; tidak ada500 atau pemulihan pending. |
 | WF-03 | Dua confirm bersamaan dan retry dengan key sama | Satu tindakan dan satu result_ref; key sama payload beda 409. |
 | WF-04 | Commit kasus berhasil tetapi response hilang | GET action menemukan hasil; retry tidak membuat kasus kedua. |
 | WF-05 | Kirim tambahan informasi atas nama pengguna | Konfirmasi diperlukan; email asli inbound tidak terkena konfirmasi portal. |
@@ -155,4 +156,6 @@ Urutan: uji kontrak/domain dan akses → integrasi → evaluasi AI calibration �
 
 Setiap run mencatat run_id, waktu, app commit, schema/fixture/dataset version, model/settings, lingkungan, command, expected/actual, status pass/fail/blocked/not_run, log tersanitasi dan defect reference. Failed/blocked tidak dihapus untuk menghasilkan skor lebih tinggi. Ringkasan portfolio boleh fokus pada konfigurasi final yang terbukti dengan konteks pengujian yang benar.
 
-QA dokumen wajib menunjukkan sumber requirement dan lokasi temuannya. QA implementasi wajib memeriksa bukti eksekusi, tidak hanya membaca rencana. Lead memeriksa ulang temuan kritis dan alasan menutup defect. Semua tes di dokumen ini masih direncanakan; belum ada hasil implementasi yang diklaim.
+QA dokumen wajib menunjukkan sumber requirement dan lokasi temuannya. QA implementasi wajib memeriksa bukti eksekusi, tidak hanya membaca rencana. Lead memeriksa ulang temuan kritis dan alasan menutup defect. Katalog ini menetapkan cakupan target; hasil implementasi per tahap dicatat di docs/backend/task_plan.md, bukan dianggap otomatis lulus untuk seluruh produk.
+
+CASE-01 memetakan SEC-01/02/07 ke isolasi draf tenant/aktor/sesi dan runtime RLS, WF-01 ke koreksi serta guard versi/hash internal, WF-02 ke persistent cancel tanpa eksekusi, dan WF-02A ke deadline sebelum/selama operasi. Konfirmasi HTTP dan commit consent/case/outbox WF-01–04 dituntaskan CASE-02; adopsi riwayat serta pembatalan draf saat upgrade SEC-12 tetap AUTH-02. Keberhasilan tes draf tidak menyatakan jalur tersebut sudah selesai.
