@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#1863bc" />
+    <title>Case details — Westbridge Airport</title>
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="request.css?v=fe-vis-03-20261103-2" />
+    <link rel="stylesheet" href="case.css?v=vis06-1" />
+    <script src="case.js?v=vis06-1" defer></script>
+  </head>
+  <body class="request-page case-page">
+    <a class="skip" href="#main">Skip to case details</a>
+    <header class="request-header">
+      <a href="submission.html?preview=receipt" id="back-link"
+        >← <span id="back-text">Request receipt</span></a
+      ><a class="brand" href="index.html" id="brand"
+        ><img src="assets/mark.svg" alt="" width="36" height="36" /><span
+          >Westbridge Airport<small>AI Assistant</small></span
+        ></a
+      ><button class="language" id="language">ID</button>
+    </header>
+    <div class="preview-tools">
+      <span id="preview-note"
+        >Design preview · Fictional case · No request is sent</span
+      ><label for="scene" id="scene-label">Preview state</label
+      ><select id="scene"></select>
+      <div class="scenario-tools">
+        <label for="outcome" id="outcome-label">Sample send result</label
+        ><select id="outcome"></select
+        ><label for="lookup" id="lookup-label">Sample status check</label
+        ><select id="lookup"></select>
+      </div>
+    </div>
+    <main class="request-layout" id="main" tabindex="-1">
+      <aside class="journey case-rail">
+        <p class="journey-title" id="rail-title">Your support case</p>
+        <p class="rail-label" id="reference-label">Case reference</p>
+        <p class="rail-reference" id="rail-reference"></p>
+        <p class="journey-note" id="rail-note">
+          Keep this reference when asking about the same issue.
+        </p>
+        <a class="rail-link" id="help-link" href="index.html">Help centre</a>
+      </aside>
+      <div id="screen"></div>
+    </main>
+    <dialog id="leave-dialog" aria-labelledby="leave-title">
+      <h2 id="leave-title">Leave this page?</h2>
+      <p id="leave-copy">
+        Leaving discards unsent text and local recovery information. It does not
+        cancel a request that may have reached the service.
+      </p>
+      <div class="dialog-actions">
+        <button class="primary" id="stay">Stay on this case</button
+        ><button class="secondary" id="leave">Discard and leave</button>
+      </div>
+    </dialog>
+  </body>
+</html>

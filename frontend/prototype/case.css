@@ -1,0 +1,391 @@
+/* C-06 keeps the customer Sydney/Tuffy shell and separates present status from prior results. */
+.case-page .scenario-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  width: 100%;
+}
+.case-page .preview-tools select {
+  max-width: 260px;
+}
+.case-rail .rail-label {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 26px;
+}
+.rail-reference {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  margin: 8px 0 24px;
+}
+.rail-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-top: 16px;
+  color: var(--blue);
+  text-underline-offset: 4px;
+}
+.case-paper {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.case-current {
+  padding: 26px 28px;
+  border-bottom: 1px solid var(--line);
+}
+.case-state-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.case-badge {
+  border: 1px solid #c3cfe0;
+  border-radius: 5px;
+  padding: 5px 10px;
+  font-size: 14px;
+}
+.case-badge.closed {
+  background: #f2f7f4;
+  border-color: #c2d6ca;
+  color: #28543f;
+}
+.case-badge.new,
+.case-badge.in_progress {
+  background: #f0f6ff;
+  color: #1c559c;
+  border-color: #c0d3ec;
+}
+.case-time {
+  font-size: 13px;
+  color: var(--muted);
+}
+.case-current dl,
+.case-section dl {
+  display: grid;
+  grid-template-columns: 145px minmax(0, 1fr);
+  gap: 12px 20px;
+  margin: 0;
+}
+.case-current dt,
+.case-section dt {
+  color: var(--muted);
+}
+.case-current dd,
+.case-section dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.case-section {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--line);
+}
+.case-section:last-child {
+  border-bottom: 0;
+}
+.case-section h2,
+.case-current h2 {
+  font-size: 21px;
+  line-height: 1.4;
+  margin-bottom: 16px;
+}
+.case-section p {
+  line-height: 1.7;
+}
+.case-section p + p {
+  margin-top: 12px;
+}
+.case-section .original-report {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.case-section .context-note {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+  margin-top: 12px;
+}
+.closure-date {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.closure-result {
+  border-left: 3px solid #becddf;
+  padding-left: 18px;
+  margin: 18px 0 0;
+}
+.closure-result p {
+  margin-top: 6px;
+}
+.case-section .actions {
+  margin-top: 20px;
+}
+.case-history summary {
+  min-height: 44px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--blue);
+  font-weight: 700;
+  gap: 14px;
+}
+.case-history summary::after {
+  content: '+';
+  font-size: 24px;
+}
+.case-history[open] summary::after {
+  content: '−';
+}
+.case-history ol {
+  padding-left: 22px;
+  margin: 24px 0 0;
+}
+.case-history li {
+  padding: 0 0 22px 8px;
+  line-height: 1.65;
+}
+.case-history li:last-child {
+  padding-bottom: 0;
+}
+.case-history time {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  margin-bottom: 5px;
+}
+.case-history p {
+  margin: 6px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.followup-heading {
+  margin: 24px 0 10px;
+}
+.case-page #followup-form label:not(.same-issue) {
+  display: block;
+  font-weight: 700;
+  margin: 18px 0 8px;
+}
+.case-page #explanation {
+  min-height: 135px;
+  line-height: 1.7;
+}
+.case-page .same-issue {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-weight: 400;
+  margin-top: 18px;
+  min-height: 44px;
+  cursor: pointer;
+}
+.case-page .same-issue input {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+.case-page .same-issue span {
+  line-height: 1.6;
+}
+.case-page .status-note {
+  font-size: 14px;
+  color: var(--muted);
+  margin-top: 16px;
+  line-height: 1.65;
+}
+.case-page .case-notice {
+  padding: 18px 22px;
+  border: 1px solid #c8d7e9;
+  background: #eff5fc;
+  border-radius: 8px;
+  margin: 0 0 20px;
+  line-height: 1.7;
+}
+.case-notice h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+}
+.case-notice.warning {
+  background: #fff9ed;
+  border-color: #e5cea0;
+}
+.case-notice.error {
+  background: #fff3f0;
+  border-color: #e4b9b2;
+}
+.case-notice .secondary {
+  background: white;
+  margin-top: 14px;
+}
+.case-notice p + p {
+  margin-top: 8px;
+}
+.case-page .recorded-message {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  background: var(--pale);
+  border-radius: 6px;
+  padding: 16px;
+  line-height: 1.7;
+}
+.case-error-summary {
+  padding: 14px 18px;
+  background: #fff3f0;
+  border: 1px solid #dfa9a0;
+  border-radius: 6px;
+  margin-bottom: 18px;
+}
+.case-error-summary h3 {
+  font-size: 17px;
+  line-height: 1.4;
+}
+.case-error-summary a {
+  display: block;
+  color: #8a2724;
+  margin-top: 8px;
+  text-underline-offset: 3px;
+}
+.case-page .failure-card {
+  padding: 28px;
+}
+.failure-card h1 {
+  font-size: 30px;
+  line-height: 1.3;
+  margin-bottom: 14px;
+}
+.failure-card p {
+  line-height: 1.7;
+}
+.failure-card .actions a {
+  color: var(--blue);
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.case-page .readonly-explanation {
+  margin-top: 14px;
+}
+.case-page .field-error {
+  line-height: 1.6;
+}
+.case-page .followup-disabled {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.case-page .page-heading > p {
+  overflow-wrap: anywhere;
+}
+.case-page dialog p {
+  line-height: 1.7;
+}
+.case-page .subtle-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--blue);
+  text-underline-offset: 4px;
+}
+.case-page .notice-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 16px;
+}
+@media (max-width: 640px) {
+  .case-page .scenario-tools {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 10px;
+    justify-content: start;
+  }
+  .case-page .preview-tools select {
+    max-width: none;
+    min-width: 0;
+    width: 100%;
+  }
+  .case-rail {
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+    margin-bottom: 22px;
+    display: flex;
+    gap: 8px 14px;
+    align-items: start;
+    flex-wrap: wrap;
+  }
+  .case-rail .rail-label {
+    margin: 0;
+    font-size: 13px;
+  }
+  .case-rail .rail-reference {
+    font-size: 13px;
+    margin: 0;
+    flex: 1;
+    min-width: 140px;
+  }
+  .case-rail .rail-link {
+    margin: 0;
+    width: 100%;
+  }
+  .case-current,
+  .case-section {
+    padding: 22px 20px;
+  }
+  .case-current dl,
+  .case-section dl {
+    display: block;
+  }
+  .case-current dt,
+  .case-section dt {
+    font-size: 14px;
+    margin-top: 14px;
+  }
+  .case-current dd,
+  .case-section dd {
+    margin-top: 4px;
+  }
+  .case-current .case-state-line {
+    margin-bottom: 14px;
+  }
+  .case-time {
+    font-size: 12px;
+  }
+  .case-page .case-notice {
+    padding: 18px;
+  }
+  .case-page .actions > button {
+    width: 100%;
+  }
+  .case-page .actions .quiet {
+    margin-left: 0;
+  }
+  .case-page .failure-card {
+    padding: 24px 20px;
+  }
+  .case-page .failure-card h1 {
+    font-size: 27px;
+  }
+  .case-page .notice-actions > button {
+    width: 100%;
+  }
+  .case-page .case-history summary {
+    font-size: 16px;
+  }
+  .case-page .case-section h2 {
+    font-size: 20px;
+  }
+}

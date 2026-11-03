@@ -476,10 +476,12 @@ async function act(kind) {
     return;
   }
   if (kind === 'details') {
-    $('detail-title').textContent = t().detailsTitle;
-    $('detail-copy').textContent = t().detailsNote;
-    $('close-detail').textContent = t().closeDetails;
-    $('detail-note').showModal();
+    const preview = scene === 'receipt-only' ? 'recover' : 'new';
+    location.href =
+      'case.html?preview=' +
+      preview +
+      '&case=33333333-3333-4333-8333-333333333333&lang=' +
+      lang;
     return;
   }
   if (kind === 'copy') {
@@ -498,7 +500,6 @@ async function act(kind) {
     }
   }
 }
-$('close-detail').onclick = () => $('detail-note').close();
 $('scene').onchange = (e) => choose(e.target.value, true);
 $('lookup').onchange = (e) => (lookup = e.target.value);
 $('language').onclick = () => {
