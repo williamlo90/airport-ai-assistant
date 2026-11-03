@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Support workspace — Westbridge Airport</title>
+    <link rel="icon" href="assets/mark.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="workspace.css?v=vis04-6" />
+    <script src="workspace.js?v=vis04-6" defer></script>
+  </head>
+  <body class="workspace-page">
+    <a class="skip" href="#workspace">Skip to cases</a>
+    <header class="staff-header">
+      <a class="brand" href="index.html" id="home"
+        ><img src="assets/mark.svg" alt="" width="34" height="34" /><span
+          >Westbridge Airport<small>AI Assistant · Staff workspace</small></span
+        ></a
+      >
+      <div class="staff-identity">
+        <span class="avatar" aria-hidden="true" id="initials">JM</span
+        ><span id="identity">Jordan Miller<small>Customer service</small></span
+        ><button
+          class="language"
+          id="language"
+          aria-label="Switch to Indonesian"
+        >
+          ID
+        </button>
+      </div>
+    </header>
+    <div class="fixture-bar">
+      <p id="fixture-note">
+        Design preview · Sample staff and cases · No requests are sent
+      </p>
+      <div>
+        <label for="profile" id="profile-label">Sample profile</label
+        ><select id="profile"></select
+        ><label for="scene" id="scene-label">Preview state</label
+        ><select id="scene"></select>
+      </div>
+    </div>
+    <main class="workspace" id="workspace" tabindex="-1">
+      <aside class="scope-panel">
+        <p class="scope-title" id="scope-title">Support workspace</p>
+        <p class="scope-org" id="scope-org"></p>
+        <p class="scope-current" id="scope-current">Cases</p>
+        <p class="scope-note" id="scope-note"></p>
+      </aside>
+      <section class="case-queue" id="queue" aria-labelledby="queue-title">
+        <div class="queue-heading">
+          <h1 id="queue-title">Support cases</h1>
+          <p id="queue-scope"></p>
+        </div>
+        <div
+          id="queue-tabs"
+          class="queue-tabs"
+          role="group"
+          aria-label="Case view"
+        ></div>
+        <div class="queue-filter">
+          <label for="status-filter" id="status-label">Status</label
+          ><select id="status-filter"></select>
+        </div>
+        <div class="queue-scroll" id="queue-scroll"></div>
+        <p class="queue-foot" id="queue-foot"></p>
+      </section>
+      <section
+        class="case-detail"
+        id="detail"
+        aria-label="Case details"
+      ></section>
+    </main>
+    <dialog id="dirty-dialog" aria-labelledby="dirty-title">
+      <h2 id="dirty-title">Leave unsaved changes?</h2>
+      <p id="dirty-copy">Your unsaved case update will be discarded.</p>
+      <div class="dialog-actions">
+        <button class="primary" id="keep-editing">Keep editing</button
+        ><button class="secondary" id="discard">
+          Discard changes and leave
+        </button>
+      </div>
+    </dialog>
+    <dialog id="action-dialog" aria-labelledby="action-title">
+      <div class="modal-heading">
+        <h2 id="action-title"></h2>
+        <button class="close" id="close-dialog" aria-label="Close dialog">
+          ×
+        </button>
+      </div>
+      <form id="action-form" novalidate>
+        <div id="action-fields"></div>
+        <p role="alert" class="field-error" id="action-error"></p>
+        <div class="dialog-actions">
+          <button class="secondary" type="button" id="cancel-action">
+            Cancel</button
+          ><button class="primary" type="submit" id="confirm-action">
+            Review change
+          </button>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>

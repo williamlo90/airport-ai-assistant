@@ -82,6 +82,23 @@ Try:
 
 C-03/C-04 follow the approved Tuffy/Sydney/Westbridge visual direction. New assets, styles and JS are confined to request.html, request.css and request.js; C-01/C-02 user adjustments remain untouched. Backend validation, email sending, verification, server-generated previews/hashes/deadlines, status lookup and stable-idempotency recovery are implemented in their own tasks.
 
-Visual QA and evidence are recorded privately under docs/frontend/fe_vis_03.md and local/fe-vis-03/. Design acceptance by the user is still pending.
+Visual QA and evidence are recorded privately under docs/frontend/fe_vis_03.md and local/fe-vis-03/. The user approved the C-03/C-04 appearance on3November2026.
 
-QA FE-VIS-03: PASS for the isolated visual prototype after rechecking resend-code clearing, recovery from sender unavailable, and44px Edit targets. Actual desktop/mobile widths, dialogs/focus, EN/ID retention, edits and failure/unknown states were checked. This does not prove real verification, API submission, email delivery or full accessibility conformance. User visual approval remains pending.
+QA FE-VIS-03: PASS for the isolated visual prototype after rechecking resend-code clearing, recovery from sender unavailable, and44px Edit targets. Actual desktop/mobile widths, dialogs/focus, EN/ID retention, edits and failure/unknown states were checked. This does not prove real verification, API submission, email delivery or full accessibility conformance. User approved the C-03/C-04 appearance on3November2026.
+
+## FE-VIS-04 — staff queue and case detail
+
+Open [Staff workspace](http://127.0.0.1:4173/workspace.html). Add `?lang=id` for Indonesian. This isolated design prototype uses only local sample cases/staff, with no API, login, provider or email calls. It is not the integrated React staff application.
+
+- Desktop shows scoped navigation, queue and selected detail. Mobile opens a case in place of the list; Back keeps the selected view, filter and list position.
+- **Sample profile** switches between airport CS, supervisor, lounge partner CS and administrator-only. The partner sees only partner cases; admin-only sees no cases. This selector never grants access in the actual application.
+- Try Unassigned/My cases/All in scope and the status filter. Select a new case, Take case, then fill Next action. Switching case/profile with an unsaved update asks Keep editing or Discard changes and leave. Language changes retain the original report and your update.
+- Supervisor assignment/reassignment shows the current and target staff before confirmation. Assigning a New case leaves it New; acceptance through a status update is separate. Eligible names are scoped fixtures, not a live directory.
+- Status updates require a next action and offer only the lifecycle transitions allowed for the current state. Close opens a separate review: resolution is required; duplicate offers only related cases for the same customer; No response requires follow-up evidence. No response/Closed never implies satisfaction or email delivery. Closed cases keep the recorded result and cannot be edited or reopened by staff.
+- **Preview state** offers normal/empty/loading/unavailable/conflict/unknown/revoked scenarios. Conflict requires loading the latest sample before another explicit save while retaining authorized text. Unknown blocks repeating the action and offers a status check without claiming success. Revoked clears previous case text. All fixture updates are marked as local samples.
+
+Fixture lists are small, explicitly scoped samples; they do not demonstrate a live queue count, cursor/pagination, staff capabilities or server eligibility. Those API gaps remain in the task plan. Updated fixtures are lost on reload; no private data is placed in persistent storage or URLs.
+
+Source: workspace.html/css/js. Private evidence and audit record: docs/frontend/fe_vis_04.md and local/fe-vis-04/. FE-VIS-04 visual approval is pending.
+
+QA FE-VIS-04: PASS for this isolated visual prototype. Actual desktop/mobile widths, role/scope examples, lifecycle prerequisites, dirty-input retention, mobile Back/scroll, dialogs, closure validation and recovery states were checked. User visual approval is pending. Real authentication, authorization, staff directory, queue APIs and mutations require their implementation tasks.
