@@ -29,6 +29,7 @@ dist/
 build/
 .next/
 .vite/
+.vitest/
 coverage/
 
 # Local state, uploads, logs, and sensitive test artifacts

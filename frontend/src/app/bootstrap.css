@@ -1,0 +1,27 @@
+:root {
+  color: #000c20;
+  background: #f1f4fa;
+  font-family: system-ui, sans-serif;
+  font-synthesis: none;
+  line-height: 1.5;
+}
+
+body {
+  margin: 0;
+}
+
+.bootstrap {
+  box-sizing: border-box;
+  max-width: 52rem;
+  margin: 10vh auto;
+  padding: 2rem;
+}
+
+.bootstrap-label {
+  color: #1863bc;
+}
+
+h1 {
+  font-size: clamp(1.5rem, 4vw, 2rem);
+  line-height: 1.25;
+}

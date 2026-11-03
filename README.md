@@ -21,9 +21,12 @@ Booking creation, payment processing, refund execution, and delegation managemen
 | [Data and API contracts](DATA_AND_API_CONTRACTS.md) | Domain entities, API behavior, confirmation, and state transitions. |
 | [Test plan](TEST_PLAN.md) | Planned verification, acceptance gates, and evidence requirements. |
 | [Customer design preview](frontend/prototype/README.md) | Run the Sydney-inspired homepage and conversation prototype; Tuffy font, bilingual guides, clarification, and support context. |
+| [Frontend setup](frontend/README.md) | React/TypeScript/Vite bootstrap, pinned tooling, local development, and executable checks. |
 | [Reference source](reference_service/README.md) | Standalone source setup, signed API protocol, fictional actors/data, demo client, and tests. |
 
 ## Implementation status
+
+The React frontend bootstrap supports clean installation, strict typechecking, linting, a component smoke test, and a static production build. The approved customer screens remain a separate visual prototype while shared components, routing, authentication, and API integration are implemented.
 
 The backend provides a FastAPI bootstrap with structured errors, request IDs, input limits, service wiring, and executable module boundaries (BE-01–03). Neon PostgreSQL connections, versioned migrations, restricted runtime roles, forced tenant/identity RLS, and guarded populated upgrades are implemented (DB-01–04). See [backend setup](backend/README.md) for installation and commands.
 
