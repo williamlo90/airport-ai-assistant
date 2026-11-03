@@ -93,6 +93,6 @@ try {
 
 Tes bridge memerlukan environment reference_service yang sudah diinstal. Server source memakai interpreter tersendiri, port/SQLite/key sementara dan normal HTTP/HMAC; backend memakai restricted login/schema Neon sementara dengan OTP delivery terkontrol di tes. Tidak memprovisi akun/relasi pada app aktual. Tes membuktikan tenant aplikasi berbeda dari tenant sumber, role resource owner/rep/beneficiary/payer/outsider, policy/relations internal, pagination, logout, mapping/claim rejection, source outage dan grant revoke. Server/schema/role tes dibersihkan.
 
-Tidak ada migration baru; schema tetap0004_staff_auth. SRC-03A selanjutnya mengimplementasikan pemeriksaan grants serta security labels untuk commit kasus privat. SRC-03B/QUALITY-01 memeriksa case/blob/cursor/model/worker/email sebenarnya. Snapshot identity request atau hasil read SRC-02 tidak boleh menjadi izin permanen untuk pekerjaan berikutnya.
+Tidak ada migration baru; schema tetap0004_staff_auth. SRC-03A menambahkan [pemeriksaan grants serta security labels](source_authorization.md) untuk fondasi commit kasus privat. SRC-03B/QUALITY-01 memeriksa case/blob/cursor/model/worker/email sebenarnya. Snapshot identity request atau hasil read SRC-02 tidak boleh menjadi izin permanen untuk pekerjaan berikutnya.
 
 Rujukan: [HTTPX timeouts](https://www.python-httpx.org/advanced/timeouts/), [HTTPX async streaming](https://www.python-httpx.org/async/).

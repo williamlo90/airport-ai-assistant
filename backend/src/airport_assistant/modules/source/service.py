@@ -28,9 +28,17 @@ class SourceReadService:
 
     async def caller(self,identity:AccessIdentity)->SourceCaller:
         if identity.session.kind!="customer":raise AuthError(401,"AUTH_REQUIRED")
-        tenant=self._tenant_map.get(identity.session.tenant_id)
+        return await self.caller_for_context(identity.database_context)
+
+    async def caller_for_context(self,context:DatabaseContext)->SourceCaller:
+        """Internal trusted principal lookup, also used by background grant checks.
+
+        Does not authenticate a session or establish case participation.
+        """
+        if context.actor_kind!="customer" or context.principal_id is None:raise AuthError(401,"AUTH_REQUIRED")
+        tenant=self._tenant_map.get(context.tenant_id)
         if tenant is None:raise SourceFailure(404)
-        subject=await self._subjects.find_subject(identity.database_context)
+        subject=await self._subjects.find_subject(context)
         if subject is None:raise SourceFailure(404)
         if not re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}",subject):raise SourceFailure(503)
         return SourceCaller(tenant,subject)

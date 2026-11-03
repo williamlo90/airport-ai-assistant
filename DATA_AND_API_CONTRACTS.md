@@ -98,6 +98,12 @@ Backend menggunakan adapter HTTP async independen untuk kelima read SRC-01, tanp
 
 Respons divalidasi terhadap DTO ketat, exact reference/page/parent, scopes dan proyeksi status/details. Missing/null required status tetap invalid502; provider enum string baru menjadi unknown. Source404/mapping tidak ada tetap404, transport/timeout/sourceauth/5xx503 dan respons rusak502, tanpa mengubah status transaksi. Policy/relations belum menjadi endpoint publik. [Source integration guide](docs/backend/source_integration.md) menjelaskan protokol, batas jaringan, error, setup dan diagnostic fixture yang terpisah dari login pelanggan.
 
+### Perincian SRC-03A yang executable
+
+`CurrentSourceGrants` memeriksa subject aktif melalui RLS dan GET resource sumber setiap kali dipanggil; tidak memakai relasi atau hasil grant yang disimpan. Kebutuhan kosong/unknown ditolak, pembayaran tidak diwarisi dari booking,404 berarti tidak berhak dan kegagalan lain diteruskan fail closed. Pemanggil tetap wajib memeriksa sesi/ACL/keanggotaan objek secara terpisah.
+
+Backend membentuk `SecurityLabels` dari DTO utuh, termasuk scope detail pembayaran dan kebutuhan booking terpisah bila booking_reference ikut ditampilkan. Label policy terikat booking serta referensi versi tepat. Union mempertahankan semua kebutuhan, menolak lintas tenant dan dibatasi64resource. Restore repository memvalidasi JSON dengan tenant dari baris terotorisasi; empty/malformed labels tidak mengizinkan konten privat sumber. `PrivateSourceAccess` memerlukan seluruh grants pelanggan saat ini. [Source authorization](docs/backend/source_authorization.md) mencatat batas snapshot, fixture repository dan penerapan case/blob/model/outbound yang tetap mengikuti SRC-03B. Tidak ada endpoint label/grant publik atau perubahan schema.
+
 ## 4 Endpoint portal dan identitas
 
 | Endpoint | Akses dan kontrak |

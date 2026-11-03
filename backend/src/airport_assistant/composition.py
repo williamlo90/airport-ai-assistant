@@ -19,6 +19,8 @@ from airport_assistant.modules.identity.staff import StaffService
 from airport_assistant.modules.identity.access import AccessService
 from airport_assistant.source_config import SourceSettings
 from airport_assistant.modules.source.service import SourceReadService
+from airport_assistant.modules.source.grants import CurrentSourceGrants
+from airport_assistant.modules.source.labels import PrivateSourceAccess
 from airport_assistant.integrations.source.client import SourceHttpClient
 from airport_assistant.infrastructure.database.source_subjects import PostgresSourceSubjects
 from airport_assistant.infrastructure.database.staff_repository import PostgresStaffRepository
@@ -32,6 +34,8 @@ class ApplicationServices:
     staff: StaffService|None=None
     access: AccessService|None=None
     source: SourceReadService|None=None
+    source_grants: CurrentSourceGrants|None=None
+    private_source_access: PrivateSourceAccess|None=None
 
 
 def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings|None=None,sender:VerificationSender|None=None,source_client=None,tenant_map=None) -> ApplicationServices:
@@ -47,7 +51,10 @@ def build_services(database:RuntimeDatabase|None=None,auth_settings:AuthSettings
         access=AccessService(auth,repository)
         staff=StaffService(auth,repository,BoundedPasswordVerifier(),access)
     source=SourceReadService(source_client,PostgresSourceSubjects(database),tenant_map) if source_client is not None and database is not None and access is not None else None
-    return ApplicationServices(health=ProcessHealthService(),auth=auth,staff=staff,access=access,source=source)
+    source_grants=CurrentSourceGrants(source,source_client) if source is not None else None
+    private_source_access=PrivateSourceAccess(source_grants) if source_grants is not None else None
+    return ApplicationServices(health=ProcessHealthService(),auth=auth,staff=staff,access=access,source=source,
+                               source_grants=source_grants,private_source_access=private_source_access)
 
 
 @dataclass(frozen=True)

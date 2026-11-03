@@ -28,6 +28,8 @@ from airport_assistant.source_config import SourceSettings
 from airport_assistant.integrations.source.client import SourceHttpClient
 from airport_assistant.infrastructure.database.source_subjects import PostgresSourceSubjects
 from airport_assistant.modules.source.service import SourceReadService
+from airport_assistant.modules.source.grants import CurrentSourceGrants
+from airport_assistant.modules.source.labels import PrivateSourceAccess
 from airport_assistant.api.auth import SESSION_COOKIE
 
 pytestmark=pytest.mark.skipif(os.environ.get('RUN_NEON_AUTH_TESTS')!='1' or os.environ.get('RUN_SOURCE_NETWORK_TESTS')!='1',reason='Set RUN_NEON_AUTH_TESTS=1 and RUN_SOURCE_NETWORK_TESTS=1 for real source bridge.')
@@ -65,10 +67,20 @@ def reference(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
-def clear_mappings(target):
+def clear_mappings(target,reference):
     change(target,'UPDATE {s}.principals SET source_subject_ref=NULL')
-    yield
-    change(target,'UPDATE {s}.principals SET source_subject_ref=NULL')
+    with sqlite3.connect(reference['db']) as connection:
+        relations=connection.execute('SELECT * FROM relations').fetchall()
+    try:
+        yield
+    finally:
+        change(target,'UPDATE {s}.principals SET source_subject_ref=NULL')
+        # Revocation tests mutate only this temporary source fixture. Restore
+        # its relations so subsequent scope matrices cannot inherit revocation.
+        with sqlite3.connect(reference['db']) as connection:
+            connection.execute('DELETE FROM relations')
+            if relations:
+                connection.executemany('INSERT INTO relations VALUES ('+','.join('?' for _ in relations[0])+')',relations)
 
 
 class Delivery:
@@ -84,9 +96,11 @@ async def bridge(target,reference,*,base=None):
                               tenant_map={target['a']:A,target['b']:B},allow_loopback_http=True)
         client=SourceHttpClient(config.base_url,config.token.get_secret_value(),config.context_secret.get_secret_value())
         service=SourceReadService(client,PostgresSourceSubjects(h.db,target['schema']),config.tenant_map)
+        grants=CurrentSourceGrants(service,client)
         h.app=create_app(Settings(env='test',database_enabled=True,auth_enabled=True,source_enabled=True),
                          database_settings=RuntimeDatabaseSettings(DATABASE_URL=target['url']),auth_settings=AuthSettings(SESSION_SECRET=target['key']),
-                         source_settings=config,services=replace(h.app.state.services,source=service))
+                         source_settings=config,services=replace(h.app.state.services,source=service,
+                             source_grants=grants,private_source_access=PrivateSourceAccess(grants)))
         try:yield h,sender
         finally:
             await client.aclose()
@@ -194,4 +208,69 @@ def test_source_grant_revocation_is_not_cached(target,reference):
                     with connection:connection.execute('DELETE FROM relations WHERE tenant_id=? AND subject_reference=? AND resource_reference=?',(str(A),'beneficiary','TX-A-001'))
                     assert (await c.get('/api/v1/transactions/TX-A-001')).status_code==404
                 finally:connection.close()
+    run(scenario())
+
+
+@pytest.mark.parametrize('subject,booking_allowed,status_allowed,details_allowed',[
+    ('owner',True,True,True),('representative',True,False,False),
+    ('beneficiary',True,True,False),('payer',False,True,True),('outsider',False,False,False),
+])
+def test_current_grant_provider_independent_resource_scopes(target,reference,subject,booking_allowed,status_allowed,details_allowed):
+    from airport_assistant.modules.source.grants import CurrentSourceGrants
+    async def scenario():
+        async with bridge(target,reference) as (h,sender):
+            async with h.client() as c:
+                principal=await verify(h,sender,c,subject)
+                grants=h.app.state.services.source_grants
+                for kind,ref,scopes,expected in [
+                    ('booking','PK-A-001',{'booking:read'},booking_allowed),
+                    ('transaction','TX-A-001',{'payment_status:read'},status_allowed),
+                    ('transaction','TX-A-001',{'payment_details:read'},details_allowed),
+                ]:
+                    assert await grants.has_grants(tenant_id=target['a'],principal_id=principal,
+                        resource_type=kind,resource_reference=ref,required_scopes=frozenset(scopes)) is expected
+                # Identical source references in another app tenant do not authorize this principal.
+                assert not await grants.has_grants(tenant_id=target['b'],principal_id=principal,
+                    resource_type='transaction',resource_reference='TX-A-001',required_scopes=frozenset({'payment_status:read'}))
+    run(scenario())
+
+
+def test_private_labels_survive_repository_round_trip_and_revoke_after_snapshot(target,reference):
+    from airport_assistant.modules.source.grants import CurrentSourceGrants
+    from airport_assistant.modules.source.labels import SecurityLabels,PrivateSourceAccess,labels_for_observation,merge_labels
+    async def scenario():
+        async with bridge(target,reference) as (h,sender):
+            async with h.client() as owner,h.client() as beneficiary:
+                principal=await verify(h,sender,owner,'owner')
+                other=await verify(h,sender,beneficiary,'beneficiary')
+                actor=await h.app.state.services.access.resolve(target['a'],owner.cookies.get(SESSION_COOKIE))
+                source=h.app.state.services.source
+                snapshot=merge_labels(labels_for_observation(target['a'],await source.booking(actor,'PK-A-001')),
+                                     labels_for_observation(target['a'],await source.transaction(actor,'TX-A-001')))
+                # Repository fixture stores canonical JSON; no case table exists at SRC-03A.
+                stored=json.dumps(snapshot.to_records())
+                restored=SecurityLabels.from_records(target['a'],json.loads(stored))
+                access=h.app.state.services.private_source_access
+                assert await access.allows(tenant_id=target['a'],principal_id=principal,labels=restored)
+                assert not await access.allows(tenant_id=target['a'],principal_id=other,labels=restored)
+                with sqlite3.connect(reference['db']) as connection:
+                    connection.execute('DELETE FROM relations WHERE tenant_id=? AND subject_reference=? AND resource_reference=?',(str(A),'owner','TX-A-001'))
+                assert not await access.allows(tenant_id=target['a'],principal_id=principal,labels=restored)
+    run(scenario())
+
+
+def test_private_grant_gate_propagates_real_network_unavailability(target,reference):
+    from airport_assistant.modules.source.grants import CurrentSourceGrants
+    from airport_assistant.modules.source.labels import PrivateSourceAccess,SecurityLabels
+    from airport_assistant.modules.source.models import SourceFailure
+    with socket.socket() as s:s.bind(('127.0.0.1',0));port=s.getsockname()[1]
+    async def scenario():
+        async with bridge(target,reference,base=f'http://127.0.0.1:{port}') as (h,sender):
+            async with h.client() as c:
+                principal=await verify(h,sender,c,'owner')
+                labels=SecurityLabels.from_records(target['a'],[dict(source='reference',resource_type='transaction',reference='TX-A-001',required_source_scopes=['payment_status:read'])])
+                with pytest.raises(SourceFailure) as exc:
+                    await h.app.state.services.private_source_access.allows(
+                        tenant_id=target['a'],principal_id=principal,labels=labels)
+                assert exc.value.status==503
     run(scenario())

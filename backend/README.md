@@ -69,7 +69,7 @@ Implementasi mengikuti [exception handlers FastAPI](https://fastapi.tiangolo.com
 
 - Factory default hanya memasang `ProcessHealthService`, tanpa database/provider maupun state tenant/aktor. Tidak ada singleton global antaraplikasi.
 - Tes bisa memasok `create_app(settings, services=...)` atau override `get_health_service` melalui `app.dependency_overrides`. Override harus dibersihkan setelah pengujian bila memakai ulang app.
-- `modules/identity/ports.py` mendefinisikan `TenantRepository` (lookup host canonical ke tenant) dan `SourceGrantProvider` (pemeriksaan grants per tenant/principal/tipe resource/reference/scopes). Ini kontrak consumer, bukan adapter executable atau bukti akses aman. Keduanya belum dipasang pada runtime karena use case identitas/sumber belum tersedia; tidak ada fallback palsu atau endpoint privat yang memakai keduanya.
+- `modules/identity/ports.py` mendefinisikan `TenantRepository` (lookup host canonical ke tenant) dan `SourceGrantProvider` (pemeriksaan grants per tenant/principal/tipe resource/reference/scopes). Lookup tenant memakai repository PostgreSQL; SRC-03A memasang `CurrentSourceGrants` melalui composition dengan read HTTP sumber saat ini. Kontrak port sendiri bukan bukti akses aman; tidak ada fallback palsu.
 - Implementasi Neon/repository ditambahkan pada tugas database/identitas; adapter grants ditambahkan pada SRC-03A. Layanan bisnis nantinya memeriksa izin serta menangani kegagalan secara fail closed. Port tidak mengambil keputusan email recipient atau mengganti pemeriksaan bisnis.
 - `composition.py` memilih implementasi dan menyuntikkannya melalui constructor service ketika fitur tersedia. Koneksi, transaksi, tenant dan aktor harus memiliki scope yang sesuai; tidak disimpan sebagai state mutable pada service aplikasi. Worker kelak memakai composition yang sama, tanpa mengimpor FastAPI; saat ini worker tetap placeholder.
 
@@ -236,4 +236,8 @@ Revision0004_staff_auth dipasang melalui migration runner; histori0001–0003 ti
 
 ## Source connector SRC-02
 
-[Source integration](../docs/backend/source_integration.md) memuat setup internal key/mapping, tiga GET customer portal, lima metode read adapter, batas HTTP, validasi DTO dan error. APP_SOURCE_ENABLED opt-in; kebijakan/relasi tetap internal. Diagnostic localhost memakai airport-assistant-source-check; tidak menjadi bypass login customer. SourceGrantProvider/security labels mengikuti SRC-03A.
+[Source integration](../docs/backend/source_integration.md) memuat setup internal key/mapping, tiga GET customer portal, lima metode read adapter, batas HTTP, validasi DTO dan error. APP_SOURCE_ENABLED opt-in; kebijakan/relasi tetap internal. Diagnostic localhost memakai airport-assistant-source-check; tidak menjadi bypass login customer.
+
+## Source grants dan security labels SRC-03A
+
+[Source authorization](../docs/backend/source_authorization.md) menjelaskan pemeriksaan grants yang selalu baru, pembentukan label dari DTO, union lintas konten dan restore repository. Gerbang private source dipasang bersama konektor; tidak menggantikan ACL objek, sesi atau keanggotaan kasus. Tes unit: `python -m pytest backend/tests/unit/test_source_labels.py`; tes bridge: set `RUN_NEON_AUTH_TESTS=1` dan `RUN_SOURCE_NETWORK_TESTS=1`, lalu `python -m pytest backend/tests/integration/test_source_bridge.py`. Perintah dijalankan dari root proyek dengan environment backend terpasang dan environment source mandiri siap. Kredensial tetap dimuat script pengujian, bukan dicetak. Case/blob/model/email sebenarnya mengikuti SRC-03B.

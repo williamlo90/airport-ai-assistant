@@ -68,7 +68,7 @@ Dengan begitu, aturan **“email ini boleh dikirim ke siapa”** tetap dimiliki 
 - `composition.py` membuat `ApplicationServices` per aplikasi. Default sekarang hanya memuat layanan liveness; repository/provider tidak disimulasikan sebagai koneksi nyata.
 - `api/dependencies.py` mengambil layanan dari instance aplikasi. Route health memanggil kontrak `HealthService`, lalu memetakan hasil domain menjadi respons HTTP.
 - `modules/system/health.py` menyediakan kontrak, hasil domain immutable dan implementasi liveness yang tidak bergantung framework.
-- `modules/identity/ports.py` menjadi pemilik kontrak `TenantRepository` dan `SourceGrantProvider`. Implementasi konkret serta pemakai use case ditambahkan bersama fondasi identitas/sumber; keduanya belum menjadi jalur akses runtime.
+- `modules/identity/ports.py` menjadi pemilik kontrak `TenantRepository` dan `SourceGrantProvider`. Lookup tenant sudah memakai PostgreSQL. SRC-03A memasang `CurrentSourceGrants` dan gerbang `PrivateSourceAccess` di composition; pembentukan/union label berada dalam modul source. Pemakai case/blob/model/outbound dihubungkan saat fitur tersebut dibuat dan dibuktikan lewat SRC-03B.
 - `backend/tests/contracts/test_dependencies.py` memeriksa batas import API, modules, integrations, infrastructure dan entry point. Tes wiring membuktikan override service bekerja dan tidak bocor ke instance aplikasi lain. Guard import tidak menggantikan tes aturan kewenangan.
 
 Saat repository/provider nyata tersedia, composition menyuntikkannya ke constructor layanan bisnis. Service aplikasi tidak menahan transaksi atau state tenant/aktor mutable; lifecycle koneksi dan transaksi ditentukan bersama implementasinya. Worker belum executable dan tidak diberi startup palsu pada BE-03.
