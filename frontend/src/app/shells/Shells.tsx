@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { MouseEventHandler, ReactNode } from 'react';
 import type { PublicSite } from '../config/publicSite';
 import { Button } from '../../components/Button';
 import styles from './shells.module.css';
@@ -9,17 +9,22 @@ interface Props {
   onLanguageChange: () => void;
   skipLabel: string;
   children: ReactNode;
+  homeHref?: string;
+  onHomeNavigate?: MouseEventHandler<HTMLAnchorElement>;
 }
 function Header({
   site,
   languageLabel,
   onLanguageChange,
+  homeHref = '/',
+  onHomeNavigate,
 }: Omit<Props, 'children' | 'skipLabel'>) {
   return (
     <header className={styles.header}>
       <a
         className={styles.brand}
-        href="/"
+        href={homeHref}
+        onClick={onHomeNavigate}
         aria-label={`${site.airportName} — ${site.productName}`}
       >
         <img src="/assets/mark.svg" alt="" width="36" height="36" />

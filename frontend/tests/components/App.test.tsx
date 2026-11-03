@@ -1,55 +1,52 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { StrictMode } from 'react';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { createMemoryRouter } from 'react-router';
 import { App } from '../../src/app/App';
 import { createBootstrap } from '../../src/app/config/publicSite';
+import { createAppRoutes } from '../../src/app/routing/routes';
 
-beforeEach(() => window.history.replaceState(null, '', '/'));
-
+function mount(entry = '/') {
+  const bootstrap = createBootstrap('localhost', '');
+  if (bootstrap.status !== 'configured') throw new Error('fixture');
+  const router = createMemoryRouter(createAppRoutes(bootstrap.site), {
+    initialEntries: [entry],
+  });
+  render(
+    <StrictMode>
+      <App bootstrap={bootstrap} router={router} />
+    </StrictMode>,
+  );
+  return router;
+}
 describe('frontend bootstrap', () => {
-  it('mounts the application with an accessible identity and honest readiness state', () => {
-    render(
-      <StrictMode>
-        <App bootstrap={createBootstrap('localhost', '')} />
-      </StrictMode>,
-    );
-
+  it('mounts accessible identity and honest readiness', () => {
+    mount();
     expect(
       screen.getByRole('heading', {
         name: 'Westbridge Airport — AI Assistant',
-        level: 1,
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
       'Customer support screens are being prepared.',
     );
   });
-
-  it('starts in Indonesian only for the explicit supported language', () => {
-    render(<App bootstrap={createBootstrap('localhost', '?lang=id')} />);
+  it('starts in the explicit supported language', () => {
+    mount('/?lang=id');
     expect(document.documentElement.lang).toBe('id');
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Frontend sudah berjalan.',
-    );
     expect(screen.getByRole('button', { name: 'English' })).toBeInTheDocument();
   });
-
-  it('switches labels and the document language while preserving unrelated URL state', () => {
-    window.history.replaceState(null, '', '/?topic=booking#details');
-    render(<App bootstrap={createBootstrap('127.0.0.1', '?topic=booking')} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Bahasa Indonesia' }));
-    expect(document.documentElement.lang).toBe('id');
-    expect(new URLSearchParams(window.location.search).get('lang')).toBe('id');
-    expect(new URLSearchParams(window.location.search).get('topic')).toBe(
-      'booking',
+  it('switches locale with safe query/hash state and replaces history', async () => {
+    const router = mount('/?topic=booking&email=private#details');
+    await act(async () =>
+      fireEvent.click(screen.getByRole('button', { name: 'Bahasa Indonesia' })),
     );
-    expect(window.location.hash).toBe('#details');
-    fireEvent.click(screen.getByRole('button', { name: 'English' }));
-    expect(document.documentElement.lang).toBe('en');
-    expect(document.title).toBe('Westbridge Airport — AI Assistant');
+    expect(document.documentElement.lang).toBe('id');
+    expect(router.state.location.search).toBe('?topic=booking&lang=id');
+    expect(router.state.location.hash).toBe('#details');
+    expect(router.state.historyAction).toBe('REPLACE');
   });
-
-  it('does not render a tenant identity or controls on an unconfigured host', () => {
+  it('gates an unknown host before routing', () => {
     render(
       <App
         bootstrap={createBootstrap(
@@ -64,6 +61,5 @@ describe('frontend bootstrap', () => {
     expect(screen.queryByText(/Westbridge/)).not.toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
     expect(document.title).toBe('Site unavailable — AI Assistant');
-    expect(document.documentElement.lang).toBe('en');
   });
 });

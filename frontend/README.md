@@ -1,16 +1,40 @@
 # Westbridge Airport frontend
 
-React/TypeScript/Vite foundation with reviewed public host configuration, English/Indonesian labels, and shared Tuffy/Sydney UI components. The normal entry displays a readiness screen inside the customer shell; the approved customer pages remain separate in [prototype/](prototype/README.md). Full page ports, routing, authentication, and API integration follow their own tasks.
+React/TypeScript/Vite foundation with reviewed public host configuration, English/Indonesian labels, and shared Tuffy/Sydney UI components. The normal entry displays a readiness screen inside the customer shell; the approved customer pages remain separate in [prototype/](prototype/README.md). Routing foundations are implemented; full page ports, authentication, and API integration follow their own tasks.
 
 ## Shared component preview
 
 While `npm run dev` is running, open **http://127.0.0.1:5173/?preview=components**. Add `&lang=id` for Indonesian. This development-only page exercises customer/staff shell layouts, buttons, input/textarea/select, field descriptions/errors, error-summary focus, native dialog, status labels, and loading/empty/error/unavailable/unknown request states. Changing the sample shell does not log in or grant staff access. Form values remain in memory across shell/language changes, and example validation sends nothing.
 
-The preview is lazy-loaded only in development and excluded from the production application. `?preview=components` on a production build displays the normal entry instead. A known host is still required before the development preview can open. No router or backend connection is introduced by this page.
+The preview is lazy-loaded only in development and excluded from the production application. `?preview=components` on a production build displays the normal entry instead. A known host is still required before the development preview can open. This harness uses the application router but introduces no backend connection.
 
 Shared primitives live in `src/components/`; shells are in `src/app/shells/`; tokens/global type and reset rules are in `src/styles/`. Basic components accept state/callbacks and do not import business features or call APIs. Native dialog focus/inert behavior is checked in real browsers: jsdom tests use a small, explicitly limited dialog shim to test controlled wiring, not native focus-trap behavior.
 
 Tuffy400/700 and the original public-domain statement are self-hosted in `public/assets/fonts/`, copied from the already verified project assets. The airport mark is project-authored SVG. No font CDN is needed. Example formatting requires explicit currency/exponent and timezone: large/unsafe minor-unit values, invalid metadata, ambiguous timestamps, and invalid calendar dates are rejected rather than guessed. The formatter currently supports safe integer minor units within±10^12 and exponent0–6; widening that range requires exact-decimal support and tests. No airport timezone or currency is inferred from language.
+
+## Routing foundation
+
+React Router **7.18.5** uses data mode with one browser router created outside React rendering. Version7 supports the pinned Node22.19 environment; version8.5.1 requires Node22.22 or later. Routes, nested layouts, sanitized error boundaries and navigation policy live in `src/app/routing/`.
+
+| Path                                   | Current behavior                                                    |
+| -------------------------------------- | ------------------------------------------------------------------- |
+| `/`                                    | Customer shell and readiness screen                                 |
+| `/help/new?topic=information`          | Support placeholder; topics: information, booking, payment, contact |
+| `/help/conversations/:conversationId`  | UUID validation and session gate                                    |
+| `/help/verify`                         | Email verification placeholder                                      |
+| `/help/submissions/:draftId`           | Opaque UUID pointer retained through reload; session gate           |
+| `/help/cases/:caseId`                  | UUID validation and session gate                                    |
+| `/staff/login`                         | Staff sign-in placeholder                                           |
+| `/staff/cases`, `/staff/cases/:caseId` | Staff capability gate, plus UUID validation on detail               |
+| Other paths or invalid IDs/topics      | Generic not-found screen                                            |
+
+The access port defaults to **unavailable** until FE-AUTH-01 supplies trusted session state. URL parameters cannot grant roles or access. Controlled tests inject access states to check guard behavior; production has no role selector. These are UX gates; backend resource authorization remains mandatory. No API request, submission, automatic retry or receipt recovery is implemented by routing alone.
+
+Open **http://127.0.0.1:5173/__dev/navigation** in development to exercise `useUnsavedChanges`: enter text, change topic, choose Keep editing or Discard changes and leave, and try browser Back/forward. Same-page language changes and staff handoff retain the story. Other navigation, including the brand link, asks before discarding registered input. Native reload/tab-close protection is best effort (`beforeunload`); text is memory-only and not recoverable after reload. Future feature forms must register with the hook and provide an explicit discard callback. Session/account boundary clearing belongs to FE-AUTH-01.
+
+Navigation helpers copy only supported language/topic/status/view and development preview parameters, plus bounded non-sensitive fragment names. They never copy email, OTP, payload, credentials or role/tenant overrides. The application generates no URLs containing private form text. Incoming address-bar content is not a source of permission or form payload.
+
+Both development harnesses are excluded from production. The navigation harness is a routing exercise, not the C-02 customer page. Vite preview verifies SPA deep links locally; HTTPS proxy and API/asset404 separation remain FE-ENV-01 responsibilities.
 
 ## Public site configuration
 
