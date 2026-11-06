@@ -4,6 +4,7 @@ import { App } from './app/App';
 import { createBootstrap } from './app/config/publicSite';
 import { createBrowserRouter } from 'react-router';
 import { createAppRoutes } from './app/routing/routes';
+import { createBrowserAuth } from './app/auth/browser';
 import './styles/tokens.css';
 import './styles/global.css';
 
@@ -17,9 +18,12 @@ const bootstrap = createBootstrap(
   window.location.hostname,
   window.location.search,
 );
+const auth = bootstrap.status === 'configured' ? createBrowserAuth() : null;
 const router =
   bootstrap.status === 'configured'
-    ? createBrowserRouter(createAppRoutes(bootstrap.site))
+    ? createBrowserRouter(
+        createAppRoutes(bootstrap.site, undefined, [], auth?.coordinator),
+      )
     : undefined;
 
 createRoot(container).render(
@@ -27,3 +31,10 @@ createRoot(container).render(
     <App bootstrap={bootstrap} router={router} />
   </StrictMode>,
 );
+
+void auth?.start();
+if (import.meta.hot)
+  import.meta.hot.dispose(() => {
+    auth?.dispose();
+    router?.dispose();
+  });

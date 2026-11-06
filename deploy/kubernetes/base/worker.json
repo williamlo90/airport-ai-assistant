@@ -1,0 +1,97 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "westbridge-worker"
+  },
+  "spec": {
+    "replicas": 0,
+    "selector": {
+      "matchLabels": {
+        "app": "westbridge-worker"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "westbridge-worker"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 90,
+        "securityContext": {
+          "fsGroup": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          },
+          "runAsNonRoot": true
+        },
+        "containers": [
+          {
+            "name": "worker",
+            "image": "westbridge-backend:release-candidate",
+            "command": [
+              "airport-assistant-worker",
+              "--no-env-file"
+            ],
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "westbridge-config"
+                }
+              }
+            ],
+            "env": [
+              {
+                "name": "WORKER_DATABASE_URL",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-worker",
+                    "key": "WORKER_DATABASE_URL"
+                  }
+                }
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsNonRoot": true,
+              "runAsUser": 10001,
+              "runAsGroup": 10001
+            },
+            "resources": {
+              "requests": {
+                "cpu": "50m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "384Mi"
+              }
+            },
+            "volumeMounts": [
+              {
+                "name": "tmp",
+                "mountPath": "/tmp"
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "tmp",
+            "emptyDir": {
+              "sizeLimit": "32Mi"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

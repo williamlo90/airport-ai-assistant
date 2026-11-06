@@ -1,0 +1,94 @@
+.actions {
+  padding: 24px 28px;
+  border-top: 1px solid var(--color-line);
+  overflow-wrap: anywhere;
+}
+.actions h3 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+.actions h4 {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+.assignment,
+.form {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0;
+  min-width: 0;
+  max-width: 640px;
+}
+.assignment > button,
+.form > button {
+  justify-self: start;
+}
+.actions label {
+  font-weight: 700;
+}
+.actions input,
+.actions select,
+.actions textarea {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  padding: 12px;
+  font: inherit;
+  color: inherit;
+  background: white;
+}
+.actions textarea {
+  resize: vertical;
+}
+.actions button {
+  max-width: 100%;
+  white-space: normal;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.help {
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--color-muted);
+}
+.notice {
+  padding: 14px;
+  background: var(--color-warning-bg);
+  line-height: 1.65;
+  margin: 0 0 20px;
+}
+@media (max-width: 400px) {
+  .actions {
+    padding: 20px;
+  }
+}
+
+.preserve {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.compose {
+  border: 0;
+  padding: 0;
+  margin: 24px 0 0;
+  min-width: 0;
+}
+.compose legend {
+  font-size: 17px;
+  font-weight: 700;
+}
+.messages {
+  list-style: none;
+  padding: 0;
+  margin: 20px 0;
+}
+.messages li {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-line);
+}

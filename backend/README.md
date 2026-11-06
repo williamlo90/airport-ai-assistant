@@ -21,6 +21,8 @@ Copy `.env.example` hanya jika `.env` belum ada; jangan menimpa credential lokal
 
 Dalam development, buka http://127.0.0.1:8000/docs atau http://127.0.0.1:8000/openapi.json. Endpoint operasional `/health/live` mengembalikan `{"status":"ok","scope":"process"}`. Root `/` mengembalikan error 404 terstruktur. Hentikan dengan Ctrl+C. Dokumentasi development tidak diaktifkan ketika APP_ENV=production.
 
+Untuk frontend terintegrasi HTTPS lokal, gunakan `airport-assistant-api --local-proxy` dari root repository. Mode ini hanya menerima APP_ENV=development, memaksa bind127.0.0.1:8001, menonaktifkan access log, dan mempercayai forwarded headers hanya dari127.0.0.1. Startup normal tidak mempercayai forwarded headers. Gateway HTTPS localhost:8443 serta langkah sertifikat/trust milik pengguna dijelaskan di [frontend/README.md](../frontend/README.md#integrated-local-https-fe-env-01). Jangan membuka port backend/gateway ke jaringan publik. Deployment produksi membutuhkan konfigurasi proxy tepercaya sendiri; flag ini bukan runner produksi.
+
 Jangan mengganti `uv sync --locked` dengan pembaruan dependency tanpa review. `backend/uv.lock` mengunci dependency transitif; `pyproject.toml` menyatakan paket langsung dan batas versi. `.venv` lokal tidak di-commit.
 
 ## Konfigurasi yang dipakai saat ini
@@ -71,7 +73,7 @@ Implementasi mengikuti [exception handlers FastAPI](https://fastapi.tiangolo.com
 - Tes bisa memasok `create_app(settings, services=...)` atau override `get_health_service` melalui `app.dependency_overrides`. Override harus dibersihkan setelah pengujian bila memakai ulang app.
 - `modules/identity/ports.py` mendefinisikan `TenantRepository` (lookup host canonical ke tenant) dan `SourceGrantProvider` (pemeriksaan grants per tenant/principal/tipe resource/reference/scopes). Lookup tenant memakai repository PostgreSQL; SRC-03A memasang `CurrentSourceGrants` melalui composition dengan read HTTP sumber saat ini. Kontrak port sendiri bukan bukti akses aman; tidak ada fallback palsu.
 - Implementasi Neon/repository ditambahkan pada tugas database/identitas; adapter grants ditambahkan pada SRC-03A. Layanan bisnis nantinya memeriksa izin serta menangani kegagalan secara fail closed. Port tidak mengambil keputusan email recipient atau mengganti pemeriksaan bisnis.
-- `composition.py` memilih implementasi dan menyuntikkannya melalui constructor service ketika fitur tersedia. Koneksi, transaksi, tenant dan aktor harus memiliki scope yang sesuai; tidak disimpan sebagai state mutable pada service aplikasi. Worker kelak memakai composition yang sama, tanpa mengimpor FastAPI; saat ini worker tetap placeholder.
+- `composition.py` memilih implementasi dan menyuntikkannya melalui constructor service ketika fitur tersedia. Koneksi, transaksi, tenant dan aktor harus memiliki scope yang sesuai; tidak disimpan sebagai state mutable pada service aplikasi. Worker memakai composition untuk configuration/adapter binding, tanpa mengimpor FastAPI; JOB-01 menyediakan proses scheduler dengan credential terpisah.
 
 Jalankan pemeriksaan arsitektur tersendiri:
 
@@ -199,7 +201,7 @@ Rujukan: [PostgreSQL row security](https://www.postgresql.org/docs/current/ddl-r
 
 Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ketika ia admin. Positive admin management hanya menarget principal lain dalam organisasi yang diizinkan. Runtime hanya boleh mengubah active/version pada membership, role pada membership_roles, dan queue_id pada membership_queues; tenant/principal/organization/membership target tidak dapat diretarget lewat UPDATE. Perubahan scope membutuhkan operasi eksplisit terhadap record yang sesuai, dengan pemeriksaan bisnis/audit pada fitur AUTH/admin berikutnya.
 
-Status pemasangan DB-03: app ber-revision `0002_runtime_rls`. Provisioner memverifikasi login runtime terbatas dan memperbarui hanya DATABASE_URL secara internal; DATABASE_DIRECT_URL tetap credential migration. API yang sudah berjalan perlu direstart untuk memuat URL baru. Saat deployment, berikan DATABASE_URL saja pada API/worker; credential direct hanya untuk job migration/provisioning.
+Status pemasangan DB-03: app ber-revision `0002_runtime_rls`. Provisioner memverifikasi login runtime terbatas dan memperbarui hanya DATABASE_URL secara internal; DATABASE_DIRECT_URL tetap credential migration. API yang sudah berjalan perlu direstart untuk memuat URL baru. Saat deployment, berikan DATABASE_URL hanya pada API dan WORKER_DATABASE_URL hanya pada worker; credential direct hanya untuk migration/provisioning.
 
 Hasil final DB-03: full suite live **192 passed** pada 2 November 2026. QA independen mengulang suite191tes dan tes tambahan credential runtime aktual, memverifikasi rollout, dan menyatakan lulus dalam scope keamanan fondasi.
 
@@ -253,3 +255,62 @@ Panduan draf menjelaskan POST/GET/PATCH/DELETE action-drafts serta GET actions. 
 ## Adopsi riwayat AUTH-02
 
 Panduan adopsi anonim menjelaskan schema0007 dan transaksi verifikasi browser asal. Ownership/provenance, pembatalan draf, konsumsi challenge serta rotasi/revoke atomik. Retry pesan setelah login memakai ID semula; draf perlu dibuat ulang. Jalankan `python -m pytest backend/tests/integration/test_anonymous_adoption.py -q --tb=short` dengan RUN_NEON_AUTH_TESTS=1 untuk menguji schema0007. Fixtures BEHAV/CASE tetap memverifikasi prefix historis0005/0006; flow provider email nyata tetap MAIL-05.
+
+
+## Private attachments
+
+CASE-04 adds draft-bound JPG/PNG/PDF evidence (5 MiB per file, three stored files per draft), durable private PostgreSQL storage, preview version/hash changes, atomic case binding, and authorized metadata/download APIs. Upload uses a raw binary body and a stable UUID Idempotency-Key. Files are downloaded as attachments, never rendered or executed by the application.
+
+Uploads require a local ClamAV daemon configured through APP_ATTACHMENT_SCANNER_PORT. Without a scanner they fail closed with503; no file is stored. Scanner protocol and application behavior are covered by controlled tests. A real scanning-engine acceptance run remains required before enabling uploads for users. This feature does not provide OCR or model ingestion.
+
+
+## Conversation events and handoff
+
+CHAT-01 adds persisted, authorized cursor polling at GET /api/v1/conversations/{id}/events. Message retries retain stable event IDs; language changes and confirmed handoffs produce ordered events. One draft confirmation creates and links a new handoff case atomically; an authorized existing-case handoff reuses its case and receipt without a second case or email. Cursors are signed and session-bound, and every poll rechecks current access.
+
+Modes are ai, waiting_staff, human and ended. CHAT-02 below supplies atomic accept/reassignment/status/close; active-case mutations require both reviewed versions. Staff messages are implemented by CHAT-03 below. No AI response, email delivery or live staffing availability is implied.
+
+
+## Atomic staff handoff lifecycle
+
+CHAT-02 enables staff accept plus atomic reassignment/status/close for linked conversations. Accept checks both versions and a stable retry key, assigns the caller's authorized membership and returns a historical operation receipt. Active-case PATCH actions require the reviewed conversation version; supervisor reassignment moves the handler, and close ends the chat with no automatic AI restart. Case/history/conversation/event/receipt updates commit or roll back together.
+
+GET /api/v1/staff/conversations/{id} provides the latest scoped versions/handler. Public event polling supports human/ended transitions. New messages to ended chats are rejected; customer case continuation leaves the old chat ended. CHAT-03 below provides staff chat messages and the internal publication gate; model orchestration is separate.
+
+
+## Staff chat and publication gate
+
+CHAT-03 adds POST /api/v1/staff/cases/{id}/messages for the active human handler with both versions, epoch and stable retry key. Original text/language and staff_message events persist atomically; stale/reassigned/closed context is rejected. Exact retries return historical saved receipts. Queued email replies are provided by MAIL-01 below.
+
+An internal non-HTTP publication port rechecks session/version/epoch/language/expiry before storing one ai_message event. Controlled delayed generators test handoff, correction, expiry, rollback and restart. No model provider or automatic AI reply is enabled.
+
+
+## Persistent outbox worker
+
+JOB-01 adds lease-fenced claim/renew/finish, persistent retry/backoff/max attempts, heartbeat and policy-based restart recovery. A separate WORKER_DATABASE_URL login can only execute scheduler and lease-scoped mail capability functions, not read customer tables. Claim transactions end before async handler work. Unknown outcomes are not blindly retried; default expired leases require reconciliation. Scheduler fencing is not provider exactly-once.
+
+Run worker-setup to provision the local restricted credential, then worker --check-config and worker --once (python -m airport_assistant.worker_setup / worker, or installed airport-assistant-worker scripts). Mail handlers are registered only when explicit mail configuration is enabled; by default the registry is empty: --once verifies access and leaves queued work untouched, daemon mode refuses to start without handlers. No dummy completion/email send is installed.
+
+## Outbound email (MAIL-01)
+
+Staff messages support channel=email with the same human-handler/version/epoch checks as chat. The original message, durable event and email_send job commit together. The destination comes from the verified case contact, never a client-provided address. Saved means queued, not delivered.
+
+Mail is disabled by default. Explicit APP_MAIL_ENABLED and APP_MAIL_ACCOUNTS (server account ref to secret API key JSON mapping) register business-authorized handlers. Active tenant email_accounts are provisioned through the controlled direct-database deployment path; runtime API cannot change sender/recipient configuration. Worker claim and recovery are filtered by configured account references so subset workers leave other tenants' queues untouched.
+
+The first transport implements the [Resend send contract](https://resend.com/docs/api-reference/emails/send-email). It performs a bounded single POST without hidden retries. Provider acceptance is recorded separately from delivery/read status. Requested RFC Message-ID is stored separately from the actual RFC ID, which remains unknown until verified by provider retrieval/events. Ambiguous sends are held for review, even with a stable idempotency key. MAIL-02 adds read-only receipt reconciliation below; inbound correlation and real provider round-trip remain MAIL-03–05. Private source-derived mail remains disabled pending SRC-03B.
+
+## Delivery lifecycle and reconciliation (MAIL-02)
+
+A durable email_reconcile child is reserved with every envelope before POST. It uses only GET by a saved provider receipt and cannot resend. Account-scoped claim/recovery skips children while their source send lease remains live. Unknown sends without receipts are held for review. Bounded GET retries record a durable review reason at exhaustion; accepted is never treated as delivered or read.
+
+Receipt evidence must match the configured account, saved ID, normalized sender and sole recipient. Provider creation time is not used as delivery time. Monotone updates/deduplicated evidence and review decisions commit together under the child lease; stale callbacks cannot regress terminal state, and conflicting terminal evidence requires review. GET failure does not prove delivery failed.
+
+GET /api/v1/staff/cases/{id}/email-deliveries provides current case-scoped status/review metadata with no addresses/body/provider IDs and a bounded result. It is read-only, does not close cases, and cannot forge delivery or replay uncertain sends. Default mail remains disabled. Webhook authentication/inbound and live provider/OTP validation remain MAIL-03–05.
+
+## Durable email inbox (MAIL-03)
+
+Opt-in POST /integrations/email/{alias}/events verifies the exact raw Svix signature, required unique headers and attempt timestamp before parsing JSON. Server alias/account configuration determines tenant routing. Durable inbox and job commit before202; replay is deduplicated by account/event ID, with conflicting payload reuse rejected. Distinct events on one email remain independent.
+
+Receiver workers fetch the fixed provider API with bounded responses and account receiving-identity checks. A received email is staged once as inbound/pending with no case/app-message/contact privileges. Raw HTML is quarantined, attachments/download URLs are not fetched, and no content is published to cases/models before MAIL-04. Delivery events use separate event-bound leases, match a known outbound receipt, corroborate envelope context through GET and apply signed historical state/time through the MAIL-02 ledger.
+
+APP_MAIL_INGRESS_ENABLED and APP_MAIL_RECEIVING_ENABLED remainfalse by default. APP_MAIL_WEBHOOKS maps server aliases to account refs and signing-key rotation lists; APP_MAIL_ACCOUNTS supplies worker credentials. Provision email_accounts alias/inbound_address through deployment credentials. API ingress can be enabled independently of outbound sending. Real provider/domain round-trip and OTP remain MAIL-05; sender verification and case threading remain MAIL-04.

@@ -483,7 +483,7 @@ Kualitas dievaluasi berdasarkan tujuh bidang; daftar teknologi dan kanal pada lo
 
 ### Status keputusan
 
-Backend modular dan PostgreSQL yang di-host di Neon dipilih sebagai arah arsitektur. Deployment diarahkan ke VPS cloud untuk aplikasi dan worker, dengan K3s sebagai target pembuktian Kubernetes setelah uji resource. AWS Lightsail menjadi kandidat hosting pertama, bukan pembelian atau komitmen paket. Kandidat framework, model, email, ukuran server, region, dan biaya final masih memerlukan uji kelayakan.
+Backend modular dan PostgreSQL yang di-host di Neon dipilih sebagai arah arsitektur. Target deployment terbaru adalah Kubernetes untuk aplikasi dan worker, dengan Neon di luar cluster. Distribusi Kubernetes, penyedia, mesin, region dan anggaran final belum dikunci. K3s dan AWS Lightsail adalah kandidat sebelumnya, bukan pembelian atau komitmen paket. Status pemilihan model/email mengikuti bukti dan keputusan fitur terbaru, bukan dianggap belum dipilih dari paragraf rancangan awal ini.
 
 ### Arsitektur aplikasi
 
@@ -537,11 +537,11 @@ Service sumber referensi menjaga pengembangan dan demo tidak terikat ketersediaa
 
 ### Deployment dan Kubernetes
 
-Arah deployment adalah VPS Linux cloud untuk frontend, FastAPI, dan worker; Neon menyediakan database di luar VPS. AWS adalah pilihan penyedia cloud dan VPS adalah bentuk komputasi, sehingga keduanya tidak saling eksklusif. AWS Lightsail menjadi kandidat pertama untuk dibandingkan dengan VPS lain berdasarkan biaya, region, resource, akses jaringan, dan operasional.
+Arah deployment adalah Kubernetes untuk frontend, FastAPI, dan worker; Neon menyediakan database di luar cluster. VPS Linux cloud menjadi salah satu opsi mesin. Penyedia, distribusi dan ukuran belum dikunci; kandidat AWS Lightsail dapat dibandingkan dengan opsi lain berdasarkan biaya, region, resource, akses jaringan, dan operasional.
 
 Frontend dapat disajikan dari VPS yang sama. Vercel tidak menjadi dependensi MVP; dapat dievaluasi jika preview/frontend hosting memberi manfaat. Seluruh backend dan worker tidak diasumsikan mengikuti model eksekusi Functions.
 
-K3s dipilih sebagai kandidat distribusi Kubernetes di VPS setelah kelayakan resource terbukti. EKS tidak menjadi pilihan deployment awal karena biaya cluster dan resource tambahan perlu pembenaran. Ukuran cluster dan paket belum dipilih. Tidak ada pembelian atau provisioning berbayar yang dilakukan melalui keputusan rancangan ini.
+Keputusan terbaru William, 5 November 2026: Kubernetes menjadi target deployment. K3s tetap kandidat sebelumnya; distribusi final, mesin, penyedia, ukuran cluster dan anggaran belum dipilih. Penggunaan kubeadm atau layanan terkelola perlu dinilai saat rancangan deployment disiapkan. Tidak ada pembelian atau provisioning berbayar yang dilakukan melalui keputusan rancangan ini.
 
 Kubernetes diuji untuk pemulihan proses, penambahan replika dengan state/tenant yang konsisten, readiness, rolling update/rollback, dan resource requests/limits berdasarkan pengukuran. Worker diuji agar retry/restart tidak menggandakan kasus atau email. Rancangan komunikasi chat dan pembaruan antarreplika harus diputuskan sebelum klaim horizontal scaling diuji; state lokal proses tidak boleh diasumsikan tersedia pada replika lain.
 

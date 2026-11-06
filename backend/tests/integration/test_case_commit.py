@@ -87,6 +87,20 @@ def test_confirm_builds_complete_graph_and_status_recovers_lost_response(target)
     run(scenario())
 
 
+def test_public_message_after_adoption_keeps_narrow_insert_privileges(target):
+    from test_conversations import send
+    async def scenario():
+        async with cases(target) as (h,sender):
+            async with h.client() as c:
+                preview=await prepared(h,sender,c)
+                sent=await send(h,c,preview['conversation_id'],body='Additional customer question.')
+                assert sent.status_code==201,sent.text
+                assert sent.json()['sequence']==1
+                assert row(target,'SELECT resource_security_labels FROM {s}.messages WHERE id=:id',
+                    id=UUID(sent.json()['message_id']))[0]==[]
+    run(scenario())
+
+
 def test_two_confirmations_same_draft_create_only_one_case(target):
     async def scenario():
         async with cases(target) as (h,sender):

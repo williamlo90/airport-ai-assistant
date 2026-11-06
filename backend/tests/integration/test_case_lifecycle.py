@@ -25,7 +25,7 @@ pytestmark=pytest.mark.skipif(os.environ.get('RUN_NEON_AUTH_TESTS')!='1',reason=
 def target(commit_target):
     t=commit_target
     settings=load_database_settings(MigrationDatabaseSettings,Path(os.environ.get('DB_TEST_ENV_FILE','.env')))
-    for _ in range(2):assert __import__('airport_assistant.infrastructure.database.migrations',fromlist=['migrate']).migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'])=='0009_case_lifecycle'
+    for _ in range(2):assert __import__('airport_assistant.infrastructure.database.migrations',fromlist=['migrate']).migrate(settings.url.get_secret_value(),schema=t['schema'],runtime_role=t['role'],policy_role=t['policy'],auth_role=t['owner'],target_revision='0009_case_lifecycle')=='0009_case_lifecycle'
     return t
 
 

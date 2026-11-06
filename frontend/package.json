@@ -10,20 +10,28 @@
   },
   "scripts": {
     "dev": "vite",
+    "dev:integrated": "vite --mode integrated",
+    "dev:https": "node scripts/local-https.mjs",
+    "preview:https": "node scripts/local-https.mjs --preview",
     "preview": "vite preview",
     "typecheck": "tsc -b",
-    "lint": "eslint src tests *.ts *.js --max-warnings 0",
-    "format:check": "prettier --check src tests index.html package.json package-lock.json tsconfig*.json vite.config.ts vitest.config.ts eslint.config.js .prettierrc.json README.md",
-    "format": "prettier --write src tests index.html package.json package-lock.json tsconfig*.json vite.config.ts vitest.config.ts eslint.config.js .prettierrc.json README.md",
+    "lint": "eslint src tests scripts/*.mjs *.ts *.js --max-warnings 0",
+    "format:check": "prettier --check src tests scripts/*.mjs index.html package.json package-lock.json tsconfig*.json vite.config.ts vitest.config.ts eslint.config.js .prettierrc.json README.md",
+    "format": "prettier --write src tests scripts/*.mjs index.html package.json package-lock.json tsconfig*.json vite.config.ts vitest.config.ts eslint.config.js .prettierrc.json README.md",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:env": "node --test tests/infrastructure/*.test.mjs",
     "build": "npm run typecheck && vite build",
-    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run format:check && npm test && npm run test:env && npm run build"
   },
   "dependencies": {
+    "@hookform/resolvers": "7.0.1",
+    "@tanstack/react-query": "5.105.3",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-router": "7.18.5"
+    "react-hook-form": "7.91.0",
+    "react-router": "7.18.5",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
@@ -39,6 +47,7 @@
     "eslint-plugin-react-refresh": "0.5.7",
     "globals": "17.14.0",
     "jsdom": "29.1.1",
+    "playwright-core": "1.65.0",
     "prettier": "3.9.10",
     "typescript": "5.9.3",
     "typescript-eslint": "8.72.1",

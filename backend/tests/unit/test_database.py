@@ -203,6 +203,7 @@ def test_api_database_configuration_is_explicit():
 
 def test_fastapi_lifespan_opens_and_closes_configured_runtime(monkeypatch):
     database = AsyncMock()
+    database.schema='app'
     monkeypatch.setattr("airport_assistant.composition.RuntimeDatabase", lambda *args, **kwargs: database)
     app = create_app(Settings(env="test", database_enabled=True), database_settings=RuntimeDatabaseSettings(DATABASE_URL=POOLED))
     database.open.assert_not_awaited()
@@ -216,6 +217,7 @@ def test_fastapi_lifespan_opens_and_closes_configured_runtime(monkeypatch):
 
 def test_failed_startup_still_closes_resources(monkeypatch):
     database = AsyncMock()
+    database.schema='app'
     database.open.side_effect = DatabaseError()
     monkeypatch.setattr("airport_assistant.composition.RuntimeDatabase", lambda *args, **kwargs: database)
     app = create_app(Settings(env="test", database_enabled=True), database_settings=RuntimeDatabaseSettings(DATABASE_URL=POOLED))
@@ -227,10 +229,11 @@ def test_failed_startup_still_closes_resources(monkeypatch):
     database.close.assert_awaited_once()
 
 
-def test_driver_logs_are_redacted_even_with_exception(caplog):
+@pytest.mark.parametrize('logger_name',['psycopg.pool','psycopg.transaction'])
+def test_driver_logs_are_redacted_even_with_exception(caplog,logger_name):
     protect_driver_logs()
     protect_driver_logs()
-    logger = logging.getLogger("psycopg.pool")
+    logger = logging.getLogger(logger_name)
     with caplog.at_level(logging.WARNING):
         try:
             raise RuntimeError("secret-sentinel")

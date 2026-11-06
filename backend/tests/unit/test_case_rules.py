@@ -29,6 +29,10 @@ def case_setup():
     tx.lock_key=AsyncMock();tx.idempotency=AsyncMock(return_value=None)
     tx.lock_destination=AsyncMock(return_value=draft.destination);tx.verified_contact=AsyncMock(return_value=uuid4())
     tx.case_result=AsyncMock(return_value=result);tx.create_case=AsyncMock(return_value=result)
+    tx.lock_draft_sources.side_effect=lambda id:(result.case_id,) if tx.find_draft.return_value.state=='committed' else ()
+    tx.source_case_context=AsyncMock(return_value=dict(id=result.case_id,version=1,resource_security_labels=[]))
+    tx.confirmation_context=AsyncMock(return_value=dict(id=result.case_id,origin_draft_id=draft.id,
+        origin_conversation_id=draft.conversation_id,source_observations=[],resource_security_labels=[]))
     tx.mark_committed=AsyncMock(return_value=True);tx.record_key=AsyncMock()
     @asynccontextmanager
     async def savepoint():yield

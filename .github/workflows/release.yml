@@ -1,0 +1,167 @@
+name: Release package
+on:
+  push:
+    branches: ['feature/release-package']
+  pull_request:
+    paths: ['backend/**', 'frontend/**', 'reference_service/**', 'deploy/**', 'scripts/release/**', '.dockerignore', '.github/workflows/release.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: release-package-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      UV_CONCURRENT_DOWNLOADS: '2'
+      UV_CONCURRENT_BUILDS: '1'
+      UV_CONCURRENT_INSTALLS: '1'
+      UV_PYTHON_DOWNLOADS: never
+      NODE_OPTIONS: --max-old-space-size=512
+      RAYON_NUM_THREADS: '1'
+      npm_config_maxsockets: '2'
+      npm_config_jobs: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.19.0'
+      - name: Record exact committed checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '* -text\n' > .git/info/attributes
+          git -c core.autocrlf=false checkout-index --all --force
+          mkdir -p local/release
+          python - <<'PY'
+          import hashlib,json,os,subprocess
+          from pathlib import Path
+          commit=subprocess.check_output(['git','rev-parse','HEAD']).decode().strip()
+          assert commit==os.environ['GITHUB_SHA']
+          files={}
+          for entry in subprocess.check_output(['git','ls-files','--stage','-z']).split(b'\0'):
+              if not entry:continue
+              header,name=entry.split(b'\t',1);mode,blob,stage=header.decode().split();name=name.decode()
+              assert stage=='0' and not name.startswith(('docs/','local/'))
+              assert not (Path(name).name.startswith('.env') and Path(name).name!='.env.example')
+              data=Path(name).read_bytes();actual=hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()
+              assert actual==blob,(name,'checkout differs from committed bytes')
+              files[name]={'sha256':hashlib.sha256(data).hexdigest(),'git_blob':blob}
+          Path('local/release/source-provenance.json').write_text(json.dumps({'commit':commit,'files':files,'checkout_policy':'byte-preserving info/attributes -text','clean_before':not subprocess.check_output(['git','status','--porcelain'])},indent=2))
+          PY
+      - name: Locked backend and focused release qualification
+        run: |
+          python -m pip install uv==0.13.7
+          uv sync --project backend --locked --no-editable
+          backend/.venv/bin/python -m pytest backend/tests/unit/test_release_entrypoints.py backend/tests/unit/test_bootstrap.py backend/tests/unit/test_migrations.py -q
+          backend/.venv/bin/python scripts/release/package.py check
+      - name: Locked reference package
+        run: |
+          uv sync --project reference_service --locked --no-dev --no-editable
+          reference_service/.venv/bin/python -c "from airport_reference.seed import fixture_path; assert fixture_path().is_file()"
+      - name: Locked frontend code gate
+        working-directory: frontend
+        run: |
+          npm install --global npm@11.17.0 --ignore-scripts --no-audit --no-fund
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run lint
+          npm run build
+      - name: Render Kubernetes without cluster access
+        run: |
+          curl --fail --silent --show-error --location -o /tmp/kubectl https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl
+          curl --fail --silent --show-error --location -o /tmp/kubectl.sha256 https://dl.k8s.io/release/v1.34.0/bin/linux/amd64/kubectl.sha256
+          echo "$(cat /tmp/kubectl.sha256)  /tmp/kubectl" | sha256sum --check
+          chmod +x /tmp/kubectl
+          mkdir -p local/release
+          /tmp/kubectl kustomize deploy/kubernetes/base > local/release/base.yaml
+          /tmp/kubectl kustomize deploy/kubernetes/migration > local/release/migration.yaml
+      - name: Serial bounded image builds and package smoke
+        shell: bash
+        run: |
+          set -euo pipefail
+          BUILDER=westbridge-release-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}
+          TLS_DIR=$(mktemp -d /tmp/westbridge-tls.XXXXXX)
+          CONTAINERS=()
+          BUILDER_ATTEMPTED=false
+          CLEANUP_DONE=false
+          cleanup() {
+            set +e
+            cleanup_ok=1
+            for name in "${CONTAINERS[@]}"; do
+              found=$(docker ps -aq --filter "name=^/${name}$" --filter "label=org.westbridge.release-run=${BUILDER}")
+              if [ "$?" -ne 0 ]; then cleanup_ok=0
+              elif [ -n "$found" ]; then docker rm -f "$name" >/dev/null 2>&1 || cleanup_ok=0; fi
+            done
+            if [ "$BUILDER_ATTEMPTED" = true ]; then
+              docker buildx rm "$BUILDER" >/dev/null 2>&1 || cleanup_ok=0
+              left=$(docker ps -aq --filter "name=^/buildx_buildkit_${BUILDER}0$")
+              if [ "$?" -ne 0 ] || [ -n "$left" ]; then cleanup_ok=0; fi
+            fi
+            case "$TLS_DIR" in /tmp/westbridge-tls.*) rm -f "$TLS_DIR/tls.key" "$TLS_DIR/tls.crt" || cleanup_ok=0; rmdir "$TLS_DIR" || cleanup_ok=0 ;; *) cleanup_ok=0 ;; esac
+            CLEANUP_OK=$cleanup_ok python - <<'PY'
+          import json,os
+          from pathlib import Path
+          Path('local/release/cleanup.json').write_text(json.dumps({'owned_resources_removed':os.environ['CLEANUP_OK']=='1','synthetic_tls_uploaded':False}))
+          PY
+            CLEANUP_DONE=true
+            set -e
+            [ "$cleanup_ok" -eq 1 ]
+          }
+          on_exit() {
+            rc=$?
+            trap - EXIT INT TERM
+            if [ "$CLEANUP_DONE" != true ]; then cleanup || rc=1; fi
+            exit "$rc"
+          }
+          trap on_exit EXIT
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+          smoke() {
+            name="${BUILDER}-$1"; shift
+            CONTAINERS+=("$name")
+            timeout 60s docker run --name "$name" --label "org.westbridge.release-run=${BUILDER}" --rm "$@"
+          }
+          BUILDER_ATTEMPTED=true
+          docker buildx create --name "$BUILDER" --driver docker-container --driver-opt memory=1536m --driver-opt cpu-period=100000 --driver-opt cpu-quota=100000 --buildkitd-config deploy/containers/buildkitd.toml --bootstrap
+          docker inspect "buildx_buildkit_${BUILDER}0" --format '{{json .HostConfig}}' > local/release/builder-limits.json
+          python -c "import json; d=json.load(open('local/release/builder-limits.json')); assert d['Memory']==1536*1024*1024 and d['CpuQuota']==100000 and d['CpuPeriod']==100000"
+          for component in backend frontend reference; do
+            docker buildx build --builder "$BUILDER" --platform linux/amd64 --load -f "deploy/containers/$component.Dockerfile" -t "westbridge-$component:release-candidate" --metadata-file "local/release/$component.json" .
+          done
+          smoke backend-config --network none --read-only --memory 256m --cpus .5 --pids-limit 64 -e APP_ENV=production westbridge-backend:release-candidate airport-assistant-api --no-env-file --trusted-loopback-proxy --check-config
+          smoke backend-resources --network none --read-only --memory 256m --cpus .5 --pids-limit 64 westbridge-backend:release-candidate python -c "from airport_assistant.infrastructure.database.migrations import migration_directory,migration_config; from alembic.script import ScriptDirectory; assert migration_directory().name=='_migrations'; assert ScriptDirectory.from_config(migration_config()).get_heads()==['0038_staff_administration']; assert len(list((migration_directory()/'sql').glob('*.sql')))==9"
+          smoke reference-resources --network none --read-only --memory 192m --cpus .5 --pids-limit 64 westbridge-reference:release-candidate python -c "from airport_reference.seed import fixture_path; assert fixture_path().is_file()"
+          openssl req -x509 -newkey rsa:2048 -nodes -keyout "$TLS_DIR/tls.key" -out "$TLS_DIR/tls.crt" -subj /CN=synthetic.invalid -days 1 >/dev/null 2>&1
+          chmod 755 "$TLS_DIR"
+          chmod 644 "$TLS_DIR"/*
+          smoke frontend-config --network none --read-only --tmpfs /tmp:rw,noexec,nosuid,size=32m --memory 64m --cpus .25 --pids-limit 32 -v "$TLS_DIR":/etc/westbridge/tls:ro westbridge-frontend:release-candidate -t
+          git diff --exit-code
+          docker image inspect westbridge-backend:release-candidate westbridge-frontend:release-candidate westbridge-reference:release-candidate > local/release/images-inspected.json
+          cleanup
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          out=Path('local/release');images=json.loads((out/'images-inspected.json').read_text())
+          assert json.loads((out/'cleanup.json').read_text())['owned_resources_removed'] is True
+          for role,image in zip(('backend','frontend','reference'),images):
+              assert image['Config']['User']==('101:101' if role=='frontend' else '10001:10001')
+              meta=json.loads((out/(role+'.json')).read_text())
+              assert meta['containerimage.config.digest']==image['Id']
+          (out/'qualification.json').write_text(json.dumps({'passed':True,'commit':os.environ['GITHUB_SHA'],'physical_images':3,'serial_builder':True,'application_deployment':False,'provider_calls':0,'emails_sent':0,'cleanup_accepted':True}))
+          PY
+          trap - EXIT INT TERM
+      - name: Preserve release evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-package-evidence
+          path: local/release/
+          if-no-files-found: error
+          retention-days: 3

@@ -1,0 +1,18 @@
+{
+  "dimensions": 1536,
+  "max_requests": 120,
+  "max_retries_global": 10,
+  "proposed_cap_usd": 0.10,
+  "pricing_checked": "2026-11-04",
+  "providers": {
+    "openai": {"model": "text-embedding-3-small", "key_env": "EVAL_OPENAI_API_KEY", "usd_per_million_tokens": 0.02},
+    "gemini": {"model": "gemini-embedding-001", "key_env": "EVAL_GEMINI_API_KEY", "usd_per_million_tokens": 0.15}
+  },
+  "pricing_sources": [
+    "https://developers.openai.com/api/docs/models/text-embedding-3-small",
+    "https://ai.google.dev/gemini-api/docs/pricing#gemini-embedding"
+  ],
+  "rules": {"holdout_hit_count_min": 15, "per_direction_hit_count_min": 3, "near_tie_queries": 1,
+    "threshold": "calibration F1, higher threshold on tie", "ranking_tie": "chunk ID ascending",
+    "no_answer_rule": "top cosine >= per-model calibrated threshold", "automatic_winner": false}
+}

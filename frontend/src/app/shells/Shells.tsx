@@ -9,6 +9,8 @@ interface Props {
   onLanguageChange: () => void;
   skipLabel: string;
   children: ReactNode;
+  variant?: 'standard' | 'home';
+  navigation?: ReactNode;
   homeHref?: string;
   onHomeNavigate?: MouseEventHandler<HTMLAnchorElement>;
 }
@@ -18,9 +20,14 @@ function Header({
   onLanguageChange,
   homeHref = '/',
   onHomeNavigate,
+  variant = 'standard',
+  navigation,
 }: Omit<Props, 'children' | 'skipLabel'>) {
   return (
-    <header className={styles.header}>
+    <header
+      className={`${styles.header} ${variant === 'home' ? styles.homeHeader : ''}`}
+    >
+      {navigation}
       <a
         className={styles.brand}
         href={homeHref}
@@ -43,14 +50,23 @@ function Header({
     </header>
   );
 }
-export function CustomerShell({ skipLabel, children, ...header }: Props) {
+export function CustomerShell({
+  skipLabel,
+  children,
+  variant = 'standard',
+  ...header
+}: Props) {
   return (
     <>
       <a className={styles.skip} href="#main-content">
         {skipLabel}
       </a>
-      <Header {...header} />
-      <main id="main-content" className={styles.customer}>
+      <Header {...header} variant={variant} />
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={variant === 'home' ? styles.home : styles.customer}
+      >
         {children}
       </main>
     </>
@@ -73,7 +89,7 @@ export function StaffShell({
         <nav className={styles.navigation} aria-label={navigationLabel}>
           {navigation}
         </nav>
-        <main id="main-content" className={styles.staff}>
+        <main id="main-content" tabIndex={-1} className={styles.staff}>
           {children}
         </main>
       </div>

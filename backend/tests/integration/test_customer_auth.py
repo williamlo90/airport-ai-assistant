@@ -278,17 +278,18 @@ def test_customer_verification_of_staff_contact_never_creates_staff_session(targ
 
 
 @pytest.mark.parametrize("failure",["raise","timeout"])
-def test_delivery_failure_invalidates_code_without_exposing_it(target,failure,caplog):
+def test_delivery_outcome_preserves_uncertain_code_without_exposing_it(target,failure,caplog):
     async def scenario():
         async with harness(target,delivery_timeout=0.1) as h:
             h.sender.failure=failure
             async with h.client() as client:
                 await h.boot(client);result=await h.issue(client)
-                assert result.status_code==503 and len(h.sender.messages)==1
+                assert result.status_code==(202 if failure=="timeout" else 503) and len(h.sender.messages)==1
                 id=next(iter(h.sender.messages));message=h.sender.messages[id]
                 assert message.code not in result.text+caplog.text
-                assert row(target,"SELECT consumed_at FROM {s}.verification_challenges WHERE id=:id",id=id)[0]
-                assert (await h.verify(client,id)).status_code==422
+                consumed=row(target,"SELECT consumed_at FROM {s}.verification_challenges WHERE id=:id",id=id)[0]
+                assert (consumed is None)==(failure=="timeout")
+                assert (await h.verify(client,id)).status_code==(200 if failure=="timeout" else 422)
     run(scenario())
 
 

@@ -73,8 +73,15 @@ def create_migration_engine(url: str, *, connect_timeout=10):
 
 def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade",
             target_revision="head", runtime_role="airport_assistant_runtime",
-            policy_role="airport_assistant_policy_owner",auth_role="airport_assistant_auth_owner") -> str | None:
+            policy_role="airport_assistant_policy_owner",auth_role="airport_assistant_auth_owner",worker_role=None,job_owner_role=None) -> str | None:
     validate_schema(schema)
+    import hashlib
+    from airport_assistant.infrastructure.database.provisioning import role_name
+    suffix=hashlib.sha256(schema.encode()).hexdigest()[:24]
+    worker_role=worker_role or ('airport_assistant_worker' if schema=='app' else 'job_worker_'+suffix)
+    job_owner_role=job_owner_role or ('airport_assistant_job_owner' if schema=='app' else 'job_owner_'+suffix)
+    role_name(worker_role);role_name(job_owner_role)
+    if len({runtime_role,policy_role,auth_role,worker_role,job_owner_role})!=5:raise MigrationError('Dedicated database roles must differ.')
     if action not in {"upgrade", "current"}:
         raise MigrationError("Unsupported migration action.")
     config = migration_config() if action == "upgrade" else None
@@ -90,7 +97,7 @@ def migrate(url: str, *, schema="app", connect_timeout=10, action="upgrade",
                 connection.exec_driver_sql(f"CREATE SCHEMA IF NOT EXISTS {quoted}")
                 connection.exec_driver_sql(f"REVOKE ALL ON SCHEMA {quoted} FROM PUBLIC")
                 config.attributes.update(connection=connection, schema=schema,
-                                         runtime_role=runtime_role, policy_role=policy_role,auth_role=auth_role)
+                                         runtime_role=runtime_role, policy_role=policy_role,auth_role=auth_role,worker_role=worker_role,job_owner_role=job_owner_role)
                 command.upgrade(config, target_revision)
             revision = MigrationContext.configure(connection, opts={
                 "version_table": "schema_migrations", "version_table_schema": schema,

@@ -148,3 +148,43 @@
     font-size: 13px;
   }
 }
+
+.home {
+  min-width: 0;
+  background: var(--color-surface);
+}
+.homeHeader {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 10;
+  background: transparent;
+  padding: 0 max(32px, calc((100% - 1408px) / 2));
+}
+.homeHeader .language {
+  background: rgb(0 0 0 / 25%);
+}
+@media (max-width: 850px) {
+  .homeHeader {
+    padding: 0 24px;
+    gap: 12px;
+  }
+  .homeHeader .brand {
+    font-size: 18px;
+  }
+  .homeHeader .language {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
+@media (max-width: 600px) {
+  .homeHeader {
+    justify-content: space-between;
+    padding: 0 16px;
+  }
+  .homeHeader .brand {
+    font-size: 16px;
+  }
+  .homeHeader .language {
+    max-width: 145px;
+  }
+}

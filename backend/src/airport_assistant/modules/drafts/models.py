@@ -1,17 +1,20 @@
 """Validated user reports, server destinations, and confirmation-bound previews."""
 
-from dataclasses import dataclass,replace
+from dataclasses import dataclass,replace,field
 from datetime import datetime,timezone
 import hashlib
 import hmac
 import json
 import re
-from typing import Literal
+from typing import Literal,Annotated,TYPE_CHECKING
 from uuid import UUID
 
 from pydantic import BaseModel,ConfigDict,Field,field_validator
 from airport_assistant.modules.identity.auth import normalized_contact
 from airport_assistant.modules.identity.access import OwnedObject
+
+if TYPE_CHECKING:
+    from airport_assistant.modules.source.evidence import SourceEvidence
 
 
 class DraftError(Exception):
@@ -29,7 +32,13 @@ class ReportPayload(BaseModel):
     booking_reference:str|None=Field(default=None,pattern=r'^[A-Za-z0-9_-]{1,80}$')
     transaction_reference:str|None=Field(default=None,pattern=r'^[A-Za-z0-9_-]{1,80}$')
     contact_email:str|None=Field(default=None,min_length=3,max_length=320)
-    attachment_ids:tuple[UUID,...]=Field(default=(),max_length=0,strict=False)
+    attachment_ids:tuple[Annotated[UUID,Field(strict=False)],...]=Field(default=(),max_length=3,strict=False)
+
+    @field_validator('attachment_ids')
+    @classmethod
+    def unique_attachments(cls,value):
+        if len(set(value))!=len(value):raise ValueError('Repeated attachment.')
+        return value
 
     @field_validator('summary','customer_report')
     @classmethod
@@ -61,9 +70,9 @@ class Draft:
     actor_session_id:UUID|None
     created_session_id:UUID
     action_type:str
-    payload:ReportPayload
+    payload:ReportPayload=field(repr=False)
     destination:Destination
-    displayed_summary:str
+    displayed_summary:str=field(repr=False)
     language:str
     version:int
     payload_hash:str
@@ -71,18 +80,20 @@ class Draft:
     expires_at:datetime
     state:str='pending'
     case_id:UUID|None=None
-    resource_security_labels:tuple=()
+    resource_security_labels:tuple=field(default=(),repr=False)
     result_case_id:UUID|None=None
     result_message_id:UUID|None=None
     result_ref:str|None=None
     committed_at:datetime|None=None
+    case_access_verified:bool=False
+    source_evidence:'SourceEvidence | None'=field(default=None,repr=False)
 
     def projection(self):
         return OwnedObject(self.tenant_id,self.id,'draft',self.actor_principal_id,self.actor_session_id,
-                           self.case_id is None and not self.resource_security_labels)
+                           not self.resource_security_labels and (self.case_id is None or self.case_access_verified))
 
 
-def displayed_summary(action_type,payload,destination,language):
+def displayed_summary(action_type,payload,destination,language,case_id=None):
     if language=='id':
         labels=('Buat pengajuan' if action_type=='create_case' else 'Minta bantuan petugas',
                 'Kategori','Layanan','Ringkasan','Laporan pelanggan','Referensi booking','Referensi transaksi','Email','Tujuan','Belum diisi')
@@ -92,7 +103,55 @@ def displayed_summary(action_type,payload,destination,language):
     values=(payload.category,payload.service_type,payload.summary,payload.customer_report,
             payload.booking_reference or labels[-1],payload.transaction_reference or labels[-1],
             payload.contact_email or labels[-1],destination.organization_name+' / '+destination.queue_name)
-    return labels[0]+'\n'+'\n'.join(label+': '+value for label,value in zip(labels[1:-1],values))
+    result=labels[0]+'\n'+'\n'.join(label+': '+value for label,value in zip(labels[1:-1],values))
+    if case_id is not None:result+='\n'+('Kasus yang sudah ada' if language=='id' else 'Existing case')+': CASE-'+case_id.hex
+    if payload.attachment_ids:result+='\n'+('Lampiran' if language=='id' else 'Attachments')+': '+', '.join(map(str,payload.attachment_ids))
+    return result
+
+
+def source_review(payload,evidence):
+    """Internal typed snapshot must describe this report, never another order."""
+    from airport_assistant.modules.source.evidence import SourceEvidence
+    if type(evidence) is not SourceEvidence:
+        raise ValueError('Typed source evidence required.')
+    checked=SourceEvidence.from_records(evidence.tenant_id,evidence.to_records(),expected_labels=evidence.labels)
+    if checked!=evidence:
+        raise ValueError('Invalid source evidence basis.')
+    for record in checked.to_records():
+        kind,data=record['kind'],record['data']
+        if kind!='transaction' and data['service_type']!=payload.service_type:
+            raise ValueError('Source service does not match the report.')
+        if kind=='transaction':
+            if data['reference']!=payload.transaction_reference:
+                raise ValueError('Source transaction does not match the report.')
+            if data.get('booking_reference') is not None and data['booking_reference']!=payload.booking_reference:
+                raise ValueError('Source booking link does not match the report.')
+        else:
+            book=record['booking'] if kind=='policy' else data
+            if book['reference']!=payload.booking_reference:
+                raise ValueError('Source booking does not match the report.')
+    return checked
+
+
+def reviewed_summary(action_type,payload,destination,language,case_id=None,*,source_evidence=None):
+    result=displayed_summary(action_type,payload,destination,language,case_id)
+    if source_evidence is not None:
+        result+='\n\n'+source_review(payload,source_evidence).display(language)
+    if not 1<=len(result)<=7000:
+        raise ValueError('Review exceeds the bounded human preview.')
+    return result
+
+
+def with_source_evidence(draft,evidence):
+    """Server-only construction before persistence; not a public edit operation."""
+    from airport_assistant.modules.source.private_content import inherited_records
+    source_review(draft.payload,evidence)
+    if evidence.tenant_id!=draft.tenant_id or draft.source_evidence is not None:
+        raise ValueError('A source snapshot cannot replace another review.')
+    labels=inherited_records(draft.tenant_id,list(draft.resource_security_labels),evidence.labels.to_records())
+    return replace(draft,source_evidence=evidence,resource_security_labels=tuple(labels),
+        displayed_summary=reviewed_summary(draft.action_type,draft.payload,draft.destination,draft.language,
+            draft.case_id,source_evidence=evidence))
 
 
 def canonical_hash(draft):
@@ -105,6 +164,19 @@ def canonical_hash(draft):
                 displayed_summary=draft.displayed_summary,language=draft.language,version=draft.version,
                 created_at=stamp(draft.created_at),expires_at=stamp(draft.expires_at),
                 resource_security_labels=list(draft.resource_security_labels),case_id=str(draft.case_id) if draft.case_id else None)
+    if draft.source_evidence is not None:
+        from airport_assistant.modules.source.labels import SecurityLabels,merge_labels
+        try:
+            evidence=source_review(draft.payload,draft.source_evidence)
+            labels=SecurityLabels.from_records(draft.tenant_id,list(draft.resource_security_labels))
+            if (evidence.tenant_id!=draft.tenant_id
+                or merge_labels(labels,evidence.labels).to_records()!=labels.to_records()
+                or draft.displayed_summary!=reviewed_summary(draft.action_type,draft.payload,draft.destination,
+                    draft.language,draft.case_id,source_evidence=evidence)):
+                raise ValueError('Source review binding changed.')
+            record['source_observations']=evidence.to_records()
+        except (ValueError,TypeError,KeyError,UnicodeError):
+            raise DraftError(500,'INTERNAL_ERROR') from None
     return hashlib.sha256(json.dumps(record,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode()).hexdigest()
 
 

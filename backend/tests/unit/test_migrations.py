@@ -20,7 +20,7 @@ def test_packaged_revision_has_one_head():
         assert directory == package / "_migrations"
     config = Config()
     config.set_main_option("script_location", str(directory))
-    assert ScriptDirectory.from_config(config).get_heads() == ["0009_case_lifecycle"]
+    assert ScriptDirectory.from_config(config).get_heads() == ["0038_staff_administration"]
 
 
 @pytest.mark.parametrize("schema", ["public", "pg_catalog", "app;DROP SCHEMA app", 'a"b', "", "a" * 64])
@@ -76,7 +76,7 @@ def test_new_revision_is_offline_and_aborts_until_implemented(tmp_path,monkeypat
     graph=ScriptDirectory.from_config(config)
     assert len(graph.get_heads())==1
     script=graph.get_revision(graph.get_heads()[0])
-    assert script.down_revision=="0009_case_lifecycle"
+    assert script.down_revision=="0038_staff_administration"
     with pytest.raises(NotImplementedError):script.module.upgrade()
 
 
@@ -97,3 +97,15 @@ def test_multiple_heads_rejected_before_connection(tmp_path,monkeypatch):
     monkeypatch.setattr(migrations,"create_migration_engine",lambda *a,**k:pytest.fail("ambiguous head must not connect"))
     with pytest.raises(migrations.MigrationError,match="single"):
         migrations.migrate("secret-sentinel")
+
+
+def test_adoption_guard_rewrite_is_narrow_and_fails_closed_on_unexpected_definition():
+    module=ScriptDirectory.from_config(migrations.migration_config()).get_revision('0023_adoption_guard').module
+    predicate='EXISTS(SELECT 1 FROM "app".case_history h WHERE h.tenant_id=NEW.tenant_id AND h.case_id=NEW.id AND h.resulting_version=NEW.version AND h.email_source_id IS NOT NULL)'
+    old="BEGIN IF TG_TABLE_NAME='cases' THEN IF current_user='private_mail' AND "+predicate+' THEN RETURN NULL;END IF;END IF;'
+    tail=' ORIGINAL_ADOPTION_AND_TRANSITION_GUARDS_END'
+    rewritten=module.rewrite(old+tail,'"app"','private_mail')
+    assert rewritten=="BEGIN IF TG_TABLE_NAME='cases' THEN IF current_user='private_mail' THEN IF "+predicate+' THEN RETURN NULL;END IF;END IF;END IF;'+tail
+    assert all(token not in rewritten for token in ('GRANT','SECURITY DEFINER','ALTER POLICY'))
+    for value in ('unrecognized',old+old):
+        with pytest.raises(RuntimeError):module.rewrite(value,'"app"','private_mail')

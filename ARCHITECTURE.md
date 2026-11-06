@@ -88,9 +88,9 @@ Izin tersebut diperiksa ulang pada case/event/blob read, penyusunan konteks mode
 1. Simpan pesan dan periksa tenant, sesi, mode percakapan serta batas penggunaan.
 2. Tentukan kebutuhan; menu/form dapat menyelesaikan tindakan pasti tanpa LLM.
 3. Retrieval atau tool read hanya melalui backend terotorisasi. Referensi kebijakan disertakan pada jawaban yang memuat ketentuan.
-4. Jika perlu mengirim informasi atas nama pelanggan, backend membuat action draft dengan payload, tujuan, versi dan expiry.
+4. Pengajuan kasus/handoff memakai action draft dengan payload, tujuan, versi dan expiry. Tambahan teks pada kasus yang sudah ada memakai preview bertanda tangan15menit yang terikat tenant, pelanggan, sesi, kasus, versi dan nonce unik; teks tetap berada di POST JSON/memori, tidak di URL atau log.
 5. Pelanggan melihat ringkasan dan mengonfirmasi versi tertentu melalui UI. Ucapan persetujuan di chat diarahkan ke kontrol konfirmasi; model tidak membuat bukti persetujuan sendiri.
-6. Backend memeriksa ulang akses, versi draf dan mode; transaksi mencatat tindakan, kasus/pesan, audit serta outbox.
+6. Backend memeriksa ulang akses dan versi. Pengajuan kasus/handoff mencatat graph tindakan dan outbox. Konfirmasi informasi tambahan mencatat ledger preview sekali pakai, pesan asli dan history atomik dengan version kasus+1; status dan state chat tetap. Outcome unknown dipulihkan melalui GET receipt dengan izin terkini, bukan POST baru atau pemanggilan model.
 7. Hasil berasal dari pencatatan server. Timeout tidak dianggap sukses/gagal sebelum status aksi diperiksa.
 
 Koreksi payload membatalkan konfirmasi sebelumnya. Model dapat menyusun draf, tidak memanggil endpoint commit sebagai aktor pelanggan. Draf CS untuk terjemahan juga tidak mengirim otomatis; staf meninjau dan menekan kirim.
@@ -127,7 +127,7 @@ Inbound webhook diverifikasi signature dan jendela timestamp sebelum ditulis ke 
 
 Thread dipetakan menggunakan token reply-to acak dan referensi pesan server. Subject atau nomor kasus saja tidak cukup. Token thread bukan bukti identitas; sender dan bukti autentikasi email diperiksa. Forward/From asing tidak mendapatkan akses otomatis. Untuk pesan yang perlu verifikasi, kirim challenge tanpa data pribadi ke kontak yang berhak dan izinkan balasan kode melalui email; portal tidak wajib dibuka. Pesan belum terverifikasi tidak memicu data read, perubahan izin, atau reopen otomatis.
 
-Attachment sebagai bukti dibatasi ukuran/tipe, diperiksa, tidak dieksekusi atau dimasukkan ke prompt sebagai instruksi. Blob berada di penyimpanan privat terenkripsi dengan metadata tenant dan kontrol download; tidak pada filesystem pod yang tidak persisten. Provider storage dipilih pada konfigurasi deployment. Isi kasus tidak dibawa dalam log delivery.
+Attachment sebagai bukti dibatasi ukuran/tipe, diperiksa, tidak dieksekusi atau dimasukkan ke prompt sebagai instruksi. Blob berada di penyimpanan privat dengan metadata tenant dan kontrol download; tidak pada filesystem pod yang tidak persisten. Saat ini bytes disimpan di PostgreSQL bytea. Scan di luar transaksi; sesudahnya current source grants, basis draft dan kapasitas diperiksa ulang sebelum penyimpanan atomik bersama preview baru. Mode Windows lokal dapat memakai provider AMSI melalui satu helper terisolasi; production menolak mode itu dan memakai konfigurasi ClamAV yang diverifikasi pada lingkungan Kubernetes. Tidak ada temporary payload file pada adapter AMSI atau klaim bahwa kebijakan provider OS selalu offline. Isi kasus tidak dibawa dalam log delivery.
 
 ## 9 Knowledge dan model
 
@@ -141,7 +141,7 @@ Checkpoint tidak menjadi sumber status booking atau bukti otorisasi. Checkpoint 
 
 ## 10 Operasi dan deployment
 
-VPS Linux melayani frontend dan API pada origin yang sama melalui HTTPS. K3s menjalankan API dan worker; Neon berada di luar cluster. Lightsail adalah kandidat penyedia VPS, bukan paket yang sudah dibeli. Satu node adalah titik kegagalan mesin; replika di node itu hanya membuktikan pemulihan proses dan concurrency, bukan HA lintas mesin.
+Kubernetes menjadi target deployment frontend, API dan worker; Neon berada di luar cluster. Frontend dan API memakai origin HTTPS yang sama. Distribusi Kubernetes, mesin, penyedia dan anggaran belum dikunci; K3s dan Lightsail merupakan kandidat sebelumnya, bukan paket yang sudah dibeli. Satu node adalah titik kegagalan mesin; replika di node itu hanya membuktikan pemulihan proses dan concurrency, bukan HA lintas mesin. Koordinasi keputusan terbaru ada di `docs/decisions/team_coordination.md`.
 
 API liveness memeriksa proses; readiness memeriksa dependensi inti untuk melayani request tanpa memanggil model setiap probe. Email outage tidak mematikan seluruh portal; pekerjaan ditahan dan status terlihat. Shutdown menghentikan penerimaan kerja baru dan menyelesaikan/menyerahkan lease secara aman. Resource requests/limits mengikuti pengukuran, bukan asumsi minimum cluster saja.
 
@@ -167,7 +167,7 @@ Backup database dan blob disimpan dengan akses terpisah. Restore dilakukan ke li
 4. Email dua arah dengan pencocokan identitas serta riwayat kasus.
 5. Knowledge, tool read dan agent dengan checkpoint serta konfirmasi.
 6. Evaluasi tiga alur, keamanan, beban, biaya dan manfaat AI terhadap baseline.
-7. Deployment VPS/K3s, pengujian restart/rollback/restore dan pengujian ulang rilis.
+7. Deployment Kubernetes dengan Neon eksternal, pengujian restart/rollback/restore dan pengujian ulang rilis.
 
 Target, kondisi eksekusi dan bukti pengujian mengikuti TEST_PLAN.md.
 

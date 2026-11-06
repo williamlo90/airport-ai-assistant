@@ -1,0 +1,74 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "name": "westbridge-migrate"
+  },
+  "spec": {
+    "backoffLimit": 0,
+    "activeDeadlineSeconds": 300,
+    "ttlSecondsAfterFinished": 86400,
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "westbridge-migrate"
+        }
+      },
+      "spec": {
+        "restartPolicy": "Never",
+        "automountServiceAccountToken": false,
+        "securityContext": {
+          "fsGroup": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          },
+          "runAsNonRoot": true
+        },
+        "containers": [
+          {
+            "name": "migration",
+            "image": "westbridge-backend:release-candidate",
+            "command": [
+              "airport-assistant-migrate",
+              "upgrade",
+              "--no-env-file"
+            ],
+            "env": [
+              {
+                "name": "DATABASE_DIRECT_URL",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-migration",
+                    "key": "DATABASE_DIRECT_URL"
+                  }
+                }
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsNonRoot": true,
+              "runAsUser": 10001,
+              "runAsGroup": 10001
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "128Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "384Mi"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

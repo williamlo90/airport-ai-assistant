@@ -17,7 +17,7 @@ from airport_assistant.modules.identity.auth import Session,AuthError
 def setup():
     actor=AccessIdentity(Session(uuid4(),uuid4(),None,'anonymous',datetime.now(timezone.utc)+timedelta(hours=1),'private'))
     conversation=Conversation(uuid4(),actor.session.tenant_id,None,actor.session.id,'id',1,1,0)
-    tx=Mock(session_active=AsyncMock(return_value=True),find=AsyncMock(return_value=conversation),
+    tx=Mock(lock_conversation_case=AsyncMock(return_value=None),session_active=AsyncMock(return_value=True),find=AsyncMock(return_value=conversation),
             languages=AsyncMock(return_value=['id','en']),duplicate=AsyncMock(return_value=None),
             append=AsyncMock(),create=AsyncMock(),change_language=AsyncMock())
     @asynccontextmanager
@@ -101,7 +101,7 @@ def test_session_context_validation_and_composition():
     from airport_assistant.auth_config import AuthSettings
     with pytest.raises(ValueError):DatabaseContext(uuid4(),session_id='not-uuid')
     assert build_services().conversations is None
-    services=build_services(database=Mock(),auth_settings=AuthSettings(SESSION_SECRET='s'*48))
+    services=build_services(database=Mock(schema="app"),auth_settings=AuthSettings(SESSION_SECRET='s'*48))
     assert isinstance(services.conversations,ConversationService)
 
 

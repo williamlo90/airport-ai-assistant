@@ -1,0 +1,249 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "westbridge-web"
+  },
+  "spec": {
+    "replicas": 1,
+    "revisionHistoryLimit": 3,
+    "strategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxSurge": 1,
+        "maxUnavailable": 0
+      }
+    },
+    "selector": {
+      "matchLabels": {
+        "app": "westbridge-web"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "westbridge-web"
+        }
+      },
+      "spec": {
+        "automountServiceAccountToken": false,
+        "terminationGracePeriodSeconds": 180,
+        "securityContext": {
+          "fsGroup": 10001,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          },
+          "runAsNonRoot": true
+        },
+        "containers": [
+          {
+            "name": "api",
+            "image": "westbridge-backend:release-candidate",
+            "command": [
+              "airport-assistant-api",
+              "--no-env-file",
+              "--trusted-loopback-proxy"
+            ],
+            "envFrom": [
+              {
+                "configMapRef": {
+                  "name": "westbridge-config"
+                }
+              }
+            ],
+            "env": [
+              {
+                "name": "DATABASE_URL",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-api",
+                    "key": "DATABASE_URL"
+                  }
+                }
+              },
+              {
+                "name": "SESSION_SECRET",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-api",
+                    "key": "SESSION_SECRET"
+                  }
+                }
+              },
+              {
+                "name": "SOURCE_API_BASE_URL",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-api",
+                    "key": "SOURCE_API_BASE_URL"
+                  }
+                }
+              },
+              {
+                "name": "SOURCE_API_TOKEN",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-api",
+                    "key": "SOURCE_API_TOKEN"
+                  }
+                }
+              },
+              {
+                "name": "SOURCE_CONTEXT_SECRET",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-api",
+                    "key": "SOURCE_CONTEXT_SECRET"
+                  }
+                }
+              },
+              {
+                "name": "SOURCE_TENANT_MAP",
+                "valueFrom": {
+                  "secretKeyRef": {
+                    "name": "westbridge-api",
+                    "key": "SOURCE_TENANT_MAP"
+                  }
+                }
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsNonRoot": true,
+              "runAsUser": 10001,
+              "runAsGroup": 10001
+            },
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "192Mi"
+              },
+              "limits": {
+                "cpu": "1",
+                "memory": "512Mi"
+              }
+            },
+            "readinessProbe": {
+              "exec": {
+                "command": [
+                  "python",
+                  "-c",
+                  "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready',timeout=3).read()"
+                ]
+              },
+              "timeoutSeconds": 4,
+              "periodSeconds": 20,
+              "failureThreshold": 3
+            },
+            "livenessProbe": {
+              "exec": {
+                "command": [
+                  "python",
+                  "-c",
+                  "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live',timeout=3).read()"
+                ]
+              },
+              "timeoutSeconds": 4,
+              "periodSeconds": 20,
+              "failureThreshold": 3
+            },
+            "startupProbe": {
+              "exec": {
+                "command": [
+                  "python",
+                  "-c",
+                  "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/live',timeout=3).read()"
+                ]
+              },
+              "timeoutSeconds": 4,
+              "periodSeconds": 5,
+              "failureThreshold": 24
+            },
+            "volumeMounts": [
+              {
+                "name": "api-tmp",
+                "mountPath": "/tmp"
+              }
+            ]
+          },
+          {
+            "name": "frontend",
+            "image": "westbridge-frontend:release-candidate",
+            "ports": [
+              {
+                "name": "https",
+                "containerPort": 8443
+              }
+            ],
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "readOnlyRootFilesystem": true,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "runAsNonRoot": true,
+              "runAsUser": 101,
+              "runAsGroup": 101
+            },
+            "resources": {
+              "requests": {
+                "cpu": "25m",
+                "memory": "32Mi"
+              },
+              "limits": {
+                "cpu": "250m",
+                "memory": "64Mi"
+              }
+            },
+            "readinessProbe": {
+              "tcpSocket": {
+                "port": "https"
+              },
+              "periodSeconds": 10
+            },
+            "volumeMounts": [
+              {
+                "name": "web-tmp",
+                "mountPath": "/tmp"
+              },
+              {
+                "name": "tls",
+                "mountPath": "/etc/westbridge/tls",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "api-tmp",
+            "emptyDir": {
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "web-tmp",
+            "emptyDir": {
+              "sizeLimit": "64Mi"
+            }
+          },
+          {
+            "name": "tls",
+            "secret": {
+              "secretName": "westbridge-tls",
+              "defaultMode": 288
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -245,6 +245,10 @@ h3 {
   padding-left: 20px;
   overflow: hidden;
 }
+.search:focus-within {
+  outline: 3px solid #e1a800;
+  outline-offset: 4px;
+}
 .search > svg {
   width: 22px;
   height: 22px;
@@ -255,11 +259,13 @@ h3 {
   flex: 1;
   height: 100%;
   border: 0;
-  outline-offset: -4px;
-  padding: 12px 10px 12px 0;
+  padding: 12px 12px 12px 4px;
   background: transparent;
   color: var(--ink);
   font-size: 18px;
+}
+.search input:focus-visible {
+  outline: none;
 }
 .search input::placeholder {
   color: #637084;

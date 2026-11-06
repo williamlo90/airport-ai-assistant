@@ -55,7 +55,7 @@ function NavigationBlocker({
       ? {
           title: 'Tinggalkan perubahan?',
           description:
-            'Tulisan yang belum disimpan akan dibuang. Anda bisa tetap mengedit.',
+            'Informasi yang disimpan di halaman ini akan dibuang. Permintaan yang sudah dikirim mungkin tetap diproses.',
           stay: 'Tetap mengedit',
           discard: 'Buang perubahan dan pindah',
           close: 'Tutup konfirmasi',
@@ -63,7 +63,7 @@ function NavigationBlocker({
       : {
           title: 'Leave unsaved changes?',
           description:
-            'Unsubmitted text will be discarded. You can stay and keep editing.',
+            'Leaving discards information kept on this page. Requests already sent may still complete.',
           stay: 'Keep editing',
           discard: 'Discard changes and leave',
           close: 'Close confirmation',

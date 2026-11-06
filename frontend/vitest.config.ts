@@ -6,6 +6,9 @@ export default defineConfig({
   envDir: false,
   test: {
     environment: 'jsdom',
+    // Shared workstation: cap workers and avoid concurrent JSDOM files.
+    maxWorkers: 2,
+    fileParallelism: false,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],
     clearMocks: true,

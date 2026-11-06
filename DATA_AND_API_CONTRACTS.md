@@ -2,6 +2,27 @@
 
 Spesifikasi desain yang menurunkan [PRODUCT_CONTRACT.md](PRODUCT_CONTRACT.md) dan [ARCHITECTURE.md](ARCHITECTURE.md). Nama field berikut menjadi kontrak awal untuk implementasi; perubahan memerlukan pembaruan pengujian kontrak. Tidak ada endpoint untuk booking baru, perubahan booking, pembayaran, refund execution atau pemberian kuasa.
 
+## Kontrak komunikasi petugas — FE-MAIL-01
+
+Semua rute berikut memakai prefix `/api/v1`, sesi staf aktif, pemeriksaan tenant/kasus/organisasi/queue terkini, dan `Cache-Control: no-store`. Mutasi memerlukan CSRF dan satu Idempotency-Key. Kanal dan alamat penerima tidak memberi kewenangan baru kepada klien.
+
+| Rute | Kontrak |
+| --- | --- |
+| `GET /staff/cases/{id}/communication-capabilities?membership_id={id}` | Metadata kasus, versi, selected membership dan `email_available`. Bersifat advisory; penerima, label dan izin tetap diperiksa saat POST. Tidak mengembalikan alamat penerima. |
+| `GET /staff/cases/{id}/messages?membership_id={id}&limit=50` | Pesan aplikasi yang sudah dipublikasikan, maksimal 50/halaman, urutan kronologis. Halaman lebih lama memakai pasangan `before_time` dan `before_id` dari respons. `has_more` bukan klaim seluruh riwayat sudah dimuat. Tidak memproyeksikan karantina atau raw provider body. |
+| `POST /staff/cases/{id}/messages` | Balasan pada live chat menggunakan conversation ID, case/conversation version dan epoch terkini; handler harus sesuai penugasan. |
+| `POST /staff/cases/{id}/email-messages` | Email langsung pada kasus: body, bahasa, expected case version dan membership ID. Tidak menerima recipient, conversation ID atau epoch palsu. |
+| `GET /staff/cases/{id}/message-receipts/{key}?membership_id={id}` | Receipt pesan milik principal, parent kasus tersimpan dan akses operasional terkini diperiksa. `state: saved` berarti pesan tersimpan; email masih dapat queued/unknown/failed. Bukan bukti delivered/read. |
+| `POST /staff/cases/{id}/translation-drafts` | Draft terjemahan live chat/email dengan konteks conversation/version/epoch. |
+| `POST /staff/cases/{id}/email-translation-drafts` | Draft terjemahan untuk email kasus tanpa live chat, terikat principal/sesi, membership, versi kasus, request key, teks asli dan konteks penerima. |
+| `GET /staff/cases/{id}/translation-requests/{key}` dan `GET /staff/cases/{id}/email-translation-requests/{key}` | Penemuan draft melalui request key milik principal/sesi. Hanya membaca; tidak memanggil model atau mengubah expiry. |
+| `GET /staff/cases/{id}/translation-drafts/{draft_id}` dan padanan `email-translation-drafts` | Membaca draft `generating/ready/failed/sent` dengan pemeriksaan akses terkini. |
+| `POST /staff/cases/{id}/translation-drafts/{draft_id}/send` dan padanan `email-translation-drafts` | Teks hasil review, expected revision dan `approved: true` eksplisit. Pesan, job email dan transisi draft sent atomik. Model tidak menyetujui atau mengirim. |
+
+Receipt dan draft memiliki `conversation_id: null` hanya untuk jalur email langsung pada kasus. Jalur live chat tetap memiliki conversation ID nyata. Key pengiriman terdahulu tidak dapat diambil alih oleh draft baru.
+
+Respons hilang atau 5xx setelah mutasi adalah hasil belum diketahui. Frontend memulihkan melalui GET, tanpa retry POST otomatis atau key pengganti. `404` receipt tidak membuktikan pesan belum dikirim. Outage sumber menghapus teks/cache privat tetapi mempertahankan hanya ID pemulihan yang terikat owner, membership dan kasus dalam memori; reset/logout menginvalidasinya. Hasil ditampilkan kembali setelah akses kasus diperiksa, dengan kanal asli yang benar. Rincian teknis internal ada di `docs/frontend/fe_mail_01.md`.
+
 ## 1 Konvensi dan konteks akses
 
 - Base path `/api/v1`; JSON UTF-8; enum wire memakai English; label UI Indonesia/Inggris.
@@ -23,7 +44,7 @@ Error utama: 401 AUTH_REQUIRED; 403 ACTION_FORBIDDEN; 404 RESOURCE_NOT_FOUND; 40
 - Endpoint operasional `GET /health/live` berada di luar base path bisnis dan mengembalikan `{"status":"ok","scope":"process"}`. Tidak memeriksa readiness database/provider. Belum ada endpoint readiness.
 - `X-Request-ID`: UUID valid tunggal dinormalisasi; header lain diganti UUID server. Error body dan header memakai ID sama. ID bukan dasar otorisasi.
 - Batas body awal 1 MiB melalui `APP_MAX_REQUEST_BODY_BYTES` (1 byte sampai 16 MiB). Byte aktual diperiksa juga tanpa Content-Length; kelebihan memberi 413 PAYLOAD_TOO_LARGE. Framing Content-Length invalid/ganda/tidak cocok yang mencapai ASGI memberi 400 BAD_REQUEST. Penolakan framing oleh server HTTP sebelum ASGI berada di luar envelope aplikasi.
-- Schema mutasi mewarisi `RequestModel`: extra fields ditolak, tipe strict, string default maksimum 4096 karakter. Batas field/domain lebih rinci ditentukan bersama endpoint fitur. Batas transport ini harus disesuaikan saat attachment multipart dibuat; tidak mengganti batas 5 MiB/file pada kontrak attachment.
+- Schema mutasi mewarisi `RequestModel`: extra fields ditolak, tipe strict, string default maksimum 4096 karakter. Batas field/domain lebih rinci ditentukan bersama endpoint fitur. Upload file memakai raw body dengan batas HTTP khusus 5 MiB pada POST `/api/v1/attachments`; endpoint lain tetap memakai anggaran transport yang dikonfigurasi.
 - Routing 405 memberi METHOD_NOT_ALLOWED; exception tak terduga memberi 500 INTERNAL_ERROR. Keduanya mengikuti envelope error. 500 tidak menginstruksikan retry otomatis, karena hasil side effect belum tentu diketahui. Header Allow tetap tersedia pada 405.
 - HTTPException biasa memakai pesan server terkontrol berdasarkan status; exception detail tidak dipublikasikan. Kode domain yang berbagi status (misalnya konflik draft/idempotency) ditambahkan melalui error domain terkontrol bersama fitur terkait.
 
@@ -49,12 +70,12 @@ Semua tabel tenant-scoped memiliki tenant_id NOT NULL, created_at, updated_at, u
 | case_history | tenant_id, id, case_id, actor_id, event_type, previous_version, resulting_version, reason, occurred_at. |
 | email_messages | tenant_id, id, case_id, direction, message_id, in_reply_to, thread_token_hash, sender, recipient, verification_state, delivery_status, provider_message_id nullable, content_ref; provider accepted tidak berarti dibaca. |
 | email_inbox | provider_account_id, provider_event_id, provider_message_id, tenant_id, signature_checked, received_at, processing_state; unique `(provider_account_id,provider_event_id)`. Message ID tidak unique di inbox karena satu email memiliki beberapa event lifecycle. |
-| jobs/outbox | tenant_id, id, kind, entity_id, dedupe_key, state, attempts, next_attempt_at, lease_token, lease_until, last_error_code; satu logical job per dedupe_key. |
+| jobs/outbox | tenant_id,id,case_id,action_draft_id,kind,dedupe_key,state,attempts/max_attempts,next_attempt_at,replay_policy,lease_worker_id,lease_token,lease_generation,leased_at/lease_until,completed_at,result_code; satu logical job per dedupe_key. |
 | idempotency_records | tenant_id, actor_scope, operation, key, request_hash, result_ref, state; unique scope+operation+key. |
 | knowledge_versions | tenant_id, id, document_id, version, source_uri, service_type, visibility, organization_id nullable, status, valid_from/to, applicability, content_hash, published_at. |
 | knowledge_chunks | tenant_id, id, knowledge_version_id, text, embedding, embedding_model_version, ACL; tidak boleh mewarisi tenant dari teks. |
-| attachments | tenant_id, id, case_id/draft_id, uploader_id, blob_key, mime_type, byte_size, scan_status, content_hash; download hanya setelah otorisasi. |
-| ratings | tenant_id, id, target_type, target_id, customer_scope, score, comment nullable; satu rating aktif per target/pelanggan. |
+| attachments | tenant_id, id, draft_id, case_id?, uploader_principal_id/uploader_session_id, created_session_id, body (private bytea), mime_type, byte_size, scan_status, content_hash, resource_security_labels; download hanya setelah otorisasi. |
+| ratings | tenant_id, id, case_id XOR conversation_id, score, comment nullable, version, created_session_id, updated_session_id, created_at, updated_at, resource_security_labels; satu rating per target dengan customer scope dari ownership parent saat ini. |
 
 Messages yang hanya terkait case dapat memiliki conversation_id null; minimal salah satu relasi wajib ada, dan jika keduanya ada case harus sama dengan conversation.case_id. Client message uniqueness discope ke tenant, pengirim dan percakapan/kasus. Source observations menyimpan field minimum, source_updated_at dan observed_at; tidak menggantikan sistem sumber.
 
@@ -149,7 +170,7 @@ Semua path di atas berada di /api/v1. Purpose challenge saat ini customer_login;
 
 Kode di-HMAC, TTL default300detik, maksimal5percobaan, sekali pakai dan terikat tenant/sesi anonim/CSRF asal. Counter fixed-window tersimpan percontact/IP/session; failure/rate-limit tidak me-rollback counter. Session TTL default anonim24jam dan customer8jam, revocation serta rotasi server-side. Kebijakan configurable dan detail proof ada di authentication guide.
 
-Sender default belum terpasang: request verifikasi mengembalikan503 VERIFICATION_UNAVAILABLE, bukan fake202. Pengiriman terkontrol hanya untuk tes, MAIL-05 tetap syarat pengiriman email nyata. Failed/expired/replayed/unknown challenge memberi422 VERIFICATION_FAILED generik; session tidak sah401, CSRF/origin403 CSRF_REQUIRED, batas429 RATE_LIMITED dengan Retry-After. Email dinormalisasi dengan domain ASCII/lowercase dan local part ASCII dipertahankan (SMTPUTF8 belum didukung); tidak menghapus plus-tag/titik secara universal. Verifikasi kontak tidak me-rebind principal lama atau mengaktifkan principal nonaktif.
+Sender default nonaktif: request verifikasi mengembalikan503 VERIFICATION_UNAVAILABLE. MAIL-05 menambahkan route server-only tenant/account dan pengiriman login OTP opt-in. Provider accepted atau hasil kirim tidak pasti/timeout memberi202 verification_requested dengan challenge terikat browser yang tetap berlaku sampai TTL, tanpa klaim delivered. Penolakan pasti membatalkan challenge dan memberi503; cancellation mempertahankan TTL-bound challenge dan diteruskan. Tidak ada resend otomatis. Pengiriman terkontrol hanya bukti wiring; MAIL-05 tetap memerlukan round-trip provider nyata. Failed/expired/replayed/unknown challenge memberi422 VERIFICATION_FAILED generik; session tidak sah401, CSRF/origin403 CSRF_REQUIRED, batas429 RATE_LIMITED dengan Retry-After. Email dinormalisasi dengan domain ASCII/lowercase dan local part ASCII dipertahankan (SMTPUTF8 belum didukung); tidak menghapus plus-tag/titik secara universal. Verifikasi kontak tidak me-rebind principal lama atau mengaktifkan principal nonaktif.
 
 Rotasi/revoke dan adopsi browser-bound AUTH-02 sudah diimplementasikan. Percakapan mandiri dipindahkan ke principal; pesan mempertahankan ID/sequence/body dan origin_session_id, sehingga retry tidak menggandakan pesan. Pending draft asal dibatalkan, bukan diadopsi sebagai consent; deadline yang lewat menjadi expired. Verifikasi email follow-up tanpa browser masih MAIL-04. Ini tidak membuka login staf atau memberi grants sumber melalui verifikasi pelanggan.
 
@@ -167,7 +188,17 @@ Session SHARE lock mendahului conversation UPDATE lock. Revoke/expiry/tenant/pri
 
 ## 5 Konfirmasi dan tindakan pelanggan
 
-Semua mutasi pengajuan/tambahan informasi atas nama pelanggan memakai action draft. Action types: create_case, add_case_information, request_handoff. Draft terikat sesi/aktor, tenant, tujuan dan versi payload. Attachment harus selesai diperiksa sebelum ikut payload terkonfirmasi.
+Pengajuan kasus dan handoff memakai action draft dengan action types `create_case` dan `request_handoff`. Draft terikat sesi/aktor, tenant, tujuan dan versi payload. Attachment harus selesai diperiksa sebelum ikut payload terkonfirmasi. Tambahan teks pada kasus yang sudah ada memakai preview/konfirmasi khusus di bawah; bukan action type draft yang belum diimplementasikan.
+
+### Tambahan informasi pelanggan — kontrak COMPLETE-01
+
+`POST /cases/{id}/information-previews` menerima expected_version, message asli1–4000karakter Unicode dan language en/id. Pemilik terverifikasi dengan akses sumber terkini mendapat preview_id unik, salinan teks/bahasa/versi yang ditinjau, expires_at dan confirmation_token bertanda tangan. Preview berlaku15menit dan tidak menulis kasus/pesan. Koreksi menghasilkan preview baru. Token **tidak dienkripsi**: hanya POST JSON dan memori UI; tidak boleh masuk URL, webstorage, log atau model. Membuang preview hanya menghapus state lokal; tidak ada klaim durable pending/cancelled untuk token ini.
+
+`POST /cases/{id}/information` menerima confirmation_token dan confirmed:true; Idempotency-Key wajib. Backend memeriksa kembali owner, sesi, participant, versi, kasus belum closed, expiry dan seluruh label sumber. Satu transaksi mencatat ledger preview sekali pakai, satu pesan customer case-owned dan history customer_information, serta menaikkan versi kasus satu. Status, assignment, next_actor/next_action serta mode/version/epoch chat tetap. Versi baru membuat keputusan petugas yang memakai versi lama konflik; pesan tambahan bukan bukti semua permintaan informasi terpenuhi. Tidak ada booking/payment/refund, email job atau pemanggilan model.
+
+Satu preview tidak boleh menghasilkan pesan kedua dengan key baru. Replay key yang sama/intent yang sama mengembalikan hasil tersimpan; intent berbeda409. `GET /cases/{id}/information-receipts/{key}` membaca hasil tersimpan dengan izin **saat ini**, independen expiry preview, versi lama atau kasus yang kemudian closed. Respons saved berisi actual message_id/sequence dan case_version saat pencatatan.404 tidak membuktikan pesan belum tersimpan. Respons commit hilang dipulihkan melalui GET, tanpa retry POST otomatis. Kasus closed membutuhkan alur continue eksplisit yang sudah tersedia.
+
+Kontrak ini diterapkan melalui migration0035. Preview/confirmation dan receipt terpisah dari action-draft kasus baru.
 
 | Endpoint | Kontrak |
 | --- | --- |
@@ -210,14 +241,15 @@ Schema0008 hanya membuat kasus baru berisi laporan, source observations/labels[]
 | GET /staff/queues/cases | CS/supervisor sesuai organisasi dan queue, termasuk item needs_staff_review. |
 | POST /staff/conversations/{id}/accept | CS aktif berwenang, expected_version, Idempotency-Key; satu pemenang, mode human dan epoch baru. |
 | POST /staff/cases/{id}/messages | Body, channel chat/email, expected_version, Idempotency-Key; petugas menekan kirim, target email ditentukan backend dari kontak yang berhak. |
-| POST /staff/cases/{id}/translation-drafts | Menghasilkan draf dan original_message_id; tidak mengirim ke pelanggan. |
+| POST /staff/cases/{id}/translation-drafts | Menghasilkan translation draft ID, original_body dan proposal; original belum dikirim ke pelanggan. |
 | PATCH /staff/cases/{id}/status | expected_version,status,next_action,reason/resolution; CS/supervisor berwenang. |
 | PATCH /staff/cases/{id}/assignment | expected_version,assignee_id; supervisor dalam scope atau CS self-claim unassigned yang diizinkan. |
-| POST /cases/{id}/ratings | Pelanggan pemilik; score 1–5 dan comment opsional; idempotent/upsert miliknya. |
-| POST /conversations/{id}/ratings | Pelanggan sesi pemilik untuk bantuan tanpa kasus; tidak wajib verifikasi booking. |
+| GET/POST /cases/{id}/ratings | Pemilik terverifikasi dan participant aktif; score 1–5, comment opsional, expected_version; perubahan saat kasus closed, current-source gate dan idempotent desired-state upsert. |
+| GET/POST /conversations/{id}/ratings | Pemilik pelanggan/sesi anonim untuk bantuan tanpa kasus setelah jawaban tersimpan atau percakapan ended; tidak wajib verifikasi booking. |
 | POST /admin/knowledge/documents | Admin tenant; membuat draft, bukan langsung jawaban publik. |
 | POST /admin/knowledge/versions/{id}/publish | Admin; versi valid, ACL/masa berlaku sah, indeks siap, audit dan invalidasi cache. |
-| PATCH /admin/staff/{id}/memberships | Admin tenant; scope tidak boleh di luar kewenangannya, audit, cegah self-escalation. |
+| GET /admin/workspace; GET /admin/staff; GET /admin/staff/{id}/memberships | Selected membership_id admin aktif; metadata akun dan queue hanya pada organisasi terpilih, keyset directory tanpa isi kasus/credential. |
+| PATCH /admin/staff/{id}/memberships | Admin organisasi; actor_membership_id/actor_version, expected_version target, active, roles, queue_ids; audit atomik, self-principal change dilarang. |
 
 Provision/update akun staf tidak membuat peran pelaksana/mitra baru. Endpoint admin informasi dan membership tidak memberi akses isi kasus. Tidak ada UI konfigurasi credential API di MVP.
 
@@ -252,7 +284,7 @@ PATCH assignment menerima expected_version dan assignee_id berupa UUID membershi
 
 PATCH status menerima expected_version,status,next_action serta close_reason/resolution untuk closed. Duplicate memakai related_case_id berhak dan pemilik sama; API menampilkan related_case_ref hanya jika tetap berhak dibaca. no_response mewajibkan followup_evidence. Closure result tersimpan dan dapat dibaca pelanggan; pengiriman email/close-email job belum diimplementasikan.
 
-POST /cases/{id}/continue menerima expected_version,intent same_issue,message asli pelanggan dan client_request_id UUID. Hanya pemilik customer terverifikasi; kasus harus closed. Assignee sah dipertahankan dan status in_progress, selain itu assignment null/status new. Close fields sekarang dibersihkan, snapshot lama dipertahankan. Request ID sama+digest command sama tidak menambah mutasi/history dan memberi tampilan kasus saat ini; request berbeda409, write lama key baru409. Intent ambigu/thanks/new_issue tidak diinterpretasikan sebagai reopen; pemrosesan email tetap MAIL-04.
+POST /cases/{id}/continue menerima expected_version,intent same_issue,message asli pelanggan dan client_request_id UUID. Hanya pemilik customer terverifikasi; kasus harus closed. Assignee sah dipertahankan dan status in_progress, selain itu assignment null/status new. Close fields sekarang dibersihkan, snapshot lama dipertahankan. Request ID sama+digest command sama tidak menambah mutasi/history dan memberi tampilan kasus saat ini; request berbeda409, write lama key baru409. Baik penulisan baru maupun replay memeriksa owner, participant/sesi aktif dan izin sumber terkini terhadap kasus, origin serta referensi kasus terkait yang dikembalikan. Pemeriksaan sumber berlangsung di luar transaksi, dengan deadline operasi sejak sebelum grant pertama sampai sesudah commit dan reload basis terkini. Commit lambat dapat menjadi503 outcome unknown; gunakan GET kasus dengan izin saat ini, bukan request ID baru. Intent ambigu/thanks/new_issue tidak diinterpretasikan sebagai reopen; pemrosesan email tetap MAIL-04.
 
 Schema0009 memastikan case/history atomik dengan lock, CHECK, scoped RLS, column grants, immediate/deferred guards dan history immutable. Runtime tidak dapat memalsukan identity_verified history/audit atau memasang history masa depan. Auth-owner principal SELECT/INSERT dipisahkan dari privilege UPDATE lock-only. Auth adoption/receipt CASE-02 tetap berlaku tanpa memperluas consent atau ownership runtime. Panduan lifecycle. Live conversation handler/ended mode mengikuti CHAT-01/02.
 
@@ -290,3 +322,211 @@ Setiap hasil menyertakan source_kind,observed_at,allowed_fields dan error terstr
 | Email langsung | Inbox/outbox, verification dan correlation | MAIL |
 | Status, reopen dan rating | Case state, history dan ratings | CASE |
 | Deployment, reliability dan biaya | Runtime/worker/database | REL, PERF, DELIVERY |
+
+
+## CASE-04 private attachment API
+
+Create an empty-attachment draft first. POST /api/v1/attachments?draft_id=<uuid>&expected_version=<positive integer> accepts one raw JPG/PNG/PDF body (exact Content-Type image/jpeg, image/png or application/pdf) up to5MiB with Origin/CSRF and a stable UUID Idempotency-Key. It returns201 {attachment:{id,byte_size,mime_type,scan_status},draft:<updated DraftView>}. Three stored files per draft; scanner failure/unavailable rejects without persisting. Upload updates the selected IDs, version, language, displayed summary and hash; old preview consent is rejected. Create-draft still requires an empty selection, while edit permits only up to three unique clean IDs belonging to that same draft/session. Removing a selected ID does not physically delete the stored file or release its storage slot.
+
+Retry keys are namespaced per draft. Same key/bytes/MIME returns the current preview without another scan or mutation, including when the original expected_version has become stale; changed content409. New uploads require current version. Replay results never replay consent. Unknown upload can be retried with the original key and bytes.
+
+Selected files bind to the resulting case atomically with confirmation. GET /api/v1/cases/{id}/attachments returns metadata list; GET /api/v1/attachments/{id}/download rechecks current parent access and returns a private no-store attachment stream with nosniff/sandbox headers. Tenant-safe404 for inaccessible objects; no public blob URL. Pending files require original active session and pending unexpired draft; confirmed files follow current case access. Durability uses PostgreSQL bytea, not temporary process files. Source-derived private contents remain unsupported/fail closed until SRC-03B. No attachment bytes enter models or email in this slice.
+
+Normal JSON request limits remain unchanged; only exact POST /api/v1/attachments has the5MiB binary transport allowance. Nonclean files are never persisted or downloadable. Scanner engine must be provisioned and validated separately; controlled scanner tests do not establish real malware detection.
+
+
+## CHAT-01 executable event polling and handoff
+
+GET /api/v1/conversations/{id}/events accepts only after (signed cursor, <=2048chars) and limit1–100/default20. Returns {items:[{id,sequence,event_type,created_at,payload}],next_cursor,has_more,mode,generation_epoch,version}. Types: message_received {message_id,body,language,author_type:customer}; language_changed {language}; handoff_requested {case_id,mode:waiting_staff}. Event sequence differs from message sequence. Stable ID/order are persisted, empty polls valid, no auto reply. Cursor binds tenant/session/principal/kind/conversation/limit/customer visibility and expires after15minutes; current ACL is checked on every poll before cursor validation. Inaccessible resource404, invalid cursor400. New identity must restart polling and dedupe stable event IDs. No raw body/contact in cursor.
+
+Confirmed request_handoff now atomically links conversation to the resulting case, changes ai to waiting_staff, advances version/epoch and emits one handoff event; same confirm retry produces no second case/event. Create_case without handoff keeps conversation standalone. Existing-case request uses optional CreateDraft.case_id with action_type=request_handoff only, owner-authorized open case and server destination, no contact_email or attachments. Preview/hash includes existing target reference. Confirm stores new consent/receipt pointing to existing initial message; no new case/message/outbox/email is implied. GET actions resolves the specific consent draft. One active (waiting_staff/human) conversation per case; ended conversations remain historical. Pending drafts are cancelled on proven anonymous adoption; linked report-only context stays authorized and cursor rotates with session.
+
+Events are trigger-emitted with NOLOGIN metadata-only owner, forced RLS, tenant composite FKs and immutable rows; runtime cannot INSERT/UPDATE events or UPDATE event counter. Only stored user messages are backfilled, not invented historic transitions. Staff reads require current linked-case scope. Private source-derived context remains fail closed. CHAT-02 below supplies accept/human/ended and paired case/conversation mutations; active-case PATCH requires the reviewed conversation version. Staff send is specified by CHAT-03 below.
+
+
+## CHAT-02 executable staff lifecycle
+
+GET /api/v1/staff/conversations/{id} returns a scoped, case-then-conversation locked snapshot {conversation_id,case_id,case_version,version,generation_epoch,mode,handler_membership_id}. POST .../{id}/accept requires expected_version (conversation), expected_case_version and stable Idempotency-Key. Handler is the caller's freshly authorized membership, prioritizing an existing assignment to that membership. Another assignee409; closed409; stale version409; wrong scope404. Accepted receipt {state:accepted,...snapshot} is immutable and historical, replays only identical command/key with current ACL. Refresh metadata after replay before acting; old receipt is not current ownership after reassignment/close.
+
+PATCH staff case assignment/status adds expected_conversation_version for active chats: missing422 CHAT_VERSION_REQUIRED, mismatch409. Supervisor-only assignment keeps waiting chat unaccepted or moves the human handler with case assignment. CS accepts through the dedicated endpoint. Close ends chat/clears handler; other active status updates retain mode/handler. Each successful active operation advances case/conversation versions and generation_epoch, writes matching case history, public event and transition ledger atomically. PATCH retries with old versions409/no duplicate history/event. Unlinked cases preserve CASE-03 behavior.
+
+Modes now ai/waiting_staff/human/ended. Public events add chat_accepted/chat_reassigned/chat_ended/chat_updated {case_id,mode}; event IDs/order remain stable. New customer messages to ended conversations409 CONVERSATION_ENDED; identical old message retry remains a stored receipt. Customer continuation may reopen a case while leaving old chat ended; a new conversation can handoff to that case, one active chat per case. No automatic AI takeover.
+
+0012_chat_handoff stores immutable actor-owned accept receipts/transition records, composite origin FKs and deferred case/conversation/history/event checks. Every active case UPDATE requires a paired transition, not just status/assignment-column writes; private authenticated identity adoption has the existing ownership-only exemption. Ledger kind/history/role rules require supervisor for assignment and self for accept. RLS and latest memberships apply on every operation/replay. CHAT-03 below supplies staff chat send and controlled-generator publication guards; no browser, email, live model or production-wide acceptance claim.
+
+
+## CHAT-03 executable messaging and internal publication
+
+POST /api/v1/staff/cases/{id}/messages requires staff mutation session, stable Idempotency-Key, conversation_id,channel(chat/email),body1–4000,language(en/id),expected_version(case),expected_conversation_version and expected_epoch. New chat replies require the current human handler/assignee and exact basis; stale409 STALE_MESSAGE. Response201 {state:saved,message_id,conversation_id,case_id,sequence,channel:chat|email} is a historical storage receipt, not delivered/read. Exact retry returns the same after current ACL; changed command/key409. Email follows MAIL-01 below: without active tenant account/followup contact it returns503 MAIL_UNAVAILABLE; otherwise message/event/job are saved atomically, not marked delivered. Original body/language persists as staff_message.
+
+Polling adds staff_message/ai_message and explicit author_type staff/ai. Internal AIPublication has no HTTP/model-tool endpoint. Tickets bind original session/principal/conversation/version/epoch/language and5minute deadline to a hidden nonce hash. Generation work is outside transactions. Current permission/context is rechecked at persistence; waiting/human/ended never accept new AI output. Changed input/language/mode or expiry discards without body/event. A NULL-to-linked race releases locks then only reauthorizes/discards, never replays writes. SQL expiry Z0013 rolls counter/body/event back before marking stale; other integrity errors are not masked.
+
+0013 enforces distinct author/source shapes, immutable retry receipts, generation FKs and basis fields. AI authors do not impersonate customers. Unique generation/deferred checks bind one published message to one ticket. SQL validates handler/assignee/mode/version/epoch/language and case-then-conversation order. Runtime DB is backend-trusted; public callers cannot set source/author/generation fields or access tickets.
+
+Acceptance uses controlled delayed generators, not a live model/provider. Repeat with actual orchestration at AI-03. Private-source context remains SRC-03B; MAIL, UI integration, model quality/cost/latency and FILE-01 scanner are separate.
+
+
+## JOB-01 executable scheduler
+
+Worker uses a separate WORKER_DATABASE_URL credential, never the API DATABASE_URL or migration credential. It can execute the scheduler capability functions job_claim/job_renew/job_finish and the MAIL-01 lease-scoped mail functions; no direct case/message/contact/outbox table or column access. Fixed-path NOLOGIN scheduler owner has only job/tenant-active/account-routing metadata access; mail projections use a separate owner. API cannot execute scheduler functions or insert worker state, attempts, schedule or safe-replay policy.
+
+Claim is bounded SKIP LOCKED over registered kinds/active tenants. Every lease binds tenant/job/worker/token/generation; renew/finish recheck database time after row lock. Network/business handler awaits are outside transactions. Heartbeat failure/cancellation prevents stale completion. Outcomes/codes are finite; unexpected errors/timeouts become unknown, not automatic retry. Explicit retry persists capped exponential backoff/max attempts. Default replay_policy reconcile turns expired leases unknown; safe jobs may be reclaimed with a new token/generation. This fences scheduler state, not external side effects/provider exactly-once.
+
+MAIL-01 registers case_created/email_send handlers only with explicit enabled mail configuration and account credentials. --once with empty registry verifies credential and leaves jobs untouched; daemon without handlers fails. MAIL-01 validates email through controlled transports; real provider round-trip remains MAIL-05. No model execution is claimed.
+
+## MAIL-01 executable outbound boundary
+
+Staff POST messages accepts channel=chat/email and returns a saved historical receipt with the same channel. For email, missing active tenant mail account or followup contact gives503/no write. Otherwise it atomically writes the staff message, event and a unique email_send job. The existing handler/assignee, exact versions/epoch and current staff ACL are required. Exact retry does not enqueue again. No HTTP/model tool accepts arbitrary to/from or sends directly.
+
+Email notification handlers re-read verified contact, principal/participant and account state at send; private labels are fail-closed pending SRC-03B. Conditional reservation binds the latest projection and active job fence before network. Worker exposes only lease-scoped mail RPCs with no raw table access; account-filtered claim/reaper support multiple tenant credentials and subset workers. Stored IDs distinguish source app message UUID, internal email UUID, outbox job UUID, requested RFC header, actual RFC ID nullable, provider receipt and stable account delivery key.
+
+Only sending/accepted/failed/delivery_unknown storage is executable in MAIL-01. MAIL-02 below adds delivery state and receipt reconciliation; callback ingress and inbound are not yet active. A successful POST is accepted, not delivered/read. Sending/unknown is never blindly resent. Default-disabled configuration leaves app queues untouched; provider live round-trip and OTP sender remain MAIL-05.
+
+## MAIL-02 executable delivery boundary
+
+GET /api/v1/staff/cases/{id}/email-deliveries requires current staff session/queue/case access, rejects identity override headers and query parameters, and returns no-store {items,has_more}, at most100 latest sends. Item fields: job_id,app_message_id nullable,email_message_id nullable,delivery_status,delivery_version nullable,needs_review,review_reason nullable,queued_at,provider_status_at nullable,last_checked_at nullable. No body/address/provider receipt/RFC key is returned. Nonstaff uses the existing401 staff authentication boundary; unauthorized staff gets404. No new mutation/evidence/resend HTTP endpoint exists.
+
+0016 stores lifecycle/review metadata and an immutable capability-protected evidence ledger. Each envelope atomically gets a unique safe GET email_reconcile child, including upgrade backfill. Routing preserves account subset isolation and skips live source POST leases. Snapshot/observe RPCs bind tenant/job/worker/token/generation to the exact email and optimistic delivery version, recheck expiry after row-lock waits and after writes, and commit state/evidence together. Raw API/worker writes remain denied.
+
+GET receipt evidence is matched to the saved account/ID/sender/sole recipient and bounded. Missing receipt ->NO_RECEIPT, lookup exhausted ->LOOKUP_UNAVAILABLE, repeatedly accepted at cap ->PENDING_DELIVERY. None triggers another POST. Accepted/delivered/read are distinct; no read claim is stored. Older accepted/unknown cannot regress terminal state; conflicting terminal proof keeps current state with CONFLICTING_EVIDENCE. Deduped accepted evidence does not suppress a later cap review decision. provider_status_at tracks actual supplied provider event time only; poll timestamps are local observations, not invented from email created_at. Verified callback ingress remains MAIL-03.
+
+## MAIL-03 executable inbox boundary
+
+POST /integrations/email/{alias}/events takes raw application/json<=64KiB with one each svix-id/svix-timestamp/svix-signature and no query parameters. Signature verification precedes JSON parse; attempt timestamp±300s and configured rotation secrets bind id.timestamp.rawbytes. Server alias/account and active DB mapping define tenant; payload identity fields do not.202 {accepted:true} and no-store follow successful inbox/job commit only. Invalid auth401, malformed signed event400, oversize413, conflicting reused eventID409, unavailable mapping503 and storage failure non2xx. Unknown supported-shape event types are durably ignored without inventing messages.
+
+Inbox unique(account,eventID) is independent of email unique(account,direction,providerID). Received content is a private inbound/pending stage with NULL case/app/contact/principal and delivery status. Body is not released to timeline/model; headers/HTML/authentication observations are untrusted for authorization. New inbox jobs have explicit NULL-case shapes and account/fence-protected fetch/bind/complete capabilities. A stopped worker leaves durable review. Outbound event jobs use a saved exact account receipt and signed historical type/time after GET context verification, even after the ordinary polling child is terminal. Case identity/correlation remains MAIL-04.
+
+
+## MAIL-04 staff email reply status
+
+`GET /api/v1/staff/cases/{id}/email-replies` requires a live scoped CS/supervisor session. It returns at most100 ordered items with email_id, state, reason, app_message_id, created_at, published body, verification_state, send_state and attempts. Pending/control body, recipient, tokens, hashes and raw headers are excluded. Responses use Cache-Control:no-store; unknown/out-of-scope cases return404. Customer sessions cannot use the staff endpoint.
+
+Verified replies are case-only messages, not events appended to an ended conversation. Closed thanks and ambiguous replies remain readable in this projection; only explicit same-issue continuation reopens a case.
+
+
+## MAIL-05 authentication mail route
+
+`APP_MAIL_AUTH_ROUTES` maps the server-resolved tenant UUID to an explicit account UUID/ref and sender/reply identities. The API-only `auth_mail_route_allowed` capability checks current active metadata and returns a boolean, without raw account/body access. Missing or mismatched routes cannot call the provider. Readiness checks configuration only; live acceptance requires actual mailbox/webhook/round-trip evidence.
+
+
+## API-FE-03 — Selected staff workspace metadata
+
+`GET /api/v1/staff/cases/{id}/capabilities?membership_id=<uuid>` requires live staff case access in that exact membership, organization and queue. Success200 contains case_id/case_version, actor_principal_id, membership_id/membership_version, organization{id,name}, queue{id,name}, assignee{membership_id,display_name nullable} ornull, active_conversation{id,version,mode waiting_staff|human} ornull, self_claim_membership_id ornull, allowed_actions, allowed_statuses and allowed_close_reasons. The selected membership is revalidated in the database; role/queue permissions from other organizations are not combined. Admin-only has no case access. Names come from constrained server metadata; contacts/emails/passwords/session secrets are not directory projections.
+
+Actions are exactly claim,assign,unassign,update_status,close. CS claim is only for unassigned cases without an active linked chat and uses the exact selected membership. Supervisor assignment may preassign new cases without accepting them. Supervisor unassign requires an assigned new case and no human chat. Existing backend policy permits any authorized scoped CS/supervisor to update status, not only the assignee. Nonclosed statuses follow TRANSITIONS including allowed same-state edits and require a current valid assignee. Close reasons are resolved,customer_cancelled,duplicate,no_response with required command-specific resolution/target/evidence. Closed cases offer no mutations. These are advisory snapshots; mutations still revalidate actor, target, case version, active conversation version and all state/evidence. Active linked chat is waiting_staff/human only; historical ended chat does not require expected_conversation_version.
+
+`GET /api/v1/staff/cases/{id}/eligible-assignees?membership_id=<uuid>&limit=25&cursor=<opaque>` is restricted to a supervisor in the selected membership. Limit1..100, default25. Response200 contains case_id/case_version, membership_id/membership_version, items[{membership_id,display_name nullable}], has_more and next_cursor nullable. Candidates satisfy the same live active principal/membership/organization/queue/CS-or-supervisor/credential/verified-bound-contact predicate as assignment. No global directory, contact fallback or fabricated name. Closed case returns no candidates after validating any supplied cursor.
+
+The signed cursor is at most2048characters and binds tenant/session/principal/case/caseversion/selectedmembership/version/organization/queue/limit with900second validity. UUID ascending keyset ordering is a live directory, not a frozen snapshot: revoked targets disappear, names do not reorder identities and newly eligible IDs before the cursor require a fresh first page. Caseversion/scope/query changes reject the cursor rather than silently restarting. No total counts are returned. Scope is checked before cursor validity to conceal inaccessible cases.
+
+`GET /api/v1/staff/cases/{id}` accepts optional membership_id for exact workspace scope; existing unscoped staff access and customer CaseView DTOs remain compatible. Unknown/duplicate query keys400, malformed typed fields422, inaccessible case/member generic404, unauthorized directory403, invalid/tampered/mismatched/expired cursor400. All staff responses including dependency/path/query/errors use no-store. Capability reads lock case, active conversation, then authoritative metadata in lifecycle order; they do not execute business mutations or send email. API-FE-05 queue pagination and duplicate-candidate lookup have separate contracts below.
+
+
+## API-FE-05 — Server-side selected-membership queue pages
+
+`GET /api/v1/staff/queues/cases` retains the legacy no-membership contract: only optional status, items-only bounded first100, no completeness claim. A supplied membership_id selects the scoped paged response; queue_id is optional within this membership, view=all|mine|unassigned(defaultall), optional status=new|in_progress|awaiting_customer|awaiting_external|closed, limit1..100(default25), sort=created_asc only, cursor optional1..2048characters. Any new query key without membership_id is rejected, not silently processed as legacy. Unknown/duplicate keys400, invalid typed values422, current inaccessible scope404, invalid/tampered/expired/context-mismatched cursor400. All staff responses including errors are no-store.
+
+Scope comes from live current-actor membership/organization/CS-or-supervisor/queue and credential/verified-contact checks through private `case_staff_queue_workspace`. Admin-only, foreign membership or unavailable requested queue is concealed404. Zero active permitted queues is404; an authorized scope with no matching cases is200empty with real scope labels. No additional raw-table grants. Metadata returns organization{id,name} plus the full live authorized queues[{id,name}], even when a specific queue_id filters the query. Rows are SQL-filtered by tenant, selected organization, effective authorized queues, view and status BEFORE pagination. Mine means exact assigned_membership_id==selectedmembership, unassigned means storedNULL (not an inactive assignee), all means current readable cases in this selected scope. No union with other memberships/organizations.
+
+Response fields: membership_id/membership_version,organization,queues,queue_id(nullable selected filter),view,status,sort,limit,items(existing QueueItem fields plus queue_id and created_at),has_more,next_cursor nullable,consistency='live_keyset',watermark and observed_at. No total or tabcounts. has_more describes the current remaining query, not a frozen/globalcomplete list. Client references source facts and case details separately; queue rows do not include customer_report, contacts or source/payment data.
+
+Immutable created_at ASC,id ASC provides deterministic UUID tiebreaking, unaffected by updated_at changes. SQL uses strict(created_at,id)>cursorposition and created_at<=initial database watermark, retaining timestamp microseconds. Dedicated-purpose signed cursor binds tenant/session/principal/membership/version/organization/fullauthorizedqueue-set fingerprint/selectedqueue/view/status/sort/limit, initial watermark, last tuple and fixed900second expiry. Canonical SHA256 queue-set binding is bounded regardless of queue count; live grant/removal invalidates it even without membershipversion change. Renamed labels need not invalidate an otherwise unchanged scope. All pages revalidate live scope before decoding cursor; there is no invalid-cursor firstpage fallback.
+
+This is a LIVE filtered traversal, not snapshot isolation. Initially committed+visible rows remaining eligible and authorized traverse exactly once; status/assignment/revocation changes can remove rows, and newly eligible or newly committed rows behind the cursor require a fresh firstpage. Rows with created_at after the watermark are excluded. An in-flight insertion timestamped before the watermark but committed later may become visible later or be missed behind the cursor. Do not claim all newly committed cases are excluded or that a false has_more means global completeness. Watermark and expiry do not slide on later pages. New queue views do not change API-FE-03 capabilities or authorize staff mutations.
+
+## API-FE-04 — exact duplicate candidate lookup
+
+POST /api/v1/staff/cases/{id}/duplicate-candidates/search is an advisory read using the existing staff lifecycle boundary. It requires same-origin HTTPS/session/CSRF even though it makes no business write. Strict JSON body: membership_id(UUID), expected_version(positive integer, not boolean/string), public_reference(exact canonical CASE- followed by32lowercase hexadecimal characters). No query parameters, extra body fields or caller-supplied identity/tenant headers. Reference is in the POST body rather than a URL; no partial/prefix/wildcard search, directory listing or automatic normalization.
+
+Source case and active conversation are locked in existing lifecycle order; the exact selected membership is checked before disclosing stale/closed state. Missing/inaccessible source or selected membership returns generic404. Stale source expected_version409VERSION_CONFLICT; closed source409CASE_CLOSED. Nonstaff401; missing/incorrect CSRF or wrongOrigin403; forbidden query/identity headers400; malformed typed inputs422; unavailable dependency503. All staff responses, including errors, are no-store.
+
+Success200: {case_id,case_version,membership_id,membership_version,items:[{case_id,public_reference}]}, with at most one item. Envelope IDs/versions describe the source and selected membership. Target projection contains only its ID and public reference; no target owner/contact/report/history/status/version or reason for exclusion. Missing/self/foreign-tenant/different-owner/out-of-scope target all return the same empty items array under an otherwise valid source envelope.
+
+Target must pass forced runtime RLS and the SAME selected membership's active organization/queue authority. Permissions from another membership are not combined. Owner equality compares the complete nullable owner_principal_id/owner_anonymous_session_id pair; two verified contacts on one principal do not imply different owners, while distinct anonymous sessions do. Both open and closed targets can be eligible under existing duplicate-closure policy. Lookup uses exact tenant/public_reference equality and the existing unique index, with a minimal projection and no target case lock, avoiding reciprocal source/target row-lock ordering.
+
+Lookup does not reserve/authorize a future close, alter versions, create history/outbox/email, or issue an executable consent token. PATCH closed/duplicate still receives related_case_id and freshly checks version, active conversation, current resource access and owner equality. A changed/revoked target or changed source must be reviewed again; a previous lookup is not proof of current authority. No new schema/function grant or close policy is introduced by this endpoint.
+
+
+## KNOW-01 executable knowledge control plane
+
+Admin routes under /api/v1/admin/knowledge create a document+initialdraft, add versions, read metadata/version/audit pages, replace draft content, publish and withdraw. Mutations bind selected membership_id plus expected version/document revision, server session tenant, HTTPS/Origin/CSRF and no-store. Extra identity fields, query keys and index-ready overrides are rejected. No URL fetch, delete or public booking-policy claim endpoint is introduced.
+
+Documents belong to an organization; management requires current admin in that exact organization. Published public knowledge is tenant-local; staff knowledge requires allowed role and organization within the same active membership. Admin draft access never makes a draft eligible for an answer. Applicability is terminal plus optional aware-UTC booking_created_from/to, intervals start-inclusive/end-exclusive; missing required context is no match. Version selection uses exact document_key/service/language/authoritative policy_reference and as_of, status published/current ACL; it never substitutes latest for withdrawn/missing historical policy. Published content/ACL is immutable; supersedes must reference an older same-document version and does not auto-withdraw it.
+
+Publish checks readiness outside the DB transaction, then freshly rechecks session/admin/revision/full SQL basis hash and index generation/deadline before the write. Default UnavailableIndex returns503 without publication until KNOW-02 supplies real validated readiness; positive test injection is not a production index. Concurrent conflicting scopes are serialized by document locks. Withdrawal requires reason and preserves admin history. Trigger-only immutable audit and incremented document revision are committed atomically; future caches and AI publication must revalidate current status/ACL/generation. Detailed request/response fields: docs/backend/knowledge_lifecycle.md. No embeddings, model orchestration or live AI quality claim in KNOW-01.
+
+
+## Knowledge index and retrieval
+
+`POST /api/v1/admin/knowledge/versions/{id}/index` accepts `{membership_id,expected_revision}` under staff session/CSRF and exact organization admin authorization. Returns `{version_id,generation,basis_hash,valid_until}` with no-store. It builds immutable version-bound chunks atomically after external embedding calls and current revision/access checks. Repeated indexing of an already complete current basis reuses generation. It does not publish. Missing capability yields503KNOWLEDGE_INDEX_UNAVAILABLE; provider overload/unavailability uses503EMBEDDING_BUSY/EMBEDDING_UNAVAILABLE. No caller-supplied vectors, model selection, tenant, index-ready flag or arbitrary fetch URL.
+
+Internal `KnowledgeRetrieval.search(identity,Search)` returns at most10 eligible chunks with source/version/basis/generation/documentrevision. Tenant/currentACL/publication/currentgeneration and trusted policy/time/applicability are SQL-filtered before cosine ranking. No public search endpoint is added here; identity and booking applicability must be supplied by server services. Chunk bodies are source data, never instructions/tool authority. Index readiness and search ranking do not imply grounded-answer acceptance.
+
+
+## Knowledge evidence consumption
+
+Internal `KnowledgeEvidence.collect/consume` returns one of `sources_available`, `insufficient_sources`, `conflicting_sources`, `stale_sources`, or `source_unavailable`. Failure results contain no chunks or snapshot. Live authorization failures remain authorization errors. `sources_available` supplies candidate source excerpts and citations; it does not approve factual claims or tool actions.
+
+Snapshots contain signed actor/session/tenant/context/policy and version/generation/basis/ordinal/documentrevision references, never cached body or URI. Consumption re-reads authoritative text under current SQL ACL and applicability. TTL is rechecked after database transaction completion. The current eligible-version scope fingerprint invalidates snapshots when a relevant new source is published, even if previously cited documents did not change. Signing and scoring policy are server dependencies; no new public endpoint, body override, cache store or automatically selected universal threshold is introduced. Agent publication must revalidate sources after long-running generation.
+
+
+## AI-01 planning foundation
+
+No public agent execution endpoint is added in this slice. Internal AgentFoundation scopes planning and read execution to the current owned latest customer message, conversation version/epoch/language and server identity. Tool inputs are strict reference/query schemas; actor/tenant/ACL/policy/time/consent overrides are rejected. Allowed functions are read_booking, read_transaction, read_booking_policy and search_knowledge only when backend capabilities exist. Private observations retain whole-DTO SRC-03A labels and current grant checks; model output is never execution authority.
+
+Draft preparation is a separate stateless request using only persisted unlabeled customer text, not private tool/history context. Its classification/summary produces a pending DraftService preview with server references/contact/routing; no case, commit, email or source transaction. DraftService.create optionally takes internal expected_conversation_version/expected_generation_epoch, checked after lock before INSERT. Existing public draft request/response schemas remain unchanged. AI-02/03 must implement orchestration/replay/context and guarded publication; source-derived persistence remains SRC-03B.
+
+
+## AI-02 internal workflow contract
+
+ApplicationServices.agent_workflow exposes internal start(identity,RunRequest) and resume(identity,run_id); there is no new public agent HTTP endpoint. RunRequest binds current persisted conversation/message, request UUID, assist/draft mode, bounded server reference allowlists, optional general knowledge descriptor, contact and existing create_case/request_handoff draft action. Same request key with changed payload is a conflict. Identity/tenant/ACL/consent are never accepted from model output.
+
+Durable agent_runs rows are typed domain checkpoints, not serialized LangGraph actor state. Resume rebuilds up to eight current-author customer messages (≤16,000 characters), current session and grants; draft report≤4,000 and model context≤24,000. Latest explicit reference correction narrows tool scope. Search checkpoint excludes query/as_of/private applicability; query is rebuilt from latest user report and time from server. Booking-specific knowledge filters are rejected until the labelled persistence bridge. Private DTOs, knowledge bodies and generated questions remain ephemeral. Restored waiting_user uses a generic localized template rather than replaying unlabelled private-derived wording.
+
+All attempts including refresh reserve durable budget before dispatch: 3 model / 12 tool-read, serial graph deadline180s, node lease120s. Counter means tool attempts, not internal HTTP calls. Model timeout/unknown outcome is not replayed. Safe GET recovery can retry within budget. Draft INSERT + run receipt share one transaction under conversation/run fences; committed receipt returns same draft ID. Current authorization and source refresh are mandatory, never checkpoint-derived. No automatic case submission, consent, source mutation, payment or email. Publication/handoff and private-derived persistence remain AI-03/SRC-03B.
+
+
+## AI-02 final checkpoint — 5 November 2026
+
+**DONE / bounded CODE+DB orchestration QA PASS**, no confirmed remaining P1/P2. LangGraph serial routing, typed domain-owned PostgreSQL checkpoints, bounded current customer memory, fresh authorization/source checks, durable attempt budgets and atomic pending-draft receipts are implemented. Unknown model outcomes require review; safe GET recovery is bounded; restart does not repeat committed drafts or a completed draft-proposal model request. Private tool bodies and generated clarifications are not checkpointed. The typed draft proposal uses customer reports only.
+
+Lead sole serial validation:43 targeted PASS3.44s including3 independently authored QA regressions; one final backend894PASS474opt-inSKIP17.84s;5 final isolated Neon scenarios PASS81.30s. Initial4NeonPASS78.78s are preserved separately, not counted as additional unique final scenarios. Final repeat followed a real SQL transition/current-context guard change and added database negative scenario. Freeze covers253source/test/migration/manifest/lock files; all unchanged after validation. QA independently checked20 relevant hashes and source/evidence, without executing tests/providers/database operations. Both QA P2 findings were fixed: private booking applicability excluded from checkpoints, and all read refresh/recovery attempts durably counted against12.
+
+Actual schema0025→0026_agent_runs applied: all tables forced RLS, agent_runs empty, runtime DELETE/parameterUPDATE denied, case/draft/history/job/session counts unchanged. Actual-config in-process ASGI health200/protectedroute401 no-store/no cookie; agent_workflow absent while disabled; agent+embedding off and five mailflags false. Zero model/provider requests; existing listening API not restarted. Evidence local/ai-02/{source-hashes,final-validation,rollout,runtime-smoke}.json and sanitized logs. docs/local remain ignored. No Docker, extra server/browser or model downloads.
+
+This validates orchestration code and real DB behavior with controlled model/source doubles, not live LLM quality/account access or production availability. AI-03 still owns actual chat publication/handoff/staff translation, AI-04 model comparison, and SRC-03B private-derived persistence integration. Next task in backend order: AI-03 with its publication/security dependencies. Details docs/backend/agent_orchestration.md.
+
+
+## AI-03 delivery and translation HTTP contracts
+
+POST /conversations/{id}/agent-runs accepts message_id/request_key/purpose assist|handoff|answer and optional service_type general|parking|lounge; identity and tools remain server-owned. POST /agent-runs/{id}/resume returns published/discarded/draft/review plus run_id and optional message_id/sequence/draft_id/reason, never a second response body outside the event feed. Explicit POST calls require current session, Origin and CSRF. Handoff remains a pending preview followed by existing human confirmation. Per-current-message/session/mode dedup prevents request-key rotation from allocating extra model runs. Same generation ticket replay returns its immutable receipt without another model request.
+
+POST /staff/cases/{id}/translation-drafts accepts StaffMessage original text/channel/language/current version triple plus target_language and request_key. It reserves one attempt, returns generating/ready/failed/sent metadata, original_body, translated_body, reviewed_body and optional sent message_id. Original is an unsent draft body, not a fictitious original_message_id. GET same path/{draft_id} is creator-session and current case scoped. POST same path/{draft_id}/send requires reviewed text, approved=true (actual boolean), expected_revision and one Idempotency-Key; original/proposal/reviewed text are preserved and only reviewed text is sent via shared staff messaging rules. Message/event/email job if applicable and translation receipt commit atomically. Runtime has no draft DELETE/metadata rewrite; current handler, source-label gate and version/epoch checks prevent stale/unauthorized send.
+
+Agent remains opt-in/off. Customer API does not expose private read scope or model approval. AI-ANSWER-01 implements public extractive knowledge answers/citations/reconsumption; its code/DB evidence and live model quality AI-04 remain distinct gates. SRC-03B separately owns labelled private-derived persistence.
+
+
+AI-03 current validated checkpoint: bounded CODE+DB integration QA PASS (5 November 2026). Lead serial final validation:912 backend PASS/485 opt-in SKIP and11 isolated Neon scenarios PASS;105 targeted tests include4 independent QA regressions. Schema0027 forced RLS and business counts unchanged; ASGI health200/protected401/no-store. Runtime agent/embedding/email disabled; no paid model requests, emails or server restart. Current scope is actual clarification publication, human-confirmed handoff and human-approved staff translation. AI-ANSWER-01 factual-answer implementation and SRC-03B private-derived persistence remain explicit release gates; live quality remains AI-04. Evidence local/ai-03 and guide docs/backend/agent_delivery.md.
+
+
+## AI-ANSWER-01 public knowledge answers
+
+POST /conversations/{id}/agent-runs now accepts purpose answer and service_type general|parking|lounge. This category only filters public information; it is not object entitlement. Current conversation language, latest owned customer report, server time, evidence policy and tenant/session scope are server-bound. Browser document/policy/terminal/booking-date/ACL/model/citation overrides are forbidden. Knowledge capability requires explicit calibrated server policy; absent capability returns AGENT_KNOWLEDGE_UNAVAILABLE before run/provider work.
+
+AnswerSelection is a tool-free strict model response: outcome answer|insufficient|conflict and at most3 unique source_ids. The backend copies complete selected384character chunks and authoritative URI, then publishes through current version/epoch/session gates. No model-written factual prose or URI is accepted. Source ambiguity/insufficiency/staleness/unavailability and model abstention produce a localized staff offer, never automatic case submission. Actual handoff still requires a pending preview and customer confirmation.
+
+Same snapshot is consumed after model and revalidated inside publication's SQL transaction. A bounded NOWAIT catalog lock, live public applicability/catalog fingerprint, literal chunk/URI/version/revision checks, timestamp types/TTL and exact renderer SQL trigger protect INSERT. Late source failure rolls factual savepoint back and publishes only a deterministic staff offer under the same generation guard/receipt; stale mode/epoch/session/deadline still blocks publication. No model retry or stored answer checkpoint.
+
+GET /conversations/{id}/messages/{message_id}/citations returns an authorized historical_publication receipt: message_id, issued_at and citations(version_id,generation,ordinal,basis_hash,document_id,document_revision,quote,source_uri). It exposes no query/actor/HMAC/scoring config. The endpoint uses current session/ownership and no-store. Historical citations describe publication time; they are not current policy claims after withdrawal. Existing event/history body remains the UI source of truth. Private booking data remains SRC-03B. Relevance/completeness/cross-chunk qualifiers/semantic conflicts require AI-04 evaluation; exact quotation is not semantic entailment proof.
+
+
+AI-ANSWER-01 current validated checkpoint (5 November 2026): bounded CODE+DB public extractive-answer capability QA PASS.935 backend tests and14 unique isolated Neon scenarios have passing evidence;160 targeted tests include4 independent QA regressions. Source268hashes match, schema0028 forced RLS/unchanged business counts, actual-config ASGI health200/protected401no-store. Answer publication and historical server-owned citations are implemented. Current agent/embedding/email remain disabled;0provider requests/emails/server restart. Live semantic quality remains AI-04 and private-derived persistence SRC-03B. Evidence local/ai-answer-01 and private guide docs/backend/public_answers.md.
+
+
+## COMPLETE-03 — scoped service information discovery and index recovery
+
+GET `/api/v1/admin/knowledge/documents` accepts one membership_id, optional UUID after, limit1–50/default25 and optional exact lower-hyphen document_key. Response: membership_id, organization_id, items(DocumentView metadata only), limit, has_more, next_after UUID/null and consistency=live_keyset. UUID ascending/lookahead within the current selected organization; no total/snapshot. Current session/admin is rechecked. Extra/duplicate query and actor headers are rejected. Exact-key creation recovery drops prior page position; a missing record does not prove an in-flight creation failed.
+
+GET `/api/v1/admin/knowledge/versions/{id}/index?membership_id=...` checks current admin/document/version and actual stored index proof against current basis. Response: version_id, basis_hash, ready boolean, generation UUID/null, indexing_available boolean. Ready iff current proof exists and matches; availability is configured retrieval, not a publish permission. No provider/embedding call or index-ready override. Publish independently rechecks current proof, version and applicability. Both GETs are no-store. Existing POST/PATCH lifecycle contracts remain unchanged; no new migration/head.
+
+Frontend `/admin/information` uses these scoped GETs and existing create/version/edit/index/publish/withdraw APIs. All writes require explicit reviewed action. Unknown writes recover with GET current records, without automatic resend or causal receipt claims. Read-only recovery preserves only safe IDs/key and current membership binding; private body/review is purged on loss of scope/session. UTC fields retain the original full instant when unedited.

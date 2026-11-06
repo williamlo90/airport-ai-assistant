@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import Field, ValidationError
+from pydantic import Field, ValidationError, field_validator, ValidationInfo
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,9 +23,19 @@ class Settings(BaseSettings):
     host: Literal["127.0.0.1", "0.0.0.0", "::1", "::"] = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65535)
     max_request_body_bytes: int = Field(default=1_048_576, ge=1, le=16_777_216)
+    attachment_scanner_port: int | None = Field(default=None, ge=1, le=65535)
+    attachment_scanner_backend: Literal['clamav','amsi-local'] = 'clamav'
     database_enabled: bool = False
     auth_enabled: bool = False
     source_enabled: bool = False
+    private_source_enabled: bool = False
+
+    @field_validator('attachment_scanner_backend')
+    @classmethod
+    def local_scanner_only(cls,value,info:ValidationInfo):
+        if value=='amsi-local' and (info.data.get('env')=='production' or info.data.get('attachment_scanner_port') is not None):
+            raise ValueError('AMSI is a local option and cannot be combined with a ClamAV port.')
+        return value
 
 
 def load_settings(env_file: Path | None = Path(".env")) -> Settings:

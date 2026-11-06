@@ -1,3 +1,85 @@
+import { lazy, Suspense } from 'react';
+import { StaffNavigation } from '../../features/staff/StaffNavigation';
+import { useStaff } from '../../features/staff/context';
+const LazyStaffCases = lazy(
+  () => import('../../features/staff/StaffCasesPage'),
+);
+const LazyStaffLogin = lazy(() =>
+  import('../../features/staff/StaffPages').then((m) => ({
+    default: m.StaffLogin,
+  })),
+);
+const LazyStaffWorkspace = lazy(() =>
+  import('../../features/staff/StaffPages').then((m) => ({
+    default: m.StaffWorkspace,
+  })),
+);
+export function StaffHomePage() {
+  return (
+    <Suspense fallback={<p role="status">Loading workspace…</p>}>
+      <LazyStaffWorkspace />
+    </Suspense>
+  );
+}
+const LazySourcePage = lazy(() =>
+  import('../../features/source/SourcePage').then((m) => ({
+    default: m.SourcePage,
+  })),
+);
+export function ServiceRecordsPage() {
+  const { locale } = useRouting();
+  return (
+    <RequireAccess>
+      <Suspense
+        fallback={
+          <p role="status">
+            {locale === 'en'
+              ? 'Loading service records…'
+              : 'Memuat data layanan…'}
+          </p>
+        }
+      >
+        <LazySourcePage />
+      </Suspense>
+    </RequireAccess>
+  );
+}
+const LazyCaseDetailPage = lazy(() =>
+  import('../../features/cases/CaseDetailPage').then((m) => ({
+    default: m.CaseDetailPage,
+  })),
+);
+const LazyCustomerCases = lazy(() =>
+  import('../../features/cases/CustomerCasesPage').then((m) => ({
+    default: m.CustomerCasesPage,
+  })),
+);
+export function CustomerCasesPage() {
+  return (
+    <RequireAccess>
+      <Suspense fallback={<p role="status">Loading…</p>}>
+        <LazyCustomerCases />
+      </Suspense>
+    </RequireAccess>
+  );
+}
+const LazyChatPage = lazy(() =>
+  import('../../features/chat/ChatPage').then((m) => ({ default: m.ChatPage })),
+);
+function ChatPage() {
+  const { locale } = useRouting();
+  return (
+    <Suspense
+      fallback={
+        <p role="status">
+          {locale === 'en' ? 'Loading conversation…' : 'Memuat percakapan…'}
+        </p>
+      }
+    >
+      <LazyChatPage />
+    </Suspense>
+  );
+}
 import {
   Link,
   isRouteErrorResponse,
@@ -6,6 +88,8 @@ import {
   useParams,
   useRouteError,
 } from 'react-router';
+import { Fragment, useContext } from 'react';
+import { AuthContext, useAuthState } from '../auth/context';
 import type { ReactNode } from 'react';
 import { CustomerShell, StaffShell } from '../shells/Shells';
 import { AsyncState } from '../../components/Feedback';
@@ -47,11 +131,7 @@ export function PageFrame({
     <StaffShell
       {...props}
       navigationLabel={locale === 'en' ? 'Staff navigation' : 'Navigasi staf'}
-      navigation={
-        <Link to={localizedTarget('/staff/cases', locale)}>
-          {locale === 'en' ? 'Cases' : 'Kasus'}
-        </Link>
-      }
+      navigation={<StaffNavigation />}
     >
       {children}
     </StaffShell>
@@ -65,21 +145,6 @@ export function BackHome() {
     <Link to={localizedTarget('/', locale)}>
       {locale === 'en' ? 'Back to help centre' : 'Kembali ke pusat bantuan'}
     </Link>
-  );
-}
-export function HomePage() {
-  const { site, locale } = useRouting();
-  const c = messages[locale];
-  return (
-    <PageFrame>
-      <section className="bootstrap">
-        <p className="bootstrap-label">{c.preview}</p>
-        <h1>
-          {site.airportName} — {site.productName}
-        </h1>
-        <p role="status">{c.readiness}</p>
-      </section>
-    </PageFrame>
   );
 }
 export function NotFoundPage() {
@@ -134,7 +199,20 @@ export function RequireAccess({
     ? access.kind === 'staff' &&
       access.roles.some((role) => role === 'cs' || role === 'supervisor')
     : access.kind === 'anonymous' || access.kind === 'customer';
-  if (accepted) return children;
+  const coordinator = useContext(AuthContext);
+  const auth = useAuthState(coordinator);
+  if (accepted)
+    return (
+      <Fragment
+        key={
+          auth.phase === 'ready'
+            ? auth.boundaryId + ':' + auth.epoch
+            : 'controlled-test'
+        }
+      >
+        {children}
+      </Fragment>
+    );
   const loading = access.kind === 'checking';
   return (
     <PageFrame>
@@ -151,8 +229,12 @@ export function RequireAccess({
         }
         message={
           locale === 'en'
-            ? 'Session verification is not connected in this build. A URL or resource ID does not grant access.'
-            : 'Verifikasi sesi belum terhubung pada build ini. URL atau ID resource tidak memberikan akses.'
+            ? coordinator
+              ? 'Check your session before opening private information. A link does not grant access.'
+              : 'Session verification is not connected in this build. A URL or resource ID does not grant access.'
+            : coordinator
+              ? 'Periksa sesi sebelum membuka informasi privat. Tautan tidak memberikan akses.'
+              : 'Verifikasi sesi belum terhubung pada build ini. URL atau ID resource tidak memberikan akses.'
         }
       />
       {staff && access.kind !== 'unavailable' && (
@@ -188,33 +270,74 @@ export function PlaceholderPage({
   );
 }
 export function NewHelpPage() {
-  const { locale } = useRouting();
   const location = useLocation();
   if (!readTopic(location.search)) return <NotFoundPage />;
-  return (
-    <PlaceholderPage
-      title={locale === 'en' ? 'Customer support' : 'Bantuan pelanggan'}
-    />
-  );
+  return <ChatPage />;
 }
+const LazyVerificationPage = lazy(() =>
+  import('../../features/verification/VerificationPage').then((m) => ({
+    default: m.VerificationPage,
+  })),
+);
 export function VerifyPage() {
   const { locale } = useRouting();
   return (
-    <PlaceholderPage
-      title={locale === 'en' ? 'Verify your email' : 'Verifikasi email'}
-    />
+    <Suspense
+      fallback={
+        <p role="status">
+          {locale === 'en' ? 'Loading verification…' : 'Memuat verifikasi…'}
+        </p>
+      }
+    >
+      <LazyVerificationPage />
+    </Suspense>
+  );
+}
+const LazyCaseDraftPage = lazy(() =>
+  import('../../features/cases/CaseDraftPage').then((m) => ({
+    default: m.CaseDraftPage,
+  })),
+);
+export function RequestReviewPage({ intake = false }: { intake?: boolean }) {
+  const { locale } = useRouting();
+  return (
+    <RequireAccess>
+      <Suspense
+        fallback={
+          <p role="status">
+            {locale === 'en'
+              ? 'Loading request review…'
+              : 'Memuat tinjauan permintaan…'}
+          </p>
+        }
+      >
+        <LazyCaseDraftPage intake={intake} />
+      </Suspense>
+    </RequireAccess>
   );
 }
 export function StaffLoginPage() {
-  const { locale } = useRouting();
   return (
-    <PlaceholderPage
-      title={locale === 'en' ? 'Staff sign-in' : 'Masuk petugas'}
-    />
+    <Suspense fallback={<p role="status">Loading staff sign-in…</p>}>
+      <LazyStaffLogin />
+    </Suspense>
   );
 }
 export function StaffQueuePage() {
   const { locale } = useRouting();
+  const staff = useStaff();
+  if (staff)
+    return (
+      <Suspense
+        fallback={
+          <p role="status">
+            {locale === 'en' ? 'Loading staff cases…' : 'Memuat kasus petugas…'}
+          </p>
+        }
+      >
+        <LazyStaffCases />
+      </Suspense>
+    );
   return (
     <RequireAccess staff>
       <PlaceholderPage
@@ -234,32 +357,31 @@ export function ResourcePage({
   const params = useParams();
   const { locale } = useRouting();
   if (!isResourceId(params[resource])) return <NotFoundPage />;
-  const title =
-    resource === 'draftId'
-      ? locale === 'en'
-        ? 'Support request status'
-        : 'Status pengajuan bantuan'
-      : resource === 'conversationId'
-        ? locale === 'en'
-          ? 'Conversation'
-          : 'Percakapan'
-        : locale === 'en'
-          ? 'Case details'
-          : 'Detail kasus';
+  if (resource === 'draftId') return <RequestReviewPage />;
+  if (resource === 'conversationId')
+    return (
+      <RequireAccess>
+        <ChatPage />
+      </RequireAccess>
+    );
+  if (resource === 'caseId' && !staff)
+    return (
+      <RequireAccess>
+        <Suspense
+          fallback={
+            <p role="status">
+              {locale === 'en' ? 'Loading case…' : 'Memuat kasus…'}
+            </p>
+          }
+        >
+          <LazyCaseDetailPage />
+        </Suspense>
+      </RequireAccess>
+    );
+  const title = locale === 'en' ? 'Case details' : 'Detail kasus';
   return (
     <RequireAccess staff={staff}>
-      <PlaceholderPage
-        staff={staff}
-        title={title}
-        {...(resource === 'draftId'
-          ? {
-              note:
-                locale === 'en'
-                  ? 'The submission link is preserved. Its status is not connected yet; no successful submission is being claimed.'
-                  : 'Tautan pengajuan dipertahankan. Statusnya belum terhubung; keberhasilan pengajuan belum dinyatakan.',
-            }
-          : {})}
-      />
+      <PlaceholderPage staff={staff} title={title} />
     </RequireAccess>
   );
 }

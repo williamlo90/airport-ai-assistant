@@ -1,0 +1,45 @@
+{
+  "version": 3,
+  "pricing_checked": "2026-11-05",
+  "providers": {
+    "openai": {
+      "model": "gpt-5.4-mini-2026-03-17",
+      "key_env": "EVAL_OPENAI_API_KEY",
+      "input_usd_per_million": "0.75",
+      "output_usd_per_million": "4.50",
+      "reasoning": "none"
+    }
+  },
+  "repetitions": 2,
+  "max_attempts": 72,
+  "max_retries": 0,
+  "max_wire_bytes": 8192,
+  "input_overhead_reserve": 2048,
+  "max_output_tokens": 1024,
+  "max_response_bytes": 262144,
+  "provider_interval_seconds": 6.5,
+  "max_wall_seconds": 900,
+  "proposed_cap_usd": "0.60",
+  "rules": {
+    "holdout_completion_min": "0.90",
+    "per_language_completion_min": "0.85",
+    "schema_availability_min": "0.95",
+    "plan_completion_min": "0.95",
+    "answer_completion_min": "0.90",
+    "draft_completion_min": "0.90",
+    "translation_completion_min": "0.90",
+    "critical_failures_max": 0,
+    "semantic_review_required": true,
+    "automatic_winner": false,
+    "decision": "Qualify the selected OpenAI candidate against fixed gates and rule baseline; do not infer model superiority or activate production automatically."
+  },
+  "review_rules": {
+    "clarification": "Brief relevant question in requested language, no invented fact or completion promise.",
+    "draft": "Accurate category/service and faithful concise report summary; no invented identifier/contact/outcome or model approval.",
+    "translation": "Preserve meaning, negation, qualifiers, values and quoted-instruction status; adequate requested language. Literal checks alone are not semantic quality.",
+    "reviewer_identity": "Record agent or human honestly. Provider-label-hidden packets reduce labeling bias but do not establish double-blind human evaluation."
+  },
+  "sources": [
+    "https://developers.openai.com/api/docs/models/gpt-5.4-mini"
+  ]
+}

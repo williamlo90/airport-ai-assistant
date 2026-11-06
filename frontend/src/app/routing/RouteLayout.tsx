@@ -1,3 +1,7 @@
+import { ChatProvider } from '../../features/chat/ChatProvider';
+import { StaffProvider } from '../../features/staff/StaffProvider';
+import { AuthContext, useAuthState } from '../auth/context';
+import type { AuthCoordinator } from '../auth/coordinator';
 import { lazy, Suspense, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router';
 import type { PublicSite } from '../config/publicSite';
@@ -6,18 +10,33 @@ import { RoutingContext } from './context';
 import type { RouteAccess } from './context';
 import { DraftNavigation } from './drafts';
 import { localizedTarget } from './policy';
-import { HomePage } from './pages';
+import { HomePage } from '../../features/home/HomePage';
 
 const CorePreview = import.meta.env.DEV
   ? lazy(() => import('../../dev/CorePreview'))
   : null;
 export function Layout({
   site,
-  access,
+  access: staticAccess,
+  coordinator,
 }: {
   site: PublicSite;
   access: RouteAccess;
+  coordinator?: AuthCoordinator | undefined;
 }) {
+  const state = useAuthState(coordinator ?? null);
+  const access: RouteAccess = coordinator
+    ? state.phase === 'ready'
+      ? state.kind === 'staff'
+        ? { kind: 'staff', roles: state.roles }
+        : { kind: state.kind }
+      : {
+          kind:
+            state.phase === 'checking' || state.phase === 'transition'
+              ? 'checking'
+              : 'unavailable',
+        }
+    : staticAccess;
   const location = useLocation();
   const navigate = useNavigate();
   const locale = getInitialLocale(
@@ -41,11 +60,17 @@ export function Layout({
       );
   }
   return (
-    <RoutingContext value={{ site, locale, access, switchLanguage }}>
-      <DraftNavigation locale={locale}>
-        <Outlet />
-      </DraftNavigation>
-    </RoutingContext>
+    <AuthContext value={coordinator ?? null}>
+      <RoutingContext value={{ site, locale, access, switchLanguage }}>
+        <StaffProvider auth={coordinator ?? null}>
+          <DraftNavigation locale={locale}>
+            <ChatProvider auth={coordinator ?? null} scope={site.airportName}>
+              <Outlet />
+            </ChatProvider>
+          </DraftNavigation>
+        </StaffProvider>
+      </RoutingContext>
+    </AuthContext>
   );
 }
 export function HomeEntry({ site }: { site: PublicSite }) {

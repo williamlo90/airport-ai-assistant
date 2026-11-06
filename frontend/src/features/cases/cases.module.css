@@ -1,0 +1,320 @@
+.layout {
+  max-width: 1112px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 48px;
+  align-items: start;
+}
+.caseList {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 0;
+}
+.caseList li {
+  border-top: 1px solid var(--color-line);
+  padding: 24px 0;
+}
+.caseList li h2 a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.caseList li > a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-right: 16px;
+}
+.receiptReference {
+  font-size: 22px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.caseReference {
+  display: block;
+  overflow-wrap: anywhere;
+  margin: 12px 0 24px;
+}
+.history {
+  margin: 20px 0;
+  padding-left: 24px;
+}
+.history li {
+  padding: 4px 0 24px 12px;
+  border-bottom: 1px solid var(--color-line);
+  margin-bottom: 16px;
+}
+.history h3 {
+  margin-bottom: 8px;
+}
+.form .consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 44px;
+}
+.form .consent input {
+  width: 20px;
+  height: 20px;
+  min-height: 20px;
+  flex: none;
+  margin-top: 3px;
+}
+.journey {
+  padding-top: 12px;
+}
+.journey h2 {
+  font-size: 22px;
+}
+.journey ol {
+  list-style: none;
+  padding: 0;
+  margin: 28px 0;
+  display: grid;
+  gap: 24px;
+  counter-reset: step;
+}
+.journey li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-muted);
+  counter-increment: step;
+}
+.journey li::before {
+  content: counter(step);
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-control);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+.journey li[aria-current='step'] {
+  font-weight: 700;
+  color: var(--color-text);
+}
+.journey li[aria-current='step']::before {
+  background: var(--color-brand);
+  border-color: var(--color-brand);
+  color: white;
+}
+.journey p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.journey a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+.card {
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  padding: 36px;
+  overflow-wrap: anywhere;
+}
+.eyebrow {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-brand);
+  margin-bottom: 16px;
+}
+.card h1 {
+  font-size: 30px;
+  line-height: 1.2;
+}
+.intro {
+  margin: 16px 0 28px;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+.card h2 {
+  font-size: 22px;
+}
+.card h3 {
+  font-size: 18px;
+  margin: 12px 0;
+}
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 20px 0;
+  border-block: 1px solid var(--color-line);
+}
+.status span,
+.help {
+  color: var(--color-muted);
+  font-size: 14px;
+}
+.section {
+  padding: 24px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+.sectionHeading {
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+}
+.report {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: inherit;
+  line-height: 1.65;
+  margin-top: 16px;
+}
+.card dl {
+  display: grid;
+  gap: 16px;
+  margin-top: 20px;
+}
+.card dl > div {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 20px;
+}
+.card dt {
+  color: var(--color-muted);
+}
+.card dd {
+  margin: 0;
+  line-height: 1.5;
+}
+.card summary {
+  min-height: 44px;
+  cursor: pointer;
+  font-weight: 700;
+}
+.form {
+  margin-top: 24px;
+}
+.form fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.form label {
+  display: block;
+  font-weight: 700;
+  margin-top: 8px;
+}
+.form input,
+.form select,
+.form textarea {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+.form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+.form button {
+  align-self: flex-start;
+  margin-top: 12px;
+}
+.twoColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.twoColumns input,
+.twoColumns select {
+  margin-top: 12px;
+}
+.notice,
+.error {
+  padding: 16px 20px;
+  margin: 20px 0;
+  border-radius: var(--radius-control);
+  line-height: 1.6;
+}
+.notice {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+.error {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+.fieldError {
+  color: var(--color-danger);
+  font-size: 14px;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+  .journey {
+    padding: 0;
+  }
+  .journey h2 {
+    font-size: 19px;
+  }
+  .journey ol {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0;
+  }
+  .journey li {
+    flex: 1;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+    text-align: center;
+  }
+  .journey p {
+    display: none;
+  }
+  .card {
+    padding: 24px 20px;
+  }
+  .card h1 {
+    font-size: 26px;
+  }
+  .twoColumns {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  .card dl > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+  }
+  .sectionHeading {
+    align-items: start;
+    flex-wrap: wrap;
+  }
+  .sectionHeading > :first-child {
+    flex: 1 0 min(100%, 12ch);
+  }
+  .sectionHeading button {
+    flex-shrink: 0;
+  }
+  .form button {
+    width: 100%;
+  }
+}

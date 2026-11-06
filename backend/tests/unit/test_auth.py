@@ -71,15 +71,14 @@ def test_sender_failure_cancels_owned_challenge_and_redacts_exception():
     assert len(message.code)==8
 
 
-def test_sender_timeout_is_bounded_and_cancels_challenge():
+def test_sender_timeout_is_bounded_and_retains_pending_challenge():
     sender=AsyncMock()
     async def stall(message):await asyncio.Event().wait()
     sender.send.side_effect=stall
     service,repository,session,token,csrf=subject(sender,AuthPolicy(delivery_timeout=0.01))
-    with pytest.raises(AuthError) as error:
-        asyncio.run(service.request_challenge(session.tenant_id,token,csrf,"one@example.com","127.0.0.1"))
-    assert error.value.status==503
-    repository.cancel.assert_awaited_once()
+    result=asyncio.run(service.request_challenge(session.tenant_id,token,csrf,"one@example.com","127.0.0.1"))
+    assert result==sender.send.await_args.args[0].challenge_id
+    repository.cancel.assert_not_awaited()
 
 
 def test_wrong_csrf_never_reaches_challenge_repository():

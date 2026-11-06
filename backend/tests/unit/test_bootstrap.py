@@ -74,7 +74,7 @@ def test_factory_serves_openapi_without_external_services():
     response = asyncio.run(request())
     assert response.status_code == 200
     assert response.json()["info"]["title"] == "Airport AI Assistant API"
-    assert set(response.json()["paths"]) == {"/health/live"}
+    assert set(response.json()["paths"]) == {"/health/live", "/health/ready"}
 
 
 def test_production_does_not_expose_development_docs():

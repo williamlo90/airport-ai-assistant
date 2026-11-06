@@ -26,6 +26,11 @@ class RequestBoundary:
         except (ValueError, UnicodeError):
             request_id = str(uuid4())
         scope.setdefault("state", {})["request_id"] = request_id
+        body_limit = 5*1024*1024 if scope.get("path")=="/api/v1/attachments" and scope.get("method")=="POST" else self.max_body_bytes
+        if scope.get('path','').startswith('/api/v1/admin/knowledge/'):
+            body_limit=min(body_limit,131072)
+        if scope.get('path','').startswith('/integrations/email/'):
+            body_limit=min(body_limit,65536)
         started = False
         status = 500
 
@@ -35,6 +40,9 @@ class RequestBoundary:
                 started = True
                 status = message["status"]
                 headers = [(key, value) for key, value in message.get("headers", []) if key.lower() != b"x-request-id"]
+                if scope.get('path', '').startswith(('/api/v1/staff/','/api/v1/admin/knowledge/')):
+                    headers = [(key, value) for key, value in headers if key.lower() != b'cache-control']
+                    headers.append((b'cache-control', b'no-store'))
                 message = {**message, "headers": headers + [(b"x-request-id", request_id.encode("ascii"))]}
             await send(message)
 
@@ -44,7 +52,7 @@ class RequestBoundary:
                 if len(lengths) != 1 or not lengths[0].isdigit() or len(lengths[0]) > 20:
                     await error_response(400, request_id)(scope, receive, send_with_id)
                     return
-                if int(lengths[0]) > self.max_body_bytes:
+                if int(lengths[0]) > body_limit:
                     await error_response(413, request_id)(scope, receive, send_with_id)
                     return
 
@@ -55,7 +63,7 @@ class RequestBoundary:
                 if message["type"] == "http.disconnect":
                     return
                 chunk = message.get("body", b"")
-                if len(body) + len(chunk) > self.max_body_bytes:
+                if len(body) + len(chunk) > body_limit:
                     await error_response(413, request_id)(scope, receive, send_with_id)
                     return
                 body.extend(chunk)

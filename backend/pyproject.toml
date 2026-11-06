@@ -16,9 +16,14 @@ dependencies = [
     "python-dotenv>=1.0,<2",
     "uvicorn>=0.32,<1",
     "tzdata>=2025.1,<2027",
+    "langgraph==1.2.19",
+    "langsmith==0.14.17",
 ]
 
 [project.scripts]
+airport-assistant-mail-check = "airport_assistant.mail_check:main"
+airport-assistant-worker = "airport_assistant.worker:main"
+airport-assistant-worker-setup = "airport_assistant.worker_setup:main"
 airport-assistant-api = "airport_assistant.main:main"
 airport-assistant-db-check = "airport_assistant.database_check:main"
 airport-assistant-migrate = "airport_assistant.migrate:main"
@@ -34,7 +39,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["hatchling>=1.26,<2"]
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]

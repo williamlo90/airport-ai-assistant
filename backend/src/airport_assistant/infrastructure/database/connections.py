@@ -28,7 +28,7 @@ class RedactDriverLog(logging.Filter):
 
 
 def protect_driver_logs() -> None:
-    for name in ("psycopg", "psycopg.pool"):
+    for name in ("psycopg", "psycopg.pool", "psycopg.transaction"):
         logger = logging.getLogger(name)
         if not any(isinstance(item, RedactDriverLog) for item in logger.filters):
             logger.addFilter(RedactDriverLog())
@@ -47,8 +47,13 @@ def connection_options(connect_timeout: int) -> dict:
 
 class RuntimeDatabase:
     def __init__(self, url: str, *, pool_max=2, max_waiting=8, connect_timeout=10,
-                 acquire_timeout=10, statement_timeout_ms=10_000):
+                 acquire_timeout=10, statement_timeout_ms=10_000,schema='app'):
+        from airport_assistant.infrastructure.database.migrations import validate_schema
+        validate_schema(schema)
+        self.schema=schema
         protect_driver_logs()
+        self.webhook_required = False
+        self._private_history_schema = None
         self._statement_timeout_ms = statement_timeout_ms
         self._acquire_timeout = acquire_timeout
         self._pool = AsyncConnectionPool(
@@ -68,6 +73,12 @@ class RuntimeDatabase:
             await connection.close()
             raise
 
+    def require_private_mail_history(self,schema='app'):
+        from airport_assistant.infrastructure.database.migrations import validate_schema
+        validate_schema(schema)
+        if schema!=self.schema:raise ValueError('Private history and runtime schemas must match.')
+        self._private_history_schema=schema
+
     async def open(self) -> None:
         try:
             await self._pool.open()
@@ -82,6 +93,15 @@ class RuntimeDatabase:
             await self._pool.close()
             raise
 
+    async def ready(self) -> bool:
+        """Bounded core connection check; never read tenant data or providers."""
+        try:
+            async with asyncio.timeout(2):
+                async with self.transaction() as connection:
+                    return await (await connection.execute('SELECT 1')).fetchone() == (1,)
+        except Exception:
+            return False
+
     async def close(self) -> None:
         await self._pool.close()
 
@@ -91,19 +111,33 @@ class RuntimeDatabase:
                 OR r.rolreplication OR r.rolinherit OR current_user <> session_user
                 OR EXISTS (SELECT 1 FROM pg_auth_members WHERE member=r.oid)
                 OR EXISTS (SELECT 1 FROM pg_database WHERE datname=current_database() AND datdba=r.oid)
-                OR EXISTS (SELECT 1 FROM pg_namespace WHERE nspowner=r.oid AND nspname='app')
+                OR EXISTS (SELECT 1 FROM pg_namespace WHERE nspowner=r.oid AND nspname IN ('app',%s))
                 OR EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-                           WHERE n.nspname='app' AND c.relowner=r.oid)
+                           WHERE n.nspname IN ('app',%s) AND c.relowner=r.oid)
                 OR has_database_privilege(current_user,current_database(),'CREATE')
                 OR has_database_privilege(current_user,current_database(),'TEMP')
                 OR has_schema_privilege(current_user,'public','CREATE')
             FROM pg_roles r WHERE rolname=current_user
-        """)).fetchone()
+        """,(self.schema,self.schema))).fetchone()
         if row is None or row[0]:
             raise DatabaseError()
-        row = await (await connection.execute("SELECT has_schema_privilege(current_user,'app','CREATE')")).fetchone()
+        row = await (await connection.execute("SELECT has_schema_privilege(current_user,%s,'CREATE') OR EXISTS (SELECT 1 FROM pg_namespace WHERE nspname='app' AND has_schema_privilege(current_user,oid,'CREATE'))",(self.schema,))).fetchone()
         if row[0]:
             raise DatabaseError()
+        if getattr(self,'auth_mail_required',False):
+            signature=self.schema+'.auth_mail_route_allowed(uuid,uuid,text,text,text)'
+            row=await(await connection.execute("SELECT CASE WHEN to_regprocedure(%s) IS NULL THEN false ELSE has_function_privilege(current_user,%s,'EXECUTE') END",(signature,signature))).fetchone()
+            if row!=(True,):raise DatabaseError()
+        if self.webhook_required:
+            signature=self.schema+'.email_webhook_accept(text,text,text,jsonb)'
+            row=await(await connection.execute("SELECT CASE WHEN to_regprocedure(%s) IS NULL THEN false ELSE has_function_privilege(current_user,%s,'EXECUTE') END",(signature,signature))).fetchone()
+            if row!=(True,):raise DatabaseError()
+        if self._private_history_schema is not None:
+            signature=self._private_history_schema+'.private_mail_history_ready()'
+            exists=await(await connection.execute('SELECT to_regprocedure(%s) IS NOT NULL',(signature,))).fetchone()
+            if exists!=(True,):raise DatabaseError()
+            row=await(await connection.execute(psycopg.sql.SQL('SELECT {}.private_mail_history_ready()').format(psycopg.sql.Identifier(self._private_history_schema)))).fetchone()
+            if row!=(True,):raise DatabaseError()
 
     @asynccontextmanager
     async def transaction(self, context: DatabaseContext | None = None):
@@ -117,17 +151,16 @@ class RuntimeDatabase:
             try:
                 async with connection.transaction():
                     try:
-                        await connection.execute("SELECT set_config('statement_timeout', %s, true)", (str(self._statement_timeout_ms),))
-                        await connection.execute("SELECT set_config('lock_timeout', '3000', true)")
-                        await connection.execute("SELECT set_config('idle_in_transaction_session_timeout', '10000', true)")
-                        await connection.execute("SELECT set_config('app.tenant_id', %s, true)",
-                                                 (str(context.tenant_id) if context else "",))
-                        await connection.execute("SELECT set_config('app.principal_id', %s, true)",
-                                                 (str(context.principal_id) if context and context.principal_id else "",))
-                        await connection.execute("SELECT set_config('app.actor_kind', %s, true)",
-                                                 (context.actor_kind if context else "anonymous",))
-                        await connection.execute("SELECT set_config('app.session_id', %s, true)",
-                                                 (str(context.session_id) if context and context.session_id else "",))
+                        # One atomic round trip for the same transaction-local
+                        # safety/context settings; reset every field on checkout.
+                        await connection.execute("""SELECT
+                            set_config('statement_timeout',%s,true),set_config('lock_timeout','3000',true),
+                            set_config('idle_in_transaction_session_timeout','10000',true),set_config('TimeZone','UTC',true),
+                            set_config('app.tenant_id',%s,true),set_config('app.principal_id',%s,true),
+                            set_config('app.actor_kind',%s,true),set_config('app.session_id',%s,true)""",
+                            (str(self._statement_timeout_ms),str(context.tenant_id) if context else "",
+                             str(context.principal_id) if context and context.principal_id else "",
+                             context.actor_kind if context else "anonymous",str(context.session_id) if context and context.session_id else ""))
                         yield connection
                     except asyncio.CancelledError:
                         # Close locally before transaction exit: don't wait for a

@@ -208,3 +208,16 @@ describe('isolated component preview', () => {
     );
   });
 });
+
+it('keeps both shell skip targets programmatically focusable without adding a Tab stop', () => {
+  render(<Preview />);
+  const customer = screen.getByRole('main');
+  expect(customer).toHaveAttribute('tabindex', '-1');
+  customer.focus();
+  expect(customer).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: 'Staff shell' }));
+  const staff = screen.getByRole('main');
+  expect(staff).toHaveAttribute('tabindex', '-1');
+  staff.focus();
+  expect(staff).toHaveFocus();
+});

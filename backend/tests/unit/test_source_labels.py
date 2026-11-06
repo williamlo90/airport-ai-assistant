@@ -188,7 +188,7 @@ def test_composition_binds_real_grant_and_private_gate_only_when_enabled():
     from airport_assistant.auth_config import AuthSettings
     assert build_services().source_grants is None
     assert build_services().private_source_access is None
-    services=build_services(database=Mock(),auth_settings=AuthSettings(SESSION_SECRET='f'*48),
+    services=build_services(database=Mock(schema="app"),auth_settings=AuthSettings(SESSION_SECRET='f'*48),
                             source_client=Mock(),tenant_map={uuid4():uuid4()})
     assert isinstance(services.source_grants,CurrentSourceGrants)
     assert isinstance(services.private_source_access,PrivateSourceAccess)

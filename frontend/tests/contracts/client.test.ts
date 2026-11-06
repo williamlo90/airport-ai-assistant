@@ -17,6 +17,56 @@ const snapshot: BoundarySnapshot = Object.freeze({
   csrfProof: 'p'.repeat(43),
 });
 const valid = { session_kind: 'customer', principal_id: id };
+
+it('raw attachment transport sends the exact Blob and MIME with existing CSRF/no-store protections', async () => {
+  const f = fixture(),
+    file = new Blob(['%PDF-1.4\nsynthetic'], { type: 'application/pdf' });
+  await f.client.request({
+    path: `/attachments?draft_id=${id}&expected_version=1`,
+    method: 'POST',
+    boundary: snapshot,
+    isRelevant: () => true,
+    successStatus: 200,
+    decode: record,
+    file,
+    idempotencyKey: id,
+  });
+  const request = f.send.mock.calls[0]![1]!;
+  expect(request.body).toBe(file);
+  const headers = new Headers(request.headers);
+  expect(headers.get('Content-Type')).toBe('application/pdf');
+  expect(headers.get('X-CSRF-Token')).toBe(snapshot.csrfProof);
+  expect(headers.get('Idempotency-Key')).toBe(id);
+  expect(headers.get('Content-Disposition')).toBeNull();
+  expect(request.cache).toBe('no-store');
+  expect(request.redirect).toBe('error');
+});
+it('raw files cannot be mixed with JSON or sent to other endpoints/types', async () => {
+  const f = fixture(),
+    file = new Blob(['%PDF-1.4'], { type: 'application/pdf' });
+  const request = {
+    path: `/attachments?draft_id=${id}&expected_version=1`,
+    method: 'POST' as const,
+    boundary: snapshot,
+    isRelevant: () => true,
+    successStatus: 200,
+    decode: record,
+    file,
+  };
+  await expect(
+    f.client.request({ ...request, body: {} }),
+  ).rejects.toMatchObject({ outcome: 'not-sent' });
+  await expect(
+    f.client.request({ ...request, path: '/cases' }),
+  ).rejects.toMatchObject({ outcome: 'not-sent' });
+  await expect(
+    f.client.request({
+      ...request,
+      file: new Blob(['x'], { type: 'text/html' }),
+    }),
+  ).rejects.toMatchObject({ outcome: 'not-sent' });
+  expect(f.send).not.toHaveBeenCalled();
+});
 const json = (
   data: unknown,
   status = 200,

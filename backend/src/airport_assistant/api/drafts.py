@@ -18,6 +18,7 @@ class CreateDraft(RequestModel):
     conversation_id:UUID=Field(strict=False)
     action_type:Literal['create_case','request_handoff']
     payload:ReportPayload
+    case_id:UUID|None=Field(default=None,strict=False)
 
 
 class EditDraft(RequestModel):
@@ -38,6 +39,7 @@ class DraftView(BaseModel):
     expires_at:datetime
     state:Literal['pending','cancelled','expired','committed']
     result_ref:str|None=None
+    case_id:UUID|None=None
 
 
 class ActionStatus(BaseModel):
@@ -63,12 +65,12 @@ def view(draft):
     return DraftView(draft_id=draft.id,conversation_id=draft.conversation_id,action_type=draft.action_type,
         payload=draft.payload,destination=draft.destination,summary=draft.displayed_summary,
         language=draft.language,version=draft.version,payload_hash=draft.payload_hash,
-        expires_at=draft.expires_at,state=draft.state,result_ref=draft.result_ref)
+        expires_at=draft.expires_at,state=draft.state,result_ref=draft.result_ref,case_id=draft.case_id)
 
 
 @router.post('/action-drafts',status_code=201,response_model=DraftView)
 async def create(body:CreateDraft,request:Request,response:Response,identity:AccessIdentity=Depends(get_mutation_identity)):
-    return view(await service(request,response).create(identity,body.conversation_id,body.action_type,body.payload))
+    return view(await service(request,response).create(identity,body.conversation_id,body.action_type,body.payload,body.case_id))
 
 
 @router.get('/action-drafts/{id}',response_model=DraftView)

@@ -7,6 +7,8 @@ interface Common<T> {
   readonly decode: Decoder<T>;
   readonly successStatus: number;
   readonly body?: unknown;
+  /** Raw single-file upload only; never multipart/filename or JSON serialization. */
+  readonly file?: Blob;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
   readonly idempotencyKey?: string;
@@ -95,8 +97,23 @@ export function createApiClient(options: Options) {
       throw new ApiFailure('invalid-request', 'not-sent');
     if (request.idempotencyKey !== undefined && !uuid(request.idempotencyKey))
       throw new ApiFailure('invalid-request', 'not-sent');
-    let body: string | undefined;
+    let body: string | Blob | undefined;
     try {
+      if (request.file !== undefined) {
+        if (
+          request.body !== undefined ||
+          method !== 'POST' ||
+          !url.startsWith('/api/v1/attachments?') ||
+          !(request.file instanceof Blob) ||
+          request.file.size < 1 ||
+          request.file.size > 5242880 ||
+          !['image/png', 'image/jpeg', 'application/pdf'].includes(
+            request.file.type,
+          )
+        )
+          throw new Error();
+        body = request.file;
+      }
       if (request.body !== undefined) {
         if (!mutation) throw new Error();
         body = JSON.stringify(request.body);
@@ -138,7 +155,11 @@ export function createApiClient(options: Options) {
       controller.abort();
     }, timeout);
     const headers = new Headers({ Accept: 'application/json' });
-    if (body !== undefined) headers.set('Content-Type', 'application/json');
+    if (body !== undefined)
+      headers.set(
+        'Content-Type',
+        typeof body === 'string' ? 'application/json' : body.type,
+      );
     if (mutation && proof !== null) headers.set('X-CSRF-Token', proof);
     if (request.idempotencyKey)
       headers.set('Idempotency-Key', request.idempotencyKey);

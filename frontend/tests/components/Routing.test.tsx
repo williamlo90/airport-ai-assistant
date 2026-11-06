@@ -171,12 +171,12 @@ describe('routing integration', () => {
     ).toBeInTheDocument();
     expect(screen.queryByText(path)).not.toBeInTheDocument();
   });
-  it('preserves a draft pointer after a fresh router load without submitting', () => {
+  it('preserves a draft pointer after a fresh router load without submitting', async () => {
     const path = '/help/submissions/11111111-1111-4111-8111-111111111111';
     const router = mount([path], { kind: 'customer' });
     expect(router.state.location.pathname).toBe(path);
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'no successful submission is being claimed',
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Request review is unavailable.',
     );
   });
   it('admin alone is not a case role', () => {

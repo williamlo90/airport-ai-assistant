@@ -13,6 +13,10 @@ from uuid import UUID,uuid4
 from email_validator import validate_email,EmailNotValidError
 
 
+class VerificationDeliveryUncertain(Exception):
+    """A provider attempt may have succeeded; no automatic resend."""
+
+
 class AuthError(Exception):
     def __init__(self,status:int,code:str,retry_after:int|None=None):
         super().__init__(code)
@@ -132,8 +136,11 @@ class AuthService:
             async with asyncio.timeout(p.delivery_timeout):
                 await self._sender.send(VerificationMessage(id,tenant,address,code,p.challenge_ttl))
         except asyncio.CancelledError:
-            await self._repository.cancel(tenant,id,self.digest("session",tenant,token))
+            # Cancellation can happen after provider acceptance. Let TTL/rate limits
+            # bound the existing challenge rather than invalidate a delivered code.
             raise
+        except (VerificationDeliveryUncertain,TimeoutError):
+            return id
         except Exception:
             await self._repository.cancel(tenant,id,self.digest("session",tenant,token))
             raise AuthError(503,"VERIFICATION_UNAVAILABLE") from None

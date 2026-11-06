@@ -28,7 +28,7 @@ def setup():
     dest=Destination(queue_id=uuid4(),organization_id=uuid4(),queue_name='Parking',organization_name='Airport',service_type='parking')
     draft=seal(Draft(uuid4(),actor.session.tenant_id,conv.id,None,actor.session.id,actor.session.id,'create_case',report(),dest,
                      displayed_summary('create_case',report(),dest,'id'),'id',1,'',now,now+timedelta(minutes=15)))
-    tx=Mock(session_active=AsyncMock(return_value=True),find=AsyncMock(return_value=conv),
+    tx=Mock(lock_draft_case=AsyncMock(),lock_draft_sources=AsyncMock(return_value=()),session_active=AsyncMock(return_value=True),find=AsyncMock(return_value=conv),
             locate_draft=AsyncMock(return_value=conv.id),find_draft=AsyncMock(return_value=draft),
             destination=AsyncMock(return_value=dest),now=AsyncMock(return_value=now),
             create_draft=AsyncMock(side_effect=lambda value:value),edit_draft=AsyncMock(side_effect=lambda value:value),
@@ -83,7 +83,7 @@ def test_terminal_draft_cannot_pass_confirmation_guard(state,status):
 
 @pytest.mark.parametrize('changes',[
     {'source_observations':[]},{'resource_security_labels':[]},{'destination_queue_id':str(uuid4())},
-    {'attachment_ids':[str(uuid4())]},{'customer_report':' \t\n'},{'summary':'\x00'},
+    {'attachment_ids':['invalid-uuid']},{'customer_report':' \t\n'},{'summary':'\x00'},
     {'summary':'x'*201},{'customer_report':'x'*4001},{'category':'refund_payment'},
 ])
 def test_report_input_cannot_inject_authority_destination_or_unimplemented_features(changes):
@@ -134,7 +134,7 @@ def test_wire_uuid_extra_claims_and_composition():
     from airport_assistant.auth_config import AuthSettings
     values=dict(conversation_id=str(uuid4()),action_type='create_case',payload=report().model_dump(mode='json'))
     assert CreateDraft.model_validate(values).payload==report()
-    for change in ({'actor_session_id':str(uuid4())},{'case_id':str(uuid4())},{'action_type':'add_case_information'}):
+    for change in ({'actor_session_id':str(uuid4())},{'case_id':'invalid-uuid'},{'action_type':'add_case_information'}):
         with pytest.raises(ValidationError):CreateDraft.model_validate({**values,**change})
     assert build_services().drafts is None
-    assert isinstance(build_services(database=Mock(),auth_settings=AuthSettings(SESSION_SECRET='k'*48)).drafts,DraftService)
+    assert isinstance(build_services(database=Mock(schema="app"),auth_settings=AuthSettings(SESSION_SECRET='k'*48)).drafts,DraftService)

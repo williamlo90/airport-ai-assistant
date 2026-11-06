@@ -40,13 +40,13 @@ SRC-01 provides an independent read-only reference API with SQLite and fictional
 
 BEHAV-01 adds durable standalone conversations, owner-scoped customer messages, concurrent retry deduplication, and versioned language changes. Message receipt confirms storage; no AI job or case is created.
 
-CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. CASE-02 adds explicit confirmation with an atomic case, consent, history, audit, outbox and idempotency receipt. This submits customer reports; live handoff, workers and email delivery follow their dedicated tasks.
+CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. CASE-02 adds explicit confirmation with an atomic case, consent, history, audit, outbox and idempotency receipt. This submits customer reports; live handoff and worker foundations are implemented in their dedicated modules; email delivery remains a separate integration.
 
 AUTH-02 atomically adopts the originating browser's anonymous history during successful verification, preserves message provenance and retry identity, invalidates pending drafts, and rotates/revokes sessions. Other browsers cannot claim history using a challenge ID or code.
 
 CASE-03 adds scoped CS/supervisor assignment, manual status and closure with immutable history, and explicit customer continuation with versioned retry handling. Customer status reads expose the recorded outcome; email delivery and live conversation handling follow their dedicated tasks.
 
-The worker remains a placeholder. AI and remaining workflows follow the task plan.
+The worker provides a restricted lease-fenced scheduler with persistent retry/recovery. Outbound notification and staff-email handlers are registered only with explicit enabled account configuration; the default leaves queues untouched. Recipient authorization is checked again before send, and provider round-trip remains a separate validation gate. Delivery reconciliation uses saved receipts through GET, exposes scoped staff review status, and never blindly repeats an uncertain send. Signed webhook events are stored before acknowledgment, and received email is staged privately pending sender verification and case threading. AI and remaining workflows follow the task plan.
 
 The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
 

@@ -1,0 +1,108 @@
+.login {
+  max-width: 480px;
+  margin: 40px auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  padding: 36px;
+}
+.login h1,
+.workspace h1 {
+  font-size: 30px;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.login p,
+.workspace p {
+  line-height: 1.65;
+  margin: 12px 0;
+}
+.form {
+  display: grid;
+  gap: 10px;
+  margin-top: 28px;
+}
+.form label {
+  font-weight: 700;
+}
+.form input,
+.workspace select {
+  width: 100%;
+  min-height: 48px;
+  border: 1px solid var(--color-control);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 10px 12px;
+  font: inherit;
+}
+.form button {
+  margin-top: 14px;
+}
+.error {
+  color: var(--color-danger);
+  padding: 12px;
+  border-left: 3px solid var(--color-danger);
+  margin: 16px 0;
+}
+.fieldError {
+  color: var(--color-danger);
+  font-size: 14px;
+}
+.workspace {
+  max-width: 960px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-panel);
+  padding: 32px;
+  overflow-wrap: anywhere;
+}
+.workspace h2 {
+  font-size: 22px;
+  margin: 24px 0 16px;
+}
+.workspace label {
+  display: block;
+  font-weight: 700;
+  margin: 20px 0 10px;
+}
+.workspace dl {
+  display: grid;
+  gap: 16px;
+  margin: 20px 0 28px;
+}
+.workspace dl > div {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 16px;
+}
+.workspace dt {
+  color: var(--color-muted);
+}
+.workspace dd {
+  margin: 0;
+}
+.actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 20px;
+}
+@media (max-width: 600px) {
+  .login {
+    padding: 24px 20px;
+    margin: 16px auto;
+  }
+  .login h1,
+  .workspace h1 {
+    font-size: 26px;
+  }
+  .workspace {
+    padding: 24px 20px;
+  }
+  .workspace dl > div {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+}

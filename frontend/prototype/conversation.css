@@ -51,6 +51,8 @@ body.conversation-page {
 }
 .topics-panel {
   padding-top: 20px;
+  max-height: calc(100dvh - 160px);
+  overflow-y: auto;
 }
 .topics-intro h2 {
   font-size: 23px;
@@ -118,7 +120,7 @@ body.conversation-page {
   border-radius: 12px;
   display: flex;
   flex-direction: column;
-  min-height: 690px;
+  min-height: 0;
   height: calc(100dvh - 160px);
   max-height: 1000px;
   overflow: hidden;
@@ -505,7 +507,7 @@ body.conversation-page {
   }
   .conversation {
     height: calc(100dvh - 136px);
-    min-height: 680px;
+    min-height: 0;
   }
   .conversation-header-inner {
     padding: 0 24px;

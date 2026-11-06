@@ -10,8 +10,49 @@ from airport_assistant.modules.identity.auth import AuthError
 from airport_assistant.modules.source.models import SourceFailure
 from airport_assistant.modules.conversations.service import ConversationError
 from airport_assistant.modules.drafts.models import DraftError
+from airport_assistant.modules.agent.models import AgentError
 
 AUTH_ERRORS={
+    "PREVIEW_EXPIRED":("This preview expired. Review the current case before confirming again.",False),
+    "SOURCE_CONTEXT_CHANGED":("The protected source context changed. Reload the current request before continuing.",False),
+    "AGENT_KNOWLEDGE_UNAVAILABLE":("Knowledge answers are unavailable. You can request staff assistance.",False),
+    "AGENT_UNAVAILABLE":("The assistant is currently unavailable.",False),
+    "AGENT_PRIVATE_UNAVAILABLE":("Booking and payment assistance is not enabled. You can request staff assistance.",False),
+    "PRIVATE_PERSISTENCE_REQUIRED":("This request needs staff assistance before it can be saved.",False),
+    "AGENT_TRANSLATION_IN_FLIGHT":("This translation was already requested. Check its draft; it will not be retried automatically.",False),
+    "AGENT_TRANSLATION_EXPIRED":("This translation draft expired. Review the latest conversation.",False),
+    "AGENT_TRANSLATION_VALUES_CHANGED":("The translation changed a reference or numeric value. Please write the reply manually.",False),
+    "AGENT_RUN_BUSY":("This assistant run is already active or changed. Check its current status.",True),
+    "AGENT_CONTEXT_LIMIT":("This request has too much context. Please clarify or contact staff.",False),
+    "AGENT_RUN_INTERRUPTED":("The assistant run was interrupted. Check its status before retrying.",True),
+    "AGENT_STEP_LIMIT":("The assistant reached its read budget. Request staff assistance.",False),
+    "AGENT_MODEL_BUSY":("The assistant is busy. Please try again shortly.",True),
+    "AGENT_MODEL_UNAVAILABLE":("The assistant is unavailable. Please try again later.",True),
+    "AGENT_INVALID_RESPONSE":("The assistant could not prepare a valid proposal.",True),
+    "AGENT_INVALID_INPUT":("Check the request details.",False),
+    "AGENT_TOOL_DENIED":("This action is not available to the assistant.",False),
+    "AGENT_CONTEXT_CHANGED":("The conversation changed. Please review the latest context.",False),
+    "EMBEDDING_BUSY":("Embedding service is busy. Try again shortly.",True),
+    "EMBEDDING_UNAVAILABLE":("Embedding service is unavailable. Try again later.",True),
+    "KNOWLEDGE_UNAVAILABLE":("Layanan pengetahuan belum tersedia.",True),
+    "KNOWLEDGE_INDEX_UNAVAILABLE":("Indeks versi ini belum siap untuk publikasi.",True),
+    "KNOWLEDGE_NOT_DRAFT":("Versi yang sudah diterbitkan tidak dapat diedit.",False),
+    "KNOWLEDGE_NOT_PUBLISHED":("Hanya versi terbit yang dapat ditarik.",False),
+    "KNOWLEDGE_AMBIGUOUS":("Cakupan versi bertentangan. Tinjau applicability dan masa berlaku.",False),
+    "KNOWLEDGE_CONFLICT":("Kunci dokumen atau versi sudah digunakan.",False),
+    "STALE_MESSAGE":("Konteks penanganan berubah. Tinjau kembali pesan sebelum mengirim.",False),
+    "MAIL_UNAVAILABLE":("Pengiriman email belum tersedia.",True),
+    "AI_PUBLICATION_BLOCKED":("Percakapan tidak menerima publikasi AI baru.",False),
+    "CHAT_NOT_WAITING":("Percakapan tidak sedang menunggu petugas.",False),
+    "CHAT_VERSION_REQUIRED":("Versi percakapan aktif perlu ditinjau sebelum tindakan.",False),
+    "CONVERSATION_ENDED":("Percakapan ini sudah berakhir.",False),
+    "CHAT_TRANSITION_UNAVAILABLE":("Perubahan kasus dengan percakapan aktif belum tersedia.",False),
+    "HANDOFF_ALREADY_REQUESTED":("Percakapan atau kasus ini sudah memiliki permintaan petugas.",False),
+    "ATTACHMENT_UNAVAILABLE":("Lampiran belum dapat diakses.",True),
+    "ATTACHMENT_SCAN_UNAVAILABLE":("Pemeriksaan keamanan file belum tersedia. File belum disimpan.",True),
+    "ATTACHMENT_REJECTED":("File tidak lolos pemeriksaan keamanan.",False),
+    "ATTACHMENT_CONFLICT":("ID lampiran sudah dipakai.",False),
+    "ATTACHMENT_LIMIT":("Maksimal tiga lampiran per pengajuan.",False),
     "STAFF_LOGIN_FAILED":("Login staf tidak berhasil. Periksa kredensial atau hubungi administrator.",False),
     "CSRF_REQUIRED":("Permintaan harus berasal dari browser dan sesi yang sah.",False),
     "VERIFICATION_FAILED":("Verifikasi tidak dapat diselesaikan. Periksa kode atau minta kode baru.",False),
@@ -66,6 +107,10 @@ def error_response(status: int, request_id: str, headers: dict | None = None, *,
 
 
 def install_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(AgentError)
+    async def agent_error(request:Request,exc:AgentError):
+        return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code)
+
     @app.exception_handler(DraftError)
     async def draft_error(request:Request,exc:DraftError):
         return error_response(exc.status,request.state.request_id,{'Cache-Control':'no-store'},auth_code=exc.code,result_ref=exc.result_ref)

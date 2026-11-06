@@ -1,0 +1,20 @@
+{
+  "schema": 1,
+  "platform": "linux/amd64",
+  "migration_head": "0038_staff_administration",
+  "images": {
+    "backend": {
+      "dockerfile": "deploy/containers/backend.Dockerfile"
+    },
+    "frontend": {
+      "dockerfile": "deploy/containers/frontend.Dockerfile"
+    },
+    "reference": {
+      "dockerfile": "deploy/containers/reference.Dockerfile"
+    }
+  },
+  "maximum_parallel_builds": 1,
+  "builder_memory": "1536m",
+  "builder_cpus": "1",
+  "deployment_authorized": false
+}
