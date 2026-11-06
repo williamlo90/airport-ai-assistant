@@ -12,6 +12,8 @@ concurrency:
   cancel-in-progress: false
 jobs:
   package:
+    if: >-
+      ${{ !(github.event_name == 'push' && github.ref == 'refs/heads/feature/release-package' && startsWith(github.event.head_commit.message, 'ci: verify captured release evidence')) }}
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
@@ -62,6 +64,7 @@ jobs:
           uv sync --project backend --locked --no-editable
           backend/.venv/bin/python -m pytest backend/tests/unit/test_release_entrypoints.py backend/tests/unit/test_bootstrap.py backend/tests/unit/test_migrations.py -q
           backend/.venv/bin/python scripts/release/package.py check
+          python -m unittest discover -s scripts/release -p test_verify_image_evidence.py
       - name: Locked reference package
         run: |
           uv sync --project reference_service --locked --no-dev --no-editable
@@ -145,17 +148,7 @@ jobs:
           git diff --exit-code
           docker image inspect westbridge-backend:release-candidate westbridge-frontend:release-candidate westbridge-reference:release-candidate > local/release/images-inspected.json
           cleanup
-          python - <<'PY'
-          import json,os
-          from pathlib import Path
-          out=Path('local/release');images=json.loads((out/'images-inspected.json').read_text())
-          assert json.loads((out/'cleanup.json').read_text())['owned_resources_removed'] is True
-          for role,image in zip(('backend','frontend','reference'),images):
-              assert image['Config']['User']==('101:101' if role=='frontend' else '10001:10001')
-              meta=json.loads((out/(role+'.json')).read_text())
-              assert meta['containerimage.config.digest']==image['Id']
-          (out/'qualification.json').write_text(json.dumps({'passed':True,'commit':os.environ['GITHUB_SHA'],'physical_images':3,'serial_builder':True,'application_deployment':False,'provider_calls':0,'emails_sent':0,'cleanup_accepted':True}))
-          PY
+          python scripts/release/verify_image_evidence.py local/release
           trap - EXIT INT TERM
       - name: Preserve release evidence
         if: always()
@@ -164,4 +157,63 @@ jobs:
           name: release-package-evidence
           path: local/release/
           if-no-files-found: error
+          retention-days: 3
+  verify-captured-images:
+    if: >-
+      ${{ github.event_name == 'push' && github.ref == 'refs/heads/feature/release-package' && startsWith(github.event.head_commit.message, 'ci: verify captured release evidence') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.13'
+      - name: Verify captured image evidence only
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [ "$(git rev-parse HEAD)" = "$GITHUB_SHA" ]
+          [ "$(git rev-parse HEAD^)" = c6c179a1b40839a2941fbbb8bc5eb0b79bd0b79b ]
+          printf '* -text\n' > .git/info/attributes
+          git -c core.autocrlf=false checkout-index --all --force
+          mkdir -p local/captured
+          # Read-only token, exact original repository/run/artifact. No application secrets.
+          gh api repos/williamlo90/airport-ai-assistant/actions/artifacts/13510277151 > local/artifact-origin.json
+          python - <<'PY'
+          import json
+          x=json.load(open('local/artifact-origin.json'))
+          assert x['id']==13510277151 and x['workflow_run']['id']==42232675785
+          assert x['workflow_run']['repository_id']==1442738390 and x['workflow_run']['head_sha']=='c6c179a1b40839a2941fbbb8bc5eb0b79bd0b79b'
+          assert not x['expired'] and x['size_in_bytes']<=1000000
+          assert x['digest']=='sha256:83dc52a8de9c5f5762b01b86c0ea16074a3cd28c8212949bf739f31b208c8f88'
+          PY
+          gh api repos/williamlo90/airport-ai-assistant/actions/artifacts/13510277151/zip > local/original-evidence.zip
+          echo '83dc52a8de9c5f5762b01b86c0ea16074a3cd28c8212949bf739f31b208c8f88  local/original-evidence.zip' | sha256sum --check
+          python - <<'PY'
+          import hashlib,zipfile
+          from pathlib import Path
+          out=Path('local/captured')
+          expected={'backend.json','frontend.json','reference.json','builder-limits.json','images-inspected.json','cleanup.json','source-provenance.json','base.yaml','migration.yaml'}
+          with zipfile.ZipFile('local/original-evidence.zip') as z:
+              assert set(z.namelist())==expected and len(z.infolist())==9
+              assert sum(f.file_size for f in z.infolist())<=2000000
+              for name in expected:(out/name).write_bytes(z.read(name))
+          assert hashlib.sha256((out/'source-provenance.json').read_bytes()).hexdigest()=='e4e79d7b9a6880b212fb3d929721ea60bce23369bf67e60b60e90312f7971630'
+          PY
+          python -m unittest discover -s scripts/release -p test_verify_image_evidence.py
+          python scripts/release/verify_image_evidence.py local/captured --reuse
+          git diff --exit-code
+      - name: Preserve corrected qualification
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-package-verified-evidence
+          path: local/captured/
           retention-days: 3
