@@ -27,14 +27,12 @@ what to inspect. No frontend installation, environment file, database, or provid
 - Inspect uncertain responses, retry recovery, case history, and same-issue follow-up.
 - Use the available preview controls to explore alternative local states.
 
-Pages use independent synthetic fixtures and scripted responses. They do not authenticate
-users, contact a model, query bookings, send email, or create real cases. Preview references
-and receipts are illustrative. The React application has its own [setup guide](../README.md).
+Use the preview controls to explore conversation, review, and case states. The React
+application has its own [setup guide](../README.md).
 
 ## Asset provenance
 
-Westbridge Airport is fictional. The terminal artwork was generated for this project and
-does not depict a named real airport. The SVG logo and icons were authored for the project.
+The terminal artwork, SVG logo, and icons were created for the project.
 
 Tuffy is served locally. Its bundled [author's license statement](assets/fonts/LICENSE.txt)
 records the font's public-domain dedication and fallback permission. The original font source

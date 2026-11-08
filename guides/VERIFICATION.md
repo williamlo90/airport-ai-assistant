@@ -35,7 +35,7 @@ uv sync --locked --project reference_service
 uv run --locked --project reference_service pytest reference_service/tests
 ```
 
-The suite uses synthetic source data and temporary local resources. It needs no airport vendor
+The suite uses reference records and temporary local resources. It needs no airport vendor
 or model-provider credentials.
 
 ## Frontend checks

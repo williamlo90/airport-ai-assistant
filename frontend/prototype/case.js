@@ -81,7 +81,7 @@ let explanation = '',
 const copy = {
   en: {
     back: 'Request receipt',
-    preview: 'Design preview · Fictional case · No request is sent',
+    preview: 'Design preview',
     state: 'Preview state',
     outcome: 'Sample send result',
     lookup: 'Sample status check',
@@ -197,7 +197,7 @@ const copy = {
   },
   id: {
     back: 'Bukti pengajuan',
-    preview: 'Pratinjau desain · Kasus fiktif · Tidak ada pengiriman',
+    preview: 'Pratinjau desain',
     state: 'Kondisi contoh',
     outcome: 'Hasil pengiriman contoh',
     lookup: 'Pengecekan status contoh',

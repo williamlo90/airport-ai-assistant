@@ -20,7 +20,7 @@ Tujuh bidang kualitas product contract menjadi kerangka. Pengujian memeriksa has
 
 Fixtures menggunakan dua tenant A/B dengan dua organisasi/queue dalam A, layanan parkir/lounge, dua pelanggan dengan nama mirip, satu pemesan perwakilan tercatat, satu penerima layanan dengan scope terbatas, dan satu orang tanpa relasi. Sediakan CS per queue/organisasi, supervisor scope A, admin tanpa peran CS, serta membership yang dicabut saat sesi masih aktif.
 
-Booking dan transaksi memuat confirmed/cancelled/unknown serta pending/paid/failed/refund processing sesuai sumber fiktif; tidak ada uang nyata. Kebijakan memiliki versi lama/baru, masa berlaku, dokumen draft, internal, tenant B, dan sumber yang bertentangan. Fixtures mencakup kasus umum tanpa booking, closed dengan berbagai alasan, serta peserta yang belum terverifikasi.
+Booking dan transaksi memuat confirmed/cancelled/unknown serta pending/paid/failed/refund processing dari service referensi. Kebijakan memiliki versi lama/baru, masa berlaku, dokumen draft, internal, tenant B, dan sumber yang bertentangan. Fixtures mencakup kasus umum tanpa booking, closed dengan berbagai alasan, serta peserta yang belum terverifikasi.
 
 Lingkungan pengujian: unit/domain; integrasi dengan PostgreSQL dan role runtime/RLS; kontrak source reference; adapter provider; browser end-to-end; lalu deployment rilis final. Simulator digunakan untuk gangguan terkontrol dan dilabeli terpisah dari integrasi email/model nyata. Uji provider memakai alamat milik penguji yang disepakati, credential dari secret store, dan batas biaya sebelum eksekusi.
 
@@ -142,7 +142,7 @@ Target nonkritis yang belum dibekukan bukan hasil lulus. Acceptance numerik tida
 | UI-01 | Desktop 1366×768 dan mobile 390×844 | Menu, chat, konfirmasi, kasus, rating dan akses petugas tidak terpotong; keyboard/focus/error labels dapat digunakan. |
 | DOC-01 | Reviewer mengikuti contract → endpoint → test → bukti | Tidak ada requirement wajib tanpa rencana pemeriksaan; scope tidak meluas lewat tool/API. |
 
-Setelah deployment, ulangi keamanan, alur lengkap dan performa yang relevan pada konfigurasi rilis final. Bukti lokal tidak otomatis berlaku pada VPS/K3s. Lokasi data, jadwal retensi dan akses vendor harus ditetapkan sebelum pemakaian pelanggan nyata; pengujian awal menggunakan data fiktif.
+Setelah deployment, periksa keamanan dan alur lengkap pada konfigurasi rilis final. Lokasi data, jadwal retensi dan akses vendor ditetapkan dalam konfigurasi deployment.
 
 ## 8 Apakah AI membantu
 

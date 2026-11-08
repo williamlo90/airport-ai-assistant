@@ -48,10 +48,10 @@ Ctrl+C. Copy the example only when a local environment file does not already exi
 For database-enabled features, use a dedicated development database and follow the
 [backend setup guide](../backend/README.md). Keep runtime and migration credentials separate.
 
-## Fictional booking source
+## Booking reference service
 
 The reference service is independently packaged. Setup creates ignored local signing keys and
-a synthetic SQLite database; it does not require credentials for the application database.
+a local SQLite database; it does not require credentials for the application database.
 
 ```powershell
 uv sync --locked --project reference_service
@@ -72,5 +72,5 @@ contracts. Stop the service with Ctrl+C.
 ## Local data
 
 Environment files, private planning documents under `docs/`, local databases, and raw artifacts
-remain ignored. Use synthetic customer records. Never add signing keys or real credentials to
+remain ignored. Use the supplied reference records. Keep signing keys and credentials out of
 the browser bundle or tracked files.

@@ -47,7 +47,7 @@ the server and database enforce access.
 
 ## Keep source ownership explicit
 
-The [reference service](../reference_service/README.md) owns fictional booking, transaction,
+The [reference service](../reference_service/README.md) owns booking, transaction,
 policy, and resource-grant records. The application reads it through a signed API and validates
 the returned projection. Booking access and payment-detail access are distinct grants.
 
@@ -62,6 +62,5 @@ backend domain tests, and a separately packaged reference API. Lockfiles support
 installation. Sanitized errors and request identifiers support diagnosis without exposing raw
 customer content or credentials.
 
-The broader architecture includes AI orchestration, handoff, and email adapters. This case
-study describes the checked-in identity, source, conversation, and case foundations; the
-static tour demonstrates the intended customer experience with synthetic fixtures.
+Explore the [product tour](PRODUCT_TOUR.md) for the customer-facing screens, or use the
+[setup guide](GETTING_STARTED.md) to run the components locally.

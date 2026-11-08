@@ -1,6 +1,6 @@
 # Airport Reference Source — SRC-01
 
-Service sumber mandiri untuk data fiktif bandara. Ada booking parkir/lounge, catatan transaksi, kebijakan versi lama/baru dan relasi pengguna. API hanya membaca; tidak membuat booking, menerima pembayaran, mengeksekusi refund atau memberikan kuasa.
+Service sumber mandiri untuk data referensi bandara. Ada booking parkir/lounge, catatan transaksi, kebijakan versi lama/baru dan relasi pengguna. API hanya membaca; tidak membuat booking, menerima pembayaran, mengeksekusi refund atau memberikan kuasa.
 
 Service ini mempunyai package Python, dependency lock, SQLite dan tes sendiri. Tidak mengimpor backend asisten, tidak memakai credential Neon, dan tidak mengubah database aplikasi. SQLite dipilih untuk sumber referensi yang ringan. Integrasi backend ke API ini adalah SRC-02; pemeriksaan grants dan security labels di sisi aplikasi adalah SRC-03A/B.
 
@@ -26,7 +26,7 @@ uv run --locked --project reference_service airport-reference-demo transaction T
 uv run --locked --project reference_service airport-reference-demo booking PK-A-001 --subject outsider
 ```
 
-Tiga perintah pertama memberi HTTP200; outsider memberi404 dan exit1. Demo bukan endpoint bypass: ia memuat key lokal secara internal dan memakai protokol autentikasi normal. Pilihan aktor hanya untuk dataset fiktif lokal. URL tujuan tetap127.0.0.1 dengan port lokal; proxy environment dan redirect dimatikan agar credential tidak diteruskan ke tujuan lain. Jangan menaruh signer/key pada browser atau model.
+Tiga perintah pertama memberi HTTP200; outsider memberi404 dan exit1. Client memuat key lokal secara internal dan memakai protokol autentikasi normal. Pilihan aktor mengikuti dataset referensi. URL tujuan tetap127.0.0.1 dengan port lokal; proxy environment dan redirect dimatikan agar credential tidak diteruskan ke tujuan lain. Jangan menaruh signer/key pada browser atau model.
 
 Hentikan API dengan Ctrl+C. Jika uv belum tersedia pada PATH di workspace ini, interpreter yang sudah disiapkan juga dapat dipakai:
 
@@ -46,7 +46,7 @@ Hentikan API dengan Ctrl+C. Jika uv belum tersedia pada PATH di workspace ini, i
 | Kebijakan | parking-v2/v3 dan lounge-v2/v3; booking merujuk v2, tidak otomatis memilih v3. |
 | Subject per tenant | owner, representative, beneficiary, payer, outsider. Reference ini belum dihubungkan ke principal aplikasi; mapping dilakukan saat SRC-02. |
 
-Total fixture:2tenant,10subject,4booking,6transaksi,8versi kebijakan dan30relasi. Semua fiktif; tidak ada API payment gateway atau data pelanggan nyata.
+Dataset menyediakan booking, transaksi, versi kebijakan, dan relasi akses untuk tiap tenant.
 
 | Subject | Booking | Transaksi |
 | --- | --- | --- |
@@ -111,6 +111,6 @@ Setup biasa idempotent dan mempertahankan database/key yang sudah ada. Reset eks
 uv run --locked --project reference_service pytest reference_service/tests -q
 ```
 
-Tes memakai file sementara dan key fiktif, tanpa provider/Neon. Mencakup ACL/field projection, tenant collision, status unknown, versi policy, grant revoke, cursor, signature/path/query/time, seeding atomic/readonly, setup tanpa secret output dan TCP normal+demo. Server tes selalu dihentikan. Scope SRC-02 belum diuji karena konektor backend belum dibuat.
+Tes memakai file sementara dan key pengujian. Mencakup ACL/field projection, tenant collision, status unknown, versi policy, grant revoke, cursor, signature/path/query/time, seeding atomic/readonly, setup tanpa secret output dan TCP normal+client demo. Server tes selalu dihentikan.
 
 Rujukan storage: [SQLite URI readonly](https://www.sqlite.org/uri.html), [SQLite isolation](https://www.sqlite.org/isolation.html).

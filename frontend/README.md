@@ -4,7 +4,7 @@
 
 React, TypeScript, and Vite provide the customer shell, bilingual interface labels, shared
 components, and routing foundations. The independently runnable
-[design preview](prototype/README.md) presents the customer journey with synthetic scenarios.
+[design preview](prototype/README.md) presents the customer journey.
 
 ## Run
 
@@ -66,6 +66,5 @@ Stop with Ctrl+C. This command serves the build for local inspection.
 The scaffold disables environment-file loading in Vite and Vitest. It can be reviewed without
 database credentials or paid services. Keep credentials out of browser configuration.
 
-Westbridge Airport is fictional. The terminal artwork was generated for this project, and
-the locally served Tuffy font retains its [license statement](public/assets/fonts/LICENSE.txt).
+The locally served Tuffy font retains its [license statement](public/assets/fonts/LICENSE.txt).
 Private design notes and runtime artifacts stay outside tracked source.

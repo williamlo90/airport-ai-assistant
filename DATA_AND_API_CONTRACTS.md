@@ -66,7 +66,7 @@ Rating awal memakai integer 1–5 dengan label bahasa UI, opsional tanpa nilai d
 
 ## 3 Kontrak source reference API
 
-Service referensi memiliki dataset fiktif dan storage terpisah dari schema bisnis aplikasi. API hanya menerima credential service baca dan konteks caller yang ditandatangani/ditetapkan backend; header identitas publik tidak diterima langsung. Sumber memeriksa tenant dan grants aktor di setiap endpoint. Otorisasi aplikasi tetap dilakukan sebelum data ditampilkan.
+Service referensi memiliki dataset dan storage terpisah dari schema bisnis aplikasi. API hanya menerima credential service baca dan konteks caller yang ditandatangani/ditetapkan backend; header identitas publik tidak diterima langsung. Sumber memeriksa tenant dan grants aktor di setiap endpoint. Otorisasi aplikasi tetap dilakukan sebelum data ditampilkan.
 
 | Endpoint internal sumber | Hasil |
 | --- | --- |
@@ -86,7 +86,7 @@ Transaksi mengembalikan reference, booking_reference, currency, amount_minor, cu
 
 ### Perincian SRC-01 yang executable
 
-Service mandiri reference_service menyediakan lima endpoint GET di atas, dengan SQLite read-only terpisah dan fixture fiktif. Credential Bearer dan konteks signed HMAC singkat diperlukan bersamaan; konteks tenant/subject ditetapkan backend. Protokol byte, TTL/replay, pagination dan demo client ada pada [reference source guide](reference_service/README.md). Header identitas publik tidak menjadi caller.
+Service mandiri reference_service menyediakan lima endpoint GET di atas, dengan SQLite read-only terpisah dan fixture referensi. Credential Bearer dan konteks signed HMAC singkat diperlukan bersamaan; konteks tenant/subject ditetapkan backend. Protokol byte, TTL/replay, pagination dan demo client ada pada [reference source guide](reference_service/README.md). Header identitas publik tidak menjadi caller.
 
 Grant booking:read tidak memberi payment read. Transaksi minimal membutuhkan payment_status:read; currency/amount_minor/currency_exponent/refund_status hanya ada dengan payment_details:read. booking_reference pada transaksi hanya ditampilkan jika booking juga berhak dibaca. List melalui booking membutuhkan booking grant dan menyaring setiap transaksi sebelum pagination. Policy hanya versi persis dari booking berhak; relasi hanya milik subject caller. List memakai items,next_cursor dengan default20/maksimum100, cursor signed dan terikat tenant/subject/filter/limit/generation dataset. Unknown status tetap unknown; tidak ada URL instruksi pembayaran pada fixture ini.
 
@@ -276,7 +276,7 @@ POST /attachments menyediakan upload privat untuk sesi berhak; hasil id,byte_siz
 
 Allowlist: search_knowledge, read_booking, read_transaction_status, read_case, prepare_action_draft. Aktor/tenant diberikan backend di luar argumen model. Model tidak mendapat execute_sql, arbitrary_http, send_email, confirm_action, close_case, grant_access atau payment tools. Update status bisnis tidak tersedia melalui tool.
 
-Setiap hasil menyertakan source_kind,observed_at,allowed_fields dan error terstruktur. Budget tool loop mencegah pemanggilan tanpa batas; kegagalan tidak menghasilkan status fiktif. Retrieval dan tool results diperlakukan sebagai data, bukan instruksi.
+Setiap hasil menyertakan source_kind,observed_at,allowed_fields dan error terstruktur. Budget tool loop mencegah pemanggilan tanpa batas; kegagalan dilaporkan sebagai error terstruktur. Retrieval dan tool results diperlakukan sebagai data, bukan instruksi.
 
 ## 11 Ketertelusuran
 

@@ -155,7 +155,7 @@ Trace menghubungkan request, conversation, action, case, job dan provider receip
 
 Metrik: latency per tahap, error, penggunaan token, perkiraan biaya, kedalaman/umur antrean, retry, delivery_unknown, handoff dan penolakan akses. Rating adalah umpan balik opsional, bukan status penyelesaian.
 
-Retensi ditetapkan per kelas data dan tenant melalui konfigurasi administratif teknis; penghapusan mencakup pesan, checkpoint, embedding, blob dan cache. Backup mengikuti masa retensinya dan prosedur penghapusan ulang setelah restore. Deployment portfolio memakai data fiktif dan akun pengujian; data pelanggan nyata hanya digunakan setelah lokasi pemrosesan, retensi, akses vendor dan kebutuhan pelanggan disepakati. Ini bukan klaim sertifikasi.
+Retensi ditetapkan per kelas data dan tenant melalui konfigurasi administratif teknis; penghapusan mencakup pesan, checkpoint, embedding, blob dan cache. Backup mengikuti masa retensinya dan prosedur penghapusan ulang setelah restore. Konfigurasi deployment menetapkan lokasi pemrosesan, retensi, dan akses vendor.
 
 Backup database dan blob disimpan dengan akses terpisah. Restore dilakukan ke lingkungan terisolasi dengan email outbound dinonaktifkan dan job dikarantina; kiriman lama tidak diputar ulang. Uji restore memeriksa tenant, riwayat serta cursor pesan, bukan hanya keberhasilan impor database.
 

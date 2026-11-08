@@ -1,130 +1,107 @@
 # Airport AI Assistant
 
-A bilingual customer service workspace for airport passengers and support teams.
+Bilingual airport support for passenger questions, booking assistance, and customer cases.
 
-Airport AI Assistant brings airport guidance, authorized booking information, and customer
-case handling into a clear support journey. Customers can explain an issue, review a request
-before submitting it, and follow its resolution. Staff work within explicit organization,
-queue, and role boundaries.
+Find guidance, explain an issue, review a support request, and keep track of what happens next.
+Airport AI Assistant brings that journey together with English and Indonesian interfaces,
+authorized booking access, and structured case handling.
 
-> From a passenger's question to a confirmed, traceable support case.
+[Product tour](guides/PRODUCT_TOUR.md) · [Engineering](guides/CASE_STUDY.md) · [Run locally](guides/GETTING_STARTED.md)
 
-[Product walkthrough](guides/PRODUCT_TOUR.md) | [Engineering case study](guides/CASE_STUDY.md) | [Run locally](guides/GETTING_STARTED.md)
+![Airport AI Assistant homepage](guides/images/home.jpg)
 
-![Illustrative terminal artwork for the fictional Westbridge Airport](frontend/prototype/assets/airport-terminal.png)
+## The Experience
 
-Westbridge Airport is a fictional demonstration brand. The image is original generated artwork;
-the visual walkthrough uses synthetic scenarios.
+- **Find help:** search guides or choose airport information, booking support, payment issues,
+  or contact support.
+- **Keep the context:** guided conversations retain the customer's report as the issue develops.
+- **Review the request:** check the report, references, contact details, and destination before
+  confirming submission.
+- **Follow the case:** inspect status, handling results, and history; request further help on
+  the same issue.
+- **Switch languages:** move between English and Indonesian while keeping original messages
+  as written.
 
-## What the Product Does
+<table>
+  <tr>
+    <td width="50%">
+      <a href="guides/images/conversation.jpg"><img src="guides/images/conversation.jpg" alt="Booking support conversation"></a><br>
+      <strong>Guided support</strong><br>
+      Clarify the issue and find the next step.
+    </td>
+    <td width="50%">
+      <a href="guides/images/case-details.jpg"><img src="guides/images/case-details.jpg" alt="Customer case details and handling result"></a><br>
+      <strong>Case follow-up</strong><br>
+      Keep the outcome and next action visible.
+    </td>
+  </tr>
+</table>
 
-- **Airport guidance:** English and Indonesian navigation for information, booking help,
-  transaction questions, and contacting support.
-- **Authorized source access:** read-only parking and lounge booking information, transaction
-  projections, and the policy version associated with a booking.
-- **Review before submission:** editable drafts and explicit customer confirmation before a
-  support case is recorded.
-- **Traceable case handling:** staff assignment, status changes, closure, and customer follow-up
-  preserve the history of the same issue.
-- **Scoped workspaces:** customer, customer service, supervisor, and administrator access is
-  checked against tenant and resource ownership.
+[See the request review and complete screen tour →](guides/PRODUCT_TOUR.md)
 
-## Customer Journey
+## How It Works
 
 ```text
-Choose a help topic -> Explain the issue -> Verify contact
-                   -> Review the request -> Confirm submission
-                   -> Track the case -> Review the outcome or request further help
+Help topic → Conversation → Contact verification → Request review
+           → Confirmed case → Staff handling → Customer follow-up
 ```
 
-The [design walkthrough](guides/PRODUCT_TOUR.md) makes this journey inspectable without
-credentials. Its static pages demonstrate interactions with local fixtures. The modular backend
-separately implements identity, durable conversations, confirmed case submission, and case
-lifecycle rules; the static preview does not submit real cases.
+The customer preview presents the screen flow. The backend handles identity, conversations,
+request confirmation, and case transitions. A separate reference API supplies booking,
+transaction, and policy records through authorized read access.
 
-## Engineering Highlights
+## Built With
 
-| Concern            | Implementation                                                                                                                                              |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Domain boundaries  | FastAPI routes, business services, persistence, and provider adapters have separate responsibilities; an executable import guard checks their dependencies. |
-| Tenant isolation   | PostgreSQL row-level security, restricted runtime roles, tenant-aware keys, and transaction-local identity context.                                         |
-| Identity           | Browser-bound email verification, session rotation, CSRF protection, and separate staff password authentication.                                            |
-| Confirmed actions  | Session-bound drafts, canonical request hashes, explicit confirmation, and atomic case/history/audit/outbox records.                                        |
-| Reliable retries   | Stable idempotency receipts and version checks protect conversations and case transitions from duplicate mutations.                                         |
-| Source integration | A separate signed reference API, explicit resource grants, validated responses, and immutable security labels.                                              |
-| Data handling      | Synthetic fixtures, redacted errors, controlled request identifiers, and ignored local credentials and artifacts.                                           |
+| Layer         | Stack                                              |
+| ------------- | -------------------------------------------------- |
+| Frontend      | React, TypeScript, Vite                            |
+| Backend       | Python, FastAPI, Pydantic                          |
+| Database      | Neon PostgreSQL, Psycopg, Alembic                  |
+| Reference API | FastAPI, SQLite, signed requests                   |
+| Checks        | Pytest, Vitest, TypeScript, ESLint, GitHub Actions |
 
-## Architecture
+## Engineering
 
-```mermaid
-flowchart LR
-    CUSTOMER[Customer browser] --> API[FastAPI application]
-    STAFF[Staff browser] --> API
-    API --> IDENTITY[Identity and access]
-    API --> CONVERSATION[Conversations]
-    API --> CASES[Confirmed support cases]
-    IDENTITY --> DB[(Neon PostgreSQL)]
-    CONVERSATION --> DB
-    CASES --> DB
-    API --> ADAPTER[Authorized source adapter]
-    ADAPTER --> SOURCE[Signed reference API]
-    SOURCE --> FIXTURES[(Synthetic source data)]
-```
+- **Modular services:** routes, domain rules, persistence, and integration adapters have clear
+  responsibilities, checked by an executable dependency guard.
+- **Scoped access:** tenant isolation, PostgreSQL row-level security, resource grants, and
+  separate customer and staff authentication.
+- **Explicit confirmation:** session-bound drafts and atomic case submission preserve consent,
+  history, and audit records.
+- **Reliable retries:** idempotency receipts and version checks protect against duplicate
+  messages and case updates.
+- **Source-aware responses:** booking access, payment details, and policy versions retain their
+  own access rules and provenance.
 
-The frontend uses React, TypeScript, and Vite. The backend uses Python, FastAPI, Psycopg, and
-Alembic. Business logic stays in a modular application; the independent reference service
-supplies fictional booking and transaction data through a read-only integration boundary.
+[Read the engineering case study →](guides/CASE_STUDY.md)
 
-See the [engineering case study](guides/CASE_STUDY.md) for the design decisions and
-[architecture specification](ARCHITECTURE.md) for the broader system design.
+## Try It
 
-## Explore Locally
-
-Preview the customer journey with Python alone:
+From the repository root:
 
 ```powershell
-git clone https://github.com/williamlo90/airport-ai-assistant.git
-cd airport-ai-assistant
 python -m http.server 4173 --bind 127.0.0.1 --directory frontend/prototype
 ```
 
-Open [the local design preview](http://127.0.0.1:4173). Stop the server with Ctrl+C.
+Open [the customer preview](http://127.0.0.1:4173). Stop with Ctrl+C.
 
-For the React application, API bootstrap, and reference-service setup, follow
-[Getting started](guides/GETTING_STARTED.md). Dependency lockfiles accompany each application.
-
-## Review and Verification
-
-The repository includes backend unit and domain-boundary tests, opt-in PostgreSQL integration
-tests, reference-service tests, and frontend component tests. Review instructions distinguish
-the credential-free path from database-connected verification.
-
-The [quality gate](.github/workflows/quality-gate.yml) checks repository documentation on pull
-requests or manual dispatch. Credential-free application checks are an explicit manual option.
-Tests execute in a bounded sequence; local resource rules are documented in the
-[verification guide](guides/VERIFICATION.md).
+For the React application, backend, and reference service, use the
+[setup guide](guides/GETTING_STARTED.md).
 
 ## Documentation
 
-| Read                                                | Purpose                                                                |
-| --------------------------------------------------- | ---------------------------------------------------------------------- |
-| [Guide index](guides/README.md)                     | Find product, engineering, and setup material.                         |
-| [Product tour](guides/PRODUCT_TOUR.md)              | Inspect the customer journey using the static preview.                 |
-| [Engineering case study](guides/CASE_STUDY.md)      | Understand domain boundaries, security, and reliable case transitions. |
-| [Getting started](guides/GETTING_STARTED.md)        | Run the preview and application components.                            |
-| [Verification](guides/VERIFICATION.md)              | Run appropriate checks without paid services.                          |
-| [Product contract](PRODUCT_CONTRACT.md)             | Product scope and business rules.                                      |
-| [Architecture](ARCHITECTURE.md)                     | Detailed system design and integration direction.                      |
-| [Data and API contracts](DATA_AND_API_CONTRACTS.md) | Data ownership, confirmation, and state transitions.                   |
-| [Test plan](TEST_PLAN.md)                           | Verification scenarios and acceptance requirements.                    |
+- [Product tour](guides/PRODUCT_TOUR.md)
+- [Engineering case study](guides/CASE_STUDY.md)
+- [Setup](guides/GETTING_STARTED.md) and [verification](guides/VERIFICATION.md)
+- [Product contract](PRODUCT_CONTRACT.md)
+- [Architecture](ARCHITECTURE.md)
+- [Data and API contracts](DATA_AND_API_CONTRACTS.md)
+- [Test plan](TEST_PLAN.md)
 
-The product and architecture contracts describe both implemented behavior and planned
-capabilities. AI orchestration, live staff handoff, and email delivery belong to the broader
-design; the preview uses local scripted responses. Source integration uses fictional data.
-Booking creation, payment processing, and refund execution are outside the product scope.
+The [GitHub quality gate](.github/workflows/quality-gate.yml) checks documentation on pull
+requests and manual dispatch. Application checks are available as a manual option.
 
 ## Source Use
 
-Copyright (c) 2026 williamlo90. All rights reserved. This repository is available for portfolio
-review; the [source-use notice](LICENSE) does not grant permission to reuse, modify, or
-redistribute the original source code. Third-party assets retain their own terms.
+Copyright (c) 2026 williamlo90. All rights reserved. See [LICENSE](LICENSE).
+Third-party dependencies and assets retain their own terms.
