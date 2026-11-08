@@ -1,72 +1,130 @@
 # Airport AI Assistant
 
-A multilingual customer service assistant for airport visitors and passengers. It combines guided support, AI-assisted conversations, and human handoff for information requests and issues involving existing parking and lounge bookings.
+A bilingual customer service workspace for airport passengers and support teams.
 
-## Product scope
+Airport AI Assistant brings airport guidance, authorized booking information, and customer
+case handling into a clear support journey. Customers can explain an issue, review a request
+before submitting it, and follow its resolution. Staff work within explicit organization,
+queue, and role boundaries.
 
-- Airport information in Indonesian and English.
-- Read-only access to authorized booking and transaction data.
-- Confirmed submission and tracking of support cases.
-- Staff chat and direct email follow-up on the same case.
-- Tenant isolation and role-based access for customers, customer service, supervisors, and administrators.
+> From a passenger's question to a confirmed, traceable support case.
 
-Booking creation, payment processing, refund execution, and delegation management are outside the MVP.
+[Product walkthrough](guides/PRODUCT_TOUR.md) | [Engineering case study](guides/CASE_STUDY.md) | [Run locally](guides/GETTING_STARTED.md)
 
-## Project documents
+![Illustrative terminal artwork for the fictional Westbridge Airport](frontend/prototype/assets/airport-terminal.png)
 
-| Document | Purpose |
-| --- | --- |
-| [Product contract](PRODUCT_CONTRACT.md) | User needs, scope, business rules, and quality requirements. |
-| [Architecture](ARCHITECTURE.md) | System boundaries, data flows, access controls, and deployment design. |
-| [Data and API contracts](DATA_AND_API_CONTRACTS.md) | Domain entities, API behavior, confirmation, and state transitions. |
-| [Test plan](TEST_PLAN.md) | Planned verification, acceptance gates, and evidence requirements. |
-| [Customer design preview](frontend/prototype/README.md) | Run the Sydney-inspired homepage and conversation prototype; Tuffy font, bilingual guides, clarification, and support context. |
-| [Frontend setup](frontend/README.md) | React/TypeScript/Vite bootstrap, pinned tooling, local development, and executable checks. |
-| [Reference source](reference_service/README.md) | Standalone source setup, signed API protocol, fictional actors/data, demo client, and tests. |
+Westbridge Airport is a fictional demonstration brand. The image is original generated artwork;
+the visual walkthrough uses synthetic scenarios.
 
-## Implementation status
+## What the Product Does
 
-The React frontend includes public host configuration, English/Indonesian labels, and shared Tuffy/Sydney components with an isolated development preview. Installation, strict typechecking, linting, component tests, and static production builds are executable. The approved customer screens remain a separate visual prototype while page ports, routing, authentication, and API integration are implemented.
+- **Airport guidance:** English and Indonesian navigation for information, booking help,
+  transaction questions, and contacting support.
+- **Authorized source access:** read-only parking and lounge booking information, transaction
+  projections, and the policy version associated with a booking.
+- **Review before submission:** editable drafts and explicit customer confirmation before a
+  support case is recorded.
+- **Traceable case handling:** staff assignment, status changes, closure, and customer follow-up
+  preserve the history of the same issue.
+- **Scoped workspaces:** customer, customer service, supervisor, and administrator access is
+  checked against tenant and resource ownership.
 
-The backend provides a FastAPI bootstrap with structured errors, request IDs, input limits, service wiring, and executable module boundaries (BE-01–03). Neon PostgreSQL connections, versioned migrations, restricted runtime roles, forced tenant/identity RLS, and guarded populated upgrades are implemented (DB-01–04). See [backend setup](backend/README.md) for installation and commands.
+## Customer Journey
 
-AUTH-01 adds anonymous/customer sessions, browser-bound email challenges, atomic verification and token rotation, logout, persistent rate limits, and HTTPS cookie/CSRF protection. Email challenge delivery is controlled in tests; the normal API returns 503 until a real sender is configured and verified in MAIL-05.
+```text
+Choose a help topic -> Explain the issue -> Verify contact
+                   -> Review the request -> Confirm submission
+                   -> Track the case -> Review the outcome or request further help
+```
 
-AUTH-03 adds local password login for provisioned staff, live organization/queue membership checks, credential rotation, and bounded Argon2id workers. Customer verification cannot create staff sessions. This adapter does not implement SSO or MFA.
+The [design walkthrough](guides/PRODUCT_TOUR.md) makes this journey inspectable without
+credentials. Its static pages demonstrate interactions with local fixtures. The modular backend
+separately implements identity, durable conversations, confirmed case submission, and case
+lifecycle rules; the static preview does not submit real cases.
 
-AUTH-04 centralizes request identity and object authorization for tenant, owner, organization, and queue scopes. The identity endpoints use the shared service; protected object behavior is verified with fixture projections and real Neon identities. Case/source/state enforcement follows each feature.
+## Engineering Highlights
 
-SRC-01 provides an independent read-only reference API with SQLite and fictional parking/lounge bookings, transactions, historical policies, and explicit resource grants. Its 96 tests pass, including normal TCP requests and the signed local demo client. SRC-02 connects the backend to that API through a bounded asynchronous HTTP adapter with strict response validation and server-owned caller mappings. Three customer read endpoints are available when enabled; policy and relation methods remain internal. SRC-03A adds current per-resource grant checks and immutable security labels with monotone aggregation. Enforcement across actual cases, model context, and outbound jobs follows in SRC-03B.
+| Concern            | Implementation                                                                                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Domain boundaries  | FastAPI routes, business services, persistence, and provider adapters have separate responsibilities; an executable import guard checks their dependencies. |
+| Tenant isolation   | PostgreSQL row-level security, restricted runtime roles, tenant-aware keys, and transaction-local identity context.                                         |
+| Identity           | Browser-bound email verification, session rotation, CSRF protection, and separate staff password authentication.                                            |
+| Confirmed actions  | Session-bound drafts, canonical request hashes, explicit confirmation, and atomic case/history/audit/outbox records.                                        |
+| Reliable retries   | Stable idempotency receipts and version checks protect conversations and case transitions from duplicate mutations.                                         |
+| Source integration | A separate signed reference API, explicit resource grants, validated responses, and immutable security labels.                                              |
+| Data handling      | Synthetic fixtures, redacted errors, controlled request identifiers, and ignored local credentials and artifacts.                                           |
 
-BEHAV-01 adds durable standalone conversations, owner-scoped customer messages, concurrent retry deduplication, and versioned language changes. Message receipt confirms storage; no AI job or case is created.
+## Architecture
 
-CASE-01 adds session-bound action drafts with server-selected destinations, complete previews, canonical hashes, versioned corrections, fixed expiry, and persistent cancellation. Drafts contain customer reports; they do not create cases or execute booking/payment actions. CASE-02 adds explicit confirmation with an atomic case, consent, history, audit, outbox and idempotency receipt. This submits customer reports; live handoff, workers and email delivery follow their dedicated tasks.
+```mermaid
+flowchart LR
+    CUSTOMER[Customer browser] --> API[FastAPI application]
+    STAFF[Staff browser] --> API
+    API --> IDENTITY[Identity and access]
+    API --> CONVERSATION[Conversations]
+    API --> CASES[Confirmed support cases]
+    IDENTITY --> DB[(Neon PostgreSQL)]
+    CONVERSATION --> DB
+    CASES --> DB
+    API --> ADAPTER[Authorized source adapter]
+    ADAPTER --> SOURCE[Signed reference API]
+    SOURCE --> FIXTURES[(Synthetic source data)]
+```
 
-AUTH-02 atomically adopts the originating browser's anonymous history during successful verification, preserves message provenance and retry identity, invalidates pending drafts, and rotates/revokes sessions. Other browsers cannot claim history using a challenge ID or code.
+The frontend uses React, TypeScript, and Vite. The backend uses Python, FastAPI, Psycopg, and
+Alembic. Business logic stays in a modular application; the independent reference service
+supplies fictional booking and transaction data through a read-only integration boundary.
 
-CASE-03 adds scoped CS/supervisor assignment, manual status and closure with immutable history, and explicit customer continuation with versioned retry handling. Customer status reads expose the recorded outcome; email delivery and live conversation handling follow their dedicated tasks.
+See the [engineering case study](guides/CASE_STUDY.md) for the design decisions and
+[architecture specification](ARCHITECTURE.md) for the broader system design.
 
-The worker remains a placeholder. AI and remaining workflows follow the task plan.
+## Explore Locally
 
-The architecture uses a modular backend and Neon PostgreSQL, with a VPS/Kubernetes deployment direction. Model and email providers are not selected. Booking and transaction integrations initially use a separate reference service with test data.
+Preview the customer journey with Python alone:
 
-## Repository structure
+```powershell
+git clone https://github.com/williamlo90/airport-ai-assistant.git
+cd airport-ai-assistant
+python -m http.server 4173 --bind 127.0.0.1 --directory frontend/prototype
+```
 
-| Directory | Responsibility |
-| --- | --- |
-| `frontend/` | Customer and staff UI, shared components, API client, and translations. |
-| `backend/` | Modular API and worker sharing domain logic, migrations, and backend tests. |
-| `reference_service/` | Separate read-only booking/transaction source API with synthetic fixtures and its own data. |
-| `tests/e2e/` | End-to-end scenarios crossing application boundaries. |
-| `evaluations/` | Versioned AI/RAG datasets, scoring rubrics, and evaluation runners. |
-| `scripts/` | Setup, seeding, checks, and operational helpers. |
-| `deploy/` | Container, Kubernetes, and VPS deployment configuration. |
-| `.github/workflows/` | CI workflows once executable checks are implemented. |
+Open [the local design preview](http://127.0.0.1:4173). Stop the server with Ctrl+C.
 
-Provider adapters belong in `backend/src/airport_assistant/integrations/`; business rules belong in `modules/`. Evaluation datasets are separate from operational fixtures. Runtime logs, uploads, backups, and raw test outputs stay outside tracked source; publish only deliberately selected, sanitized evidence. Remove a directory's `.gitkeep` when adding its first real file.
+For the React application, API bootstrap, and reference-service setup, follow
+[Getting started](guides/GETTING_STARTED.md). Dependency lockfiles accompany each application.
 
-## Local configuration
+## Review and Verification
 
-`.env.example` supplies the API bootstrap settings and reserves placeholders for later integrations. Copy it to `.env` without overwriting an existing local file. Bootstrap without database remains credential-free. DB-01 separately loads runtime and migration URLs; see backend setup for opt-in connection checks. Email/model/source placeholders remain reserved for their features.
+The repository includes backend unit and domain-boundary tests, opt-in PostgreSQL integration
+tests, reference-service tests, and frontend component tests. Review instructions distinguish
+the credential-free path from database-connected verification.
 
-Never commit `.env`, API keys, database credentials, private keys, real customer data, or unredacted provider payloads. Use synthetic fixtures for development and testing.
+The [quality gate](.github/workflows/quality-gate.yml) checks repository documentation on pull
+requests or manual dispatch. Credential-free application checks are an explicit manual option.
+Tests execute in a bounded sequence; local resource rules are documented in the
+[verification guide](guides/VERIFICATION.md).
+
+## Documentation
+
+| Read                                                | Purpose                                                                |
+| --------------------------------------------------- | ---------------------------------------------------------------------- |
+| [Guide index](guides/README.md)                     | Find product, engineering, and setup material.                         |
+| [Product tour](guides/PRODUCT_TOUR.md)              | Inspect the customer journey using the static preview.                 |
+| [Engineering case study](guides/CASE_STUDY.md)      | Understand domain boundaries, security, and reliable case transitions. |
+| [Getting started](guides/GETTING_STARTED.md)        | Run the preview and application components.                            |
+| [Verification](guides/VERIFICATION.md)              | Run appropriate checks without paid services.                          |
+| [Product contract](PRODUCT_CONTRACT.md)             | Product scope and business rules.                                      |
+| [Architecture](ARCHITECTURE.md)                     | Detailed system design and integration direction.                      |
+| [Data and API contracts](DATA_AND_API_CONTRACTS.md) | Data ownership, confirmation, and state transitions.                   |
+| [Test plan](TEST_PLAN.md)                           | Verification scenarios and acceptance requirements.                    |
+
+The product and architecture contracts describe both implemented behavior and planned
+capabilities. AI orchestration, live staff handoff, and email delivery belong to the broader
+design; the preview uses local scripted responses. Source integration uses fictional data.
+Booking creation, payment processing, and refund execution are outside the product scope.
+
+## Source Use
+
+Copyright (c) 2026 williamlo90. All rights reserved. This repository is available for portfolio
+review; the [source-use notice](LICENSE) does not grant permission to reuse, modify, or
+redistribute the original source code. Third-party assets retain their own terms.

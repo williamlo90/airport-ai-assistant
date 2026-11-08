@@ -1,0 +1,56 @@
+name: Quality gate
+
+on:
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      application_checks:
+        description: Run credential-free application checks sequentially
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Repository documentation
+        run: python scripts/check_repository.py
+      - uses: astral-sh/setup-uv@v6
+        if: github.event_name == 'workflow_dispatch' && inputs.application_checks
+        with:
+          version: "0.11.26"
+      - name: Backend unit and contract checks
+        if: github.event_name == 'workflow_dispatch' && inputs.application_checks
+        run: |
+          uv sync --locked --project backend
+          uv run --locked --project backend pytest backend/tests/contracts backend/tests/unit
+      - name: Reference-service checks
+        if: github.event_name == 'workflow_dispatch' && inputs.application_checks
+        run: |
+          uv sync --locked --project reference_service
+          uv run --locked --project reference_service pytest reference_service/tests
+      - uses: actions/setup-node@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.application_checks
+        with:
+          node-version-file: frontend/.node-version
+      - name: Install pinned npm
+        if: github.event_name == 'workflow_dispatch' && inputs.application_checks
+        run: npm install --global npm@11.17.0
+      - name: Frontend checks
+        if: github.event_name == 'workflow_dispatch' && inputs.application_checks
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run check

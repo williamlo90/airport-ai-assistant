@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [react()],
   envDir: false,
   test: {
+    maxWorkers: 2,
+    fileParallelism: false,
     environment: 'jsdom',
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.{ts,tsx}'],

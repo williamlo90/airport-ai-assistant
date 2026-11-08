@@ -123,7 +123,7 @@ Untuk mengaktifkan database pada API, ubah APP_DATABASE_ENABLED=true di `.env`, 
 | APP_DB_ACQUIRE_TIMEOUT | 10 detik; 1-60, mencakup antrean dan pemeriksaan koneksi client-side. |
 | APP_DB_STATEMENT_TIMEOUT_MS | 10000 ms; 100-120000 per transaksi runtime. |
 
-Runtime memakai autocommit pada koneksi dan BEGIN/COMMIT/ROLLBACK eksplisit pada `RuntimeDatabase.transaction()`. Statement/lock/idle timeout bersifat transaction-local; tidak ada tenant context sesi. Prepared statements otomatis dimatikan untuk kompatibilitas pooler. Probe direct memakai statement timeout 10 detik dan lock timeout 3 detik. Startup probe juga memiliki deadline client-side sebesar acquire timeout ditambah statement timeout. Pembatalan saat check/transaction menutup koneksi yang tidak pasti sebelum dikembalikan ke pool; tidak mengulang transaksi bisnis. Integrasi Neon DB-01 telah lulus dengan credential pengujian lokal; suite lengkap dengan integrasi aktif menghasilkan 108 passed. Unit fake tetap tidak dihitung sebagai integrasi provider.
+Runtime memakai autocommit pada koneksi dan BEGIN/COMMIT/ROLLBACK eksplisit pada `RuntimeDatabase.transaction()`. Statement/lock/idle timeout bersifat transaction-local; tidak ada tenant context sesi. Prepared statements otomatis dimatikan untuk kompatibilitas pooler. Probe direct memakai statement timeout 10 detik dan lock timeout 3 detik. Startup probe juga memiliki deadline client-side sebesar acquire timeout ditambah statement timeout. Pembatalan saat check/transaction menutup koneksi yang tidak pasti sebelum dikembalikan ke pool; tidak mengulang transaksi bisnis.
 
 Tes integrasi opt-in yang memanggil probe yang sama:
 
@@ -163,7 +163,7 @@ Aktifkan RUN_NEON_DB_TESTS=1 juga untuk regresi koneksi DB-01 pada full suite. T
 
 Rujukan: [Alembic connection sharing](https://alembic.sqlalchemy.org/en/latest/cookbook.html#sharing-a-connection-across-one-or-more-programmatic-migration-commands), [PostgreSQL constraints](https://www.postgresql.org/docs/current/ddl-constraints.html).
 
-Verifikasi DB-02 pada 2 November 2026: **144 tes live lulus**, audit QA independen lulus. Schema app sudah ber-revision `0001_foundation`; upgrade ulang/current dan metadata sembilan tabel fondasi diverifikasi. RLS serta role runtime belum menjadi klaim DB-02.
+Migration fondasi memakai revision `0001_foundation`. Pengujian memeriksa metadata schema serta perilaku upgrade ulang; isolasi RLS dan role runtime memiliki skenario tersendiri.
 
 ## Role runtime dan RLS DB-03
 
@@ -201,7 +201,7 @@ Mutasi membership/role/queue untuk principal aktor sendiri ditolak, termasuk ket
 
 Status pemasangan DB-03: app ber-revision `0002_runtime_rls`. Provisioner memverifikasi login runtime terbatas dan memperbarui hanya DATABASE_URL secara internal; DATABASE_DIRECT_URL tetap credential migration. API yang sudah berjalan perlu direstart untuk memuat URL baru. Saat deployment, berikan DATABASE_URL saja pada API/worker; credential direct hanya untuk job migration/provisioning.
 
-Hasil final DB-03: full suite live **192 passed** pada 2 November 2026. QA independen mengulang suite191tes dan tes tambahan credential runtime aktual, memverifikasi rollout, dan menyatakan lulus dalam scope keamanan fondasi.
+Skenario keamanan database memeriksa isolasi tenant dan akses melalui credential runtime, termasuk ketika koneksi dipakai kembali setelah error.
 
 ## Pola upgrade DB-04
 
@@ -209,7 +209,7 @@ Migration workflow menjelaskan pembuatan revision offline, PK/FK/index/RLS, sikl
 
 Tambahkan RUN_NEON_UPGRADE_TESTS=1 pada full suite untuk populated-upgrade dan siklus FK di schema sementara. Revision contoh hanya fixture test; tidak menambah tabel demonstrasi ke app atau mengubah head production0002. Tes ini bukan bukti performa backfill besar, rolling deployment, atau fitur bisnis yang belum diimplementasikan.
 
-Verifikasi DB-04: **201 tes live lulus**, dikonfirmasi ulang QA. Build bersih offline129passed72skipped serta HTTP bootstrap lulus. Smoke schema app tetap revision0002 dan sembilan tabel fondasi; fixture contoh tidak terpasang di app.
+Skenario migrasi memisahkan fixture contoh dari schema aplikasi dan memeriksa bootstrap serta jalur upgrade yang dijaga.
 
 ## Customer authentication AUTH-01
 
