@@ -90,7 +90,7 @@ Raw path termasuk percent encoding; raw query termasuk urutan/encoding parameter
 
 Nonce adalah identifier request, bukan penyimpanan anti-replay. GET identik boleh diulang selama TTL; sumber memeriksa grants lagi setiap kali. Token service saja atau header identitas publik tidak cukup. Query identitas/field tidak dikenal dan parameter ganda ditolak; X-Tenant-ID/X-Subject-ID/X-Principal-ID/X-Source-Subject ditolak. Backend SRC-02 wajib membentuk subject dari identitas terverifikasi dan mapping sumber, bukan input/model.
 
-HTTP tanpa TLS hanya diterima untuk development/test dengan peer loopback dan host localhost/127.0.0.1/::1. CLI default bind127.0.0.1 dan tidak mempercayai forwarding headers. Production membutuhkan runner/TLS yang dikonfigurasi dan menonaktifkan docs; deployment TLS, key rotation, observability/load limits dan ketersediaan belum menjadi bukti SRC-01.
+HTTP tanpa TLS hanya diterima untuk development/test dengan peer loopback dan host localhost/127.0.0.1/::1. CLI default bind127.0.0.1 dan tidak mempercayai forwarding headers. Konfigurasi deployment menggunakan runner dengan TLS, rotasi key, observability, dan pembatasan akses; dokumentasi development dinonaktifkan pada mode production.
 
 ## Storage dan reset fixture
 

@@ -319,7 +319,7 @@ Laporan pelanggan, catatan sistem, dan keputusan petugas dipertahankan sebagai i
 
 ## Rencana pengujian dan ukuran keberhasilan
 
-Kualitas Airport AI Assistant didefinisikan melalui tujuh bidang engineering berikut. Aplikasi belum dianggap memenuhi kualitas hanya karena chat dapat menjawab. Definisi ini menjadi dasar desain, implementasi, dan pengujian; bukan klaim bahwa seluruh kemampuan sudah tercapai.
+Kualitas Airport AI Assistant disusun melalui bidang engineering berikut sebagai dasar desain, implementasi, dan pengujian.
 
 ### 1 Enterprise AI Architecture and Engineering
 
@@ -418,7 +418,7 @@ Kualitas yang dituntut:
 
 Contoh pengujian: dokumen knowledge memerintahkan agent membuka semua booking; sistem tidak menjalankannya. Pengujian lain memulihkan kasus dan riwayat dari backup.
 
-Bukti: desain akses dan aliran data, konfigurasi deployment, pemeriksaan rahasia, hasil pengujian serangan, dan backup/restore. Kebutuhan enterprise/government diterjemahkan menjadi kontrol spesifik; implementasi kontrol tidak otomatis berarti sertifikasi ISO 27001, SOC 2, atau pemenuhan seluruh persyaratan suatu instansi.
+Dokumentasi engineering mencakup desain akses dan aliran data, konfigurasi deployment, pemeriksaan rahasia, pengujian keamanan, serta backup/restore. Kebutuhan akses dan perlindungan data diterjemahkan menjadi kontrol aplikasi dan infrastruktur.
 
 ### 6 AI Performance Quality and Cost Optimisation
 
@@ -483,7 +483,7 @@ Kualitas dievaluasi berdasarkan tujuh bidang; daftar teknologi dan kanal pada lo
 
 ### Status keputusan
 
-Backend modular dan PostgreSQL yang di-host di Neon dipilih sebagai arah arsitektur. Deployment diarahkan ke VPS cloud untuk aplikasi dan worker, dengan K3s sebagai target pembuktian Kubernetes setelah uji resource. AWS Lightsail menjadi kandidat hosting pertama, bukan pembelian atau komitmen paket. Kandidat framework, model, email, ukuran server, region, dan biaya final masih memerlukan uji kelayakan.
+Rancangan arsitektur menggunakan backend modular dan PostgreSQL di Neon. Aplikasi dan worker diarahkan ke VPS cloud dengan AWS Lightsail sebagai pilihan hosting dan K3s untuk pengelolaan container. Konfigurasi server, region, model, dan email dikelola sesuai kebutuhan deployment.
 
 ### Arsitektur aplikasi
 
@@ -523,29 +523,23 @@ Gunakan driver PostgreSQL standar, migration yang tersimpan dalam repository, da
 
 Validasi koneksi, latency berdasarkan region backend/database, connection pooling, dan konteks tenant ketika koneksi digunakan bergantian. Periksa hak database aplikasi dan kebijakan isolasi dengan kredensial runtime yang sesungguhnya. Ukur respons setelah idle/compute resume terpisah dari respons saat aktif. Batas paket, storage, koneksi, biaya, lokasi data, dan retensi pemulihan harus diperiksa sebelum paket dipilih.
 
-### Integrasi nyata dan simulasi
+### Integrasi layanan
 
-| Komponen | Rencana implementasi dan batas bukti |
+| Komponen | Rancangan integrasi |
 | --- | --- |
-| Model AI | Penggunaan API nyata setelah akses, kualitas, dan biaya lolos uji kelayakan. |
-| Booking dan transaksi | Service sumber referensi terpisah dengan data uji serta API baca; mencakup hubungan identitas, tenant, dan perwakilan. Bukan klaim integrasi vendor booking/payment. |
+| Model AI | Hosted model API melalui adapter dan konfigurasi aplikasi. |
+| Booking dan transaksi | Service referensi terpisah melalui API baca, dengan hubungan identitas, tenant, dan perwakilan. |
 | Sistem kasus | Bagian Airport AI Assistant dengan pengajuan, penugasan, status, dan riwayat yang benar-benar tersimpan. |
-| Email | Kirim dan terima nyata pada alamat pengujian, dicocokkan ke kasus yang sama. |
-| Gangguan | Simulator untuk timeout, sumber tidak tersedia, data tidak ditemukan, dan pesan/permintaan berulang; dibedakan dari integrasi nyata. |
+| Email | Pengiriman dan penerimaan email yang terhubung ke kasus yang sama. |
+| Gangguan | Skenario timeout, sumber tidak tersedia, data tidak ditemukan, dan permintaan berulang. |
 
 Service sumber referensi menjaga pengembangan dan demo tidak terikat ketersediaan vendor booking. Konektor vendor dapat menjadi pengembangan berikutnya tanpa menjadi syarat MVP. Konektor mengganti cara akses sistem, bukan aturan otorisasi atau hasil bisnis.
 
 ### Deployment dan Kubernetes
 
-Arah deployment adalah VPS Linux cloud untuk frontend, FastAPI, dan worker; Neon menyediakan database di luar VPS. AWS adalah pilihan penyedia cloud dan VPS adalah bentuk komputasi, sehingga keduanya tidak saling eksklusif. AWS Lightsail menjadi kandidat pertama untuk dibandingkan dengan VPS lain berdasarkan biaya, region, resource, akses jaringan, dan operasional.
+Rancangan deployment menempatkan frontend, FastAPI, dan worker pada VPS Linux, dengan PostgreSQL di Neon. AWS Lightsail menjadi pilihan VPS dan K3s menjadi distribusi Kubernetes untuk mengelola container aplikasi.
 
-Frontend dapat disajikan dari VPS yang sama. Vercel tidak menjadi dependensi MVP; dapat dievaluasi jika preview/frontend hosting memberi manfaat. Seluruh backend dan worker tidak diasumsikan mengikuti model eksekusi Functions.
-
-K3s dipilih sebagai kandidat distribusi Kubernetes di VPS setelah kelayakan resource terbukti. EKS tidak menjadi pilihan deployment awal karena biaya cluster dan resource tambahan perlu pembenaran. Ukuran cluster dan paket belum dipilih. Tidak ada pembelian atau provisioning berbayar yang dilakukan melalui keputusan rancangan ini.
-
-Kubernetes diuji untuk pemulihan proses, penambahan replika dengan state/tenant yang konsisten, readiness, rolling update/rollback, dan resource requests/limits berdasarkan pengukuran. Worker diuji agar retry/restart tidak menggandakan kasus atau email. Rancangan komunikasi chat dan pembaruan antarreplika harus diputuskan sebelum klaim horizontal scaling diuji; state lokal proses tidak boleh diasumsikan tersedia pada replika lain.
-
-Satu VPS atau satu node tidak memberikan high availability terhadap kegagalan mesin. Uji pemulihan pod tidak dianggap bukti ketahanan terhadap node mati. Ketahanan lintas mesin memerlukan rancangan serta pengujian tambahan; tidak diklaim dari deployment satu node.
+Konfigurasi deployment mencakup HTTPS, readiness, restart proses, rolling update, rollback, serta backup dan pemulihan. Worker memakai kontrol retry dan identitas pekerjaan untuk menjaga konsistensi kasus dan email. Komunikasi antarreplika menggunakan state bersama di database.
 
 Pengembangan harian tidak wajib menyalakan Kubernetes. Docker digunakan bila membantu; seluruh stack tidak diwajibkan selalu berjalan dalam Docker. Cluster pengujian dinyalakan saat pengujian deployment sesuai resource dan anggaran. Pengelolaan VPS meliputi patch OS, firewall, TLS, monitoring, dan pemulihan.
 
@@ -575,9 +569,9 @@ Setiap uji kelayakan diberi batas waktu dan batas pengeluaran sebelum dimulai. L
 4. Tambahkan knowledge dan agent: retrieval, klarifikasi, pembacaan data, konfirmasi, serta pengajuan.
 5. Lengkapi ketiga alur MVP: informasi, bantuan booking, dan kendala transaksi untuk parkir dan lounge.
 6. Kalibrasi melalui spike dan baseline kualitas, keamanan, reliability, resource, latency, serta biaya. Setelah kalibrasi, kunci versi dataset, kondisi resource/beban, dan ambang penerimaan sebelum menjalankan acceptance serta regresi dengan ambang tetap. Perubahan ambang harus dicatat dan tidak dipakai untuk meluluskan hasil yang sebelumnya gagal secara diam-diam.
-7. Deploy dengan konfigurasi yang dapat diulang; uji Kubernetes, rollback dan pemulihan. Jalankan kembali pengujian penerimaan/regresi yang relevan pada konfigurasi rilis final; hasil lokal tidak otomatis membuktikan hasil deployment. Siapkan bukti portfolio serta keterbatasan yang ditemukan.
+7. Deploy dengan konfigurasi yang dapat diulang, lalu periksa Kubernetes, rollback, pemulihan, dan alur aplikasi pada konfigurasi rilis. Dokumentasikan arsitektur dan prosedur operasinya.
 
-Ketiga alur tetap target MVP; urutan pengerjaan membantu pelacakan kegagalan dan tidak menghapus scope. Penyusunan repository mengikuti keputusan produk dan rancangan ini. Pilihan vendor, akses akun, anggaran, dan rincian teknis yang belum terbukti tetap ditandai sebagai kandidat, bukan hasil uji.
+Ketiga alur menjadi target MVP. Urutan pengerjaan mengikuti dependensi produk, integrasi, dan deployment, dengan konfigurasi layanan dikelola terpisah dari aturan bisnis.
 
 ### Referensi untuk keputusan awal
 

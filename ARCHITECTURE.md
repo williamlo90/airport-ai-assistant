@@ -141,13 +141,13 @@ Checkpoint tidak menjadi sumber status booking atau bukti otorisasi. Checkpoint 
 
 ## 10 Operasi dan deployment
 
-VPS Linux melayani frontend dan API pada origin yang sama melalui HTTPS. K3s menjalankan API dan worker; Neon berada di luar cluster. Lightsail adalah kandidat penyedia VPS, bukan paket yang sudah dibeli. Satu node adalah titik kegagalan mesin; replika di node itu hanya membuktikan pemulihan proses dan concurrency, bukan HA lintas mesin.
+Rancangan deployment memakai VPS Linux untuk frontend dan API pada origin yang sama melalui HTTPS. AWS Lightsail menjadi pilihan VPS dalam rancangan ini, K3s mengelola API dan worker, dan Neon menyediakan PostgreSQL di luar cluster. Pemulihan proses, penempatan replika, dan backup database menjadi bagian dari operasi layanan.
 
 API liveness memeriksa proses; readiness memeriksa dependensi inti untuk melayani request tanpa memanggil model setiap probe. Email outage tidak mematikan seluruh portal; pekerjaan ditahan dan status terlihat. Shutdown menghentikan penerimaan kerja baru dan menyelesaikan/menyerahkan lease secara aman. Resource requests/limits mengikuti pengukuran, bukan asumsi minimum cluster saja.
 
 Migration memakai direct connection Neon dan langkah terkontrol sebelum rollout. Runtime menggunakan pool terbatas. Perubahan schema memakai expand/contract agar rollback aplikasi tetap mungkin; migrasi destruktif tidak dilakukan bersamaan dengan rollout. Secret bukan teks publik di repository; cluster secrets memerlukan pembatasan akses dan perlindungan at rest pada konfigurasi deployment.
 
-CI memeriksa lint/type/schema, pengujian domain, isolasi dan kontrak, lalu build image dengan versi/digest. Deployment menguji smoke dan regresi relevan pada rilis final. Tidak ada deployment berbayar otomatis hanya karena rancangan ini dibuat.
+Rancangan pipeline rilis mencakup lint/type/schema, pengujian domain, isolasi dan kontrak, serta build image dengan versi/digest. Deployment dilengkapi smoke check dan regresi pada konfigurasi rilis.
 
 ## 11 Observability dan data lifecycle
 

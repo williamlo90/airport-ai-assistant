@@ -60,7 +60,6 @@ they are separate from credential-free CI.
 
 The [workflow](../.github/workflows/quality-gate.yml) checks documentation on pull requests or
 manual dispatch. Enable the `application_checks` option during manual dispatch to run the
-application suites sequentially. Repository permissions are read-only and provider secrets
-are not supplied. It does not trigger on ordinary pushes, provision cloud infrastructure, or run
-database-connected acceptance scenarios. A workflow definition describes verification to run;
-the Actions result records whether a particular revision passed.
+application suites sequentially. The workflow uses read-only repository permissions.
+Database integration checks use the dedicated setup described above. Run results are available
+in GitHub Actions.
